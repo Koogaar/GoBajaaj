@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GoBajaaj V2.2 - Soo Deji App-ka</title>
+  <link rel="icon" type="image/png" href="/logo.png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    body {
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: #181818;
+      border: 1px solid #282828;
+      border-radius: 24px;
+      max-width: 480px;
+      width: 100%;
+      padding: 32px 24px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+    .logo {
+      width: 84px;
+      height: 84px;
+      border-radius: 20px;
+      object-fit: cover;
+      margin-bottom: 16px;
+      border: 2px solid #E50914;
+      box-shadow: 0 8px 20px rgba(229, 9, 20, 0.3);
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 20px;
+    }
+    .desc {
+      color: #a0a0a0;
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-radius: 16px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: #E50914;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(229, 9, 20, 0.4);
+    }
+    .btn-primary:hover {
+      background: #c20710;
+      transform: translateY(-2px);
+    }
+    .btn-secondary {
+      background: #242424;
+      color: #ffffff;
+      border: 1px solid #333333;
+    }
+    .btn-secondary:hover {
+      background: #2e2e2e;
+      transform: translateY(-2px);
+    }
+    .btn-text {
+      text-align: left;
+    }
+    .btn-title {
+      font-size: 15px;
+      font-weight: 800;
+      display: block;
+    }
+    .btn-sub {
+      font-size: 11px;
+      opacity: 0.8;
+      display: block;
+      margin-top: 2px;
+    }
+    .btn-icon {
+      font-size: 22px;
+    }
+    .footer {
+      margin-top: 24px;
+      font-size: 12px;
+      color: #666666;
+    }
+    .footer a {
+      color: #888888;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="/logo.png" alt="GoBajaaj Logo" class="logo">
+    <h1>GoBajaaj App</h1>
+    <span class="badge">Version 2.2 (VersionCode 13) &bull; Cusbooneysiin Toos ah</span>
+    <p class="desc">
+      Nuqulkan waxa si toos ah loogu xalliyay isku-xirka Supabase iyo Web Admin-ka. Bixinta darawalka iyo codsiga pass-ka isla markiiba waxay toos uga muuqanayaan Web Admin-ka!
+    </p>
+
+    <div class="btn-group">
+      <!-- APK Button (Direct Phone Install) -->
+      <a href="/GoBajaaj_V2.2.apk" download="GoBajaaj_V2.2.apk" class="btn btn-primary">
+        <div class="btn-text">
+          <span class="btn-title">📱 Soo Deji APK (Taleefankaaga ku shubo)</span>
+          <span class="btn-sub">Nooca Cusub ee Toosan (23 MB)</span>
+        </div>
+        <span class="btn-icon">⬇️</span>
+      </a>
+
+      <!-- AAB Button (Google Play Console) -->
+      <a href="/GoBajaaj_V2.2.aab" download="GoBajaaj_V2.2.aab" class="btn btn-secondary">
+        <div class="btn-text">
+          <span class="btn-title">📦 Soo Deji AAB (Google Play)</span>
+          <span class="btn-sub">VersionCode: 13 | Play Console (22 MB)</span>
+        </div>
+        <span class="btn-icon">⬇️</span>
+      </a>
+    </div>
+
+    <div class="footer">
+      GoBajaaj Somalia &copy; 2026 &bull; <a href="/">Fur Web Admin-ka</a>
+    </div>
+  </div>
+</body>
+</html>
