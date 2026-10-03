@@ -207,7 +207,7 @@ fun ProfileSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "GoBajaaj Somalia • v2.4.0",
+                    text = "GoBajaaj Somalia • v3.1",
                     fontSize = 12.sp,
                     color = Color.Gray,
                     fontWeight = FontWeight.Medium
