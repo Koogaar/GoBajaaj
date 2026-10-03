@@ -1,0 +1,23 @@
+package com.example.somalitraffic.ui.navigation
+
+object NavRoutes {
+    const val SPLASH = "splash"
+    const val ONBOARDING = "onboarding"
+    const val LOGIN = "login"
+    const val SIGN_UP = "sign_up" // This will be the Role Selection
+    const val REGISTRATION_FORM = "registration_form/{isDriver}"
+    fun registrationForm(isDriver: Boolean) = "registration_form/$isDriver"
+    const val DRIVER_PASS = "driver_pass"
+    const val HOME = "home"
+    const val LIVE_TRAFFIC = "live_traffic"
+    const val RIDE = "ride"
+    const val TRAFFIC_DETAILS = "traffic_details/{intersectionId}"
+    fun trafficDetails(intersectionId: String) = "traffic_details/$intersectionId"
+    const val ALTERNATIVE_ROUTES = "alternative_routes"
+    const val TRAFFIC_ALERTS = "traffic_alerts"
+    const val TRAFFIC_HISTORY = "traffic_history"
+    const val PROFILE_SETTINGS = "profile_settings"
+    const val REPORTER_DASHBOARD = "reporter_dashboard"
+    const val ADMIN_DASHBOARD = "admin_dashboard"
+    const val SUPPORT_CENTER = "support_center"
+}
