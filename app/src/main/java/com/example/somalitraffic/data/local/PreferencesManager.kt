@@ -74,13 +74,27 @@ class PreferencesManager(context: Context) {
         _currentUserFlow.value = null
     }
 
+    private fun isInvalidSupabaseUrl(url: String): Boolean {
+        return url.isBlank() || 
+               url.contains("example-traffic-somalia", ignoreCase = true) || 
+               url.contains("YOUR_SUPABASE_PROJECT_REF", ignoreCase = true) ||
+               url.contains("your_supabase_project_ref", ignoreCase = true) ||
+               !url.startsWith("https://")
+    }
+
+    private fun isInvalidSupabaseKey(key: String): Boolean {
+        return key.isBlank() || 
+               key.contains("dummy_anon_key", ignoreCase = true) || 
+               key.contains("YOUR_SUPABASE_ANON_KEY", ignoreCase = true)
+    }
+
     fun getSupabaseUrl(): String {
         val buildUrl = BuildConfig.SUPABASE_URL
-        if (buildUrl.isNotBlank() && !buildUrl.contains("example-traffic-somalia")) {
+        if (!isInvalidSupabaseUrl(buildUrl)) {
             return buildUrl
         }
         val saved = prefs.getString(KEY_SUPABASE_URL, "") ?: ""
-        if (saved.isNotBlank() && !saved.contains("example-traffic-somalia")) {
+        if (!isInvalidSupabaseUrl(saved)) {
             return saved
         }
         return DEFAULT_SUPABASE_URL
@@ -88,11 +102,11 @@ class PreferencesManager(context: Context) {
 
     fun getSupabaseKey(): String {
         val buildKey = BuildConfig.SUPABASE_ANON_KEY
-        if (buildKey.isNotBlank() && !buildKey.contains("dummy_anon_key")) {
+        if (!isInvalidSupabaseKey(buildKey)) {
             return buildKey
         }
         val saved = prefs.getString(KEY_SUPABASE_KEY, "") ?: ""
-        if (saved.isNotBlank() && !saved.contains("dummy_anon_key")) {
+        if (!isInvalidSupabaseKey(saved)) {
             return saved
         }
         return DEFAULT_SUPABASE_ANON_KEY
@@ -101,8 +115,7 @@ class PreferencesManager(context: Context) {
     fun isSupabaseConfigured(): Boolean {
         val url = getSupabaseUrl()
         val key = getSupabaseKey()
-        return url.isNotBlank() && !url.contains("example-traffic-somalia") &&
-               key.isNotBlank() && !key.contains("dummy_anon_key")
+        return !isInvalidSupabaseUrl(url) && !isInvalidSupabaseKey(key)
     }
 
     fun saveSupabaseConfig(url: String, key: String) {
