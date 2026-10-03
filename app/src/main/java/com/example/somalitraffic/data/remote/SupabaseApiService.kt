@@ -210,7 +210,7 @@ interface SupabaseApiService {
         @Header("apikey") apiKey: String,
         @Header("Authorization") authHeader: String,
         @Header("Prefer") prefer: String = "return=representation",
-        @Body location: Map<String, Any>
+        @Body location: @JvmSuppressWildcards Map<String, Any>
     ): Response<List<Map<String, Any>>>
 
     @GET("rest/v1/device_locations")
@@ -228,7 +228,7 @@ interface SupabaseApiService {
         @Header("apikey") apiKey: String,
         @Header("Authorization") authHeader: String,
         @Header("Prefer") prefer: String = "return=representation",
-        @Body event: Map<String, Any>
+        @Body event: @JvmSuppressWildcards Map<String, Any>
     ): Response<List<Map<String, Any>>>
 
     @GET("rest/v1/device_recovery_events")
@@ -245,7 +245,7 @@ interface SupabaseApiService {
     suspend fun insertAuditLog(
         @Header("apikey") apiKey: String,
         @Header("Authorization") authHeader: String,
-        @Body log: Map<String, Any>
+        @Body log: @JvmSuppressWildcards Map<String, Any>
     ): Response<Unit>
 
     @POST("rest/v1/subscriptions")
@@ -253,7 +253,7 @@ interface SupabaseApiService {
         @Header("apikey") apiKey: String,
         @Header("Authorization") authHeader: String,
         @Header("Prefer") prefer: String = "return=representation",
-        @Body subscription: Map<String, Any>
+        @Body subscription: @JvmSuppressWildcards Map<String, Any>
     ): Response<List<Map<String, Any>>>
 
     @POST("rest/v1/payment_transactions")
@@ -261,7 +261,7 @@ interface SupabaseApiService {
         @Header("apikey") apiKey: String,
         @Header("Authorization") authHeader: String,
         @Header("Prefer") prefer: String = "return=representation",
-        @Body payment: Map<String, Any>
+        @Body payment: @JvmSuppressWildcards Map<String, Any>
     ): Response<List<Map<String, Any>>>
 
     @GET("rest/v1/payment_transactions")
@@ -309,7 +309,7 @@ interface SupabaseApiService {
         @Header("apikey") apiKey: String,
         @Header("Authorization") authHeader: String,
         @Query("id") idFilter: String,
-        @Body updates: Map<String, Any>
+        @Body updates: @JvmSuppressWildcards Map<String, Any>
     ): Response<Unit>
 
     // Bajaj Rides (Customer Ride & Driver Bids sync)
@@ -318,7 +318,7 @@ interface SupabaseApiService {
         @Header("apikey") apiKey: String,
         @Header("Authorization") authHeader: String,
         @Header("Prefer") prefer: String = "return=representation",
-        @Body ride: Map<String, Any>
+        @Body ride: @JvmSuppressWildcards Map<String, Any>
     ): Response<List<Map<String, Any>>>
 
     @GET("rest/v1/bajaj_rides")
@@ -343,7 +343,7 @@ interface SupabaseApiService {
         @Header("apikey") apiKey: String,
         @Header("Authorization") authHeader: String,
         @Query("id") idFilter: String,
-        @Body updates: Map<String, Any>
+        @Body updates: @JvmSuppressWildcards Map<String, Any>
     ): Response<Unit>
 
     // Lost phone / device reporting sync
