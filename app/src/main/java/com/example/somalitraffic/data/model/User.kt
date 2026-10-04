@@ -47,8 +47,9 @@ enum class TrafficStatus(val somaliName: String, val hexColor: Long, val hexColo
             return when {
                 clean.contains("furan") || clean.contains("clear") || clean.contains("open") -> FURAN
                 clean.contains("dhexdhexaad") || clean.contains("normal") || clean.contains("medium") -> DHEXDHEXAAD
+                clean.contains("mashquul") || clean.contains("busy") -> MASHQUUL
                 clean.contains("xiran") || clean.contains("closed") || clean.contains("blocked") || clean.contains("madow") -> XIRAN
-                clean.contains("saxmad") || clean.contains("mashquul") || clean.contains("heavy") || clean.contains("busy") || clean.contains("shil") || clean.contains("gaduud") -> SAXMAD_BADAN
+                clean.contains("saxmad") || clean.contains("heavy") || clean.contains("shil") || clean.contains("gaduud") -> SAXMAD_BADAN
                 else -> FURAN
             }
         }

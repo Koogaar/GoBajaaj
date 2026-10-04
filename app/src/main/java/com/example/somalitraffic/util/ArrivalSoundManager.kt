@@ -1,99 +1,42 @@
 package com.example.somalitraffic.util
 
 import android.content.Context
-import android.media.AudioAttributes
 import android.media.AudioManager
-import android.media.MediaPlayer
-import android.media.RingtoneManager
 import android.media.ToneGenerator
 import android.os.Build
-import android.os.CombinedVibration
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.speech.tts.TextToSpeech
-import android.speech.tts.UtteranceProgressListener
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Locale
 
+/**
+ * ArrivalSoundManager — plays HORN SOUND ONLY (no TTS, no music).
+ * Triggered when driver marks arrival at pickup.
+ */
 object ArrivalSoundManager {
     private const val TAG = "ArrivalSoundManager"
-    private var tts: TextToSpeech? = null
-    private var isTtsInitialized = false
-    private var pendingSpeechText: String? = null
 
     /**
-     * Initializes TTS engine lazily
-     */
-    fun initTts(context: Context) {
-        if (tts == null) {
-            tts = TextToSpeech(context.applicationContext) { status ->
-                if (status == TextToSpeech.SUCCESS) {
-                    isTtsInitialized = true
-                    // Try to set Somali or English language
-                    val somaliLocale = Locale("so", "SO")
-                    val result = tts?.setLanguage(somaliLocale)
-                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        tts?.language = Locale.US
-                    }
-                    pendingSpeechText?.let { text ->
-                        speakText(text)
-                        pendingSpeechText = null
-                    }
-                } else {
-                    Log.e(TAG, "TTS Initialization failed: $status")
-                }
-            }
-        }
-    }
-
-    /**
-     * Plays full arrival alert: Bajaj Horn Chime + Voice TTS Announcement + Vibration
+     * Plays full arrival alert: Bajaj Horn sequence + Vibration.
+     * No TTS / no music — horn only as requested.
      */
     fun playDriverArrivalAlert(
         context: Context,
         riderName: String? = null,
         pickupLocation: String? = null
     ) {
-        initTts(context)
-
-        CoroutineScope(Dispatchers.Default).launch {
-            // 1. Trigger distinct Bajaj double horn sound & vibration
-            playBajajHornSequence(context)
-
-            // 2. Play system notification chime
-            try {
-                val notificationUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                val ringtone = RingtoneManager.getRingtone(context.applicationContext, notificationUri)
-                ringtone?.play()
-            } catch (e: Exception) {
-                Log.w(TAG, "Ringtone play error: ${e.message}")
-            }
-
-            delay(700)
-
-            // 3. Play voice announcement
-            val spokenMessage = if (!pickupLocation.isNullOrBlank()) {
-                "Bajaajlihii wuu soo gaaray $pickupLocation! Fadlan soo bax."
-            } else {
-                "Bajaajlihii wuu soo gaaray gurigaaga! Fadlan soo bax."
-            }
-
-            speakText(spokenMessage)
-        }
+        playBajajHornSequence(context)
     }
 
     /**
-     * Plays loud rhythmic Bajaj Horn sound effect (Tuut-Tuut-Tuut)
+     * Plays loud rhythmic Bajaj Horn sequence (Tuut-Tuut-Tuuuut)
      */
     fun playBajajHornSequence(context: Context) {
-        // Haptic feedback / vibration
         triggerVibration(context)
-
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
@@ -109,24 +52,25 @@ object ArrivalSoundManager {
                 toneGen.stopTone()
                 delay(120)
 
-                // Honk 3 (Longer)
-                toneGen.startTone(ToneGenerator.TONE_CDMA_HIGH_L, 380)
-                delay(420)
+                // Honk 3 (Longer — Bajaaj horn signature)
+                toneGen.startTone(ToneGenerator.TONE_CDMA_HIGH_L, 500)
+                delay(560)
+                toneGen.stopTone()
+                delay(80)
+
+                // Short final honk
+                toneGen.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 160)
+                delay(200)
                 toneGen.stopTone()
                 toneGen.release()
             } catch (e: Exception) {
                 Log.w(TAG, "ToneGenerator error: ${e.message}")
-                try {
-                    val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                    val r = RingtoneManager.getRingtone(context.applicationContext, defaultUri)
-                    r?.play()
-                } catch (ignored: Exception) {}
             }
         }
     }
 
     /**
-     * Plays single quick Bajaj Horn beep
+     * Single quick Bajaj Horn beep
      */
     fun playSingleHornBeep(context: Context) {
         triggerVibration(context, durationMs = 180)
@@ -140,18 +84,6 @@ object ArrivalSoundManager {
             } catch (e: Exception) {
                 Log.w(TAG, "Single horn error: ${e.message}")
             }
-        }
-    }
-
-    private fun speakText(text: String) {
-        try {
-            if (isTtsInitialized && tts != null) {
-                tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "ARRIVAL_ALERT_UTTERANCE")
-            } else {
-                pendingSpeechText = text
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Speak text error: ${e.message}")
         }
     }
 
@@ -184,14 +116,6 @@ object ArrivalSoundManager {
         }
     }
 
-    fun release() {
-        try {
-            tts?.stop()
-            tts?.shutdown()
-            tts = null
-            isTtsInitialized = false
-        } catch (e: Exception) {
-            Log.w(TAG, "TTS release error: ${e.message}")
-        }
-    }
+    /** No TTS to release */
+    fun release() {}
 }

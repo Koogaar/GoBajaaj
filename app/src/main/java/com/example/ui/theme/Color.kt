@@ -30,13 +30,13 @@ val TextWhite = Color(0xFFFFFFFF)
 val TextMutedDark = Color(0xFF4B5563)
 val TextMutedLight = Color(0xFF9CA3AF)
 
-// Functional Traffic Semantic Colors
-val TrafficOpenGreen = Color(0xFF10B981)
-val TrafficModerateYellow = Color(0xFFF59E0B)
-val TrafficBusyOrange = Color(0xFFEA580C)
-val TrafficHeavyRed = Color(0xFFEF4444)
-val TrafficEmergencyPurple = Color(0xFF7C3AED)
-val TrafficClosedBlack = Color(0xFF1F2937)
+// Functional Traffic Semantic Colors (User's 4-level scheme)
+val TrafficOpenGreen = Color(0xFF16A34A)       // Furan - Cagaar (Green)
+val TrafficModerateYellow = Color(0xFFEAB308)  // Dhexdhexaad - Jaale (Yellow)
+val TrafficBusyOrange = Color(0xFFDC2626)      // Mashquul - Gaduud (Red) — renamed for compat, actually red
+val TrafficHeavyRed = Color(0xFFDC2626)        // Saxmad daran / Mashquul - Gaduud (Red)
+val TrafficEmergencyPurple = Color(0xFF7C3AED) // Unused — kept for backward compat
+val TrafficClosedBlack = Color(0xFF0F172A)     // Xiran - Madow (Black)
 
 // Backward Compatibility Aliases (remapped strictly to Red + Black + White)
 val SomaliBluePrimary = BrandBlack

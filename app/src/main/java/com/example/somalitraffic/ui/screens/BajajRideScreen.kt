@@ -42,6 +42,7 @@ import com.example.somalitraffic.ui.SomaliTrafficViewModel
 import com.example.somalitraffic.ui.components.SomaliBottomNavigation
 import com.example.somalitraffic.ui.components.SomaliInteractiveMap
 import com.example.somalitraffic.util.ArrivalSoundManager
+import com.example.somalitraffic.util.NotificationHelper
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -55,7 +56,6 @@ private enum class RiderFlowStep {
 private enum class DriverFlowStep {
     DRIVER_HOME,
     INCOMING_REQUEST,
-    COUNTER_OFFER,
     ON_TRIP_NAV
 }
 
@@ -115,7 +115,8 @@ fun BajajRideScreen(
     var arrivalSoundPlayedForRideId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        ArrivalSoundManager.initTts(context)
+        // Initialise system notification channels once
+        NotificationHelper.createChannels(context)
     }
 
     // Real-time Rider Polling for Driver Acceptance & Completion & Arrival Sound
@@ -137,6 +138,13 @@ fun BajajRideScreen(
                             offeredPrice = ride.agreedFare ?: ride.riderOffer,
                             phone = ride.assignedDriverPhone ?: "615000000"
                         )
+                        // Show notification that driver accepted (visible even if app is in background)
+                        NotificationHelper.showRideAcceptedNotification(
+                            context = context,
+                            driverName = ride.assignedDriverName ?: "Bajaajlaha",
+                            plate = ride.assignedDriverPlate ?: "TR-1001",
+                            etaMinutes = ride.etaMinutes
+                        )
                         riderStep = RiderFlowStep.ON_TRIP_TRACKING
                     }
                     
@@ -145,11 +153,15 @@ fun BajajRideScreen(
                             isDriverArrivedState = true
                             if (arrivalSoundPlayedForRideId != rId) {
                                 arrivalSoundPlayedForRideId = rId
-                                ArrivalSoundManager.playDriverArrivalAlert(
+                                // Play horn sound (no TTS, no music)
+                                ArrivalSoundManager.playBajajHornSequence(context)
+                                // Show system notification (works even when app is in background)
+                                NotificationHelper.showDriverArrivedNotification(
                                     context = context,
-                                    pickupLocation = pickupLocation.ifBlank { ride.pickupAddress }
+                                    driverName = ride.assignedDriverName ?: "Bajaajlaha",
+                                    pickup = pickupLocation.ifBlank { ride.pickupAddress }
                                 )
-                                Toast.makeText(context, "📯 Darawalka Bajaajta wuu soo gaaray gurigaaga!", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "📯 Bajaajlihii wuu soo gaaray gurigaaga!", Toast.LENGTH_LONG).show()
                             }
                         } else if (ride.status == "completed") {
                             riderStep = RiderFlowStep.TRIP_COMPLETED
@@ -176,8 +188,18 @@ fun BajajRideScreen(
         while (isDriverOnline && driverStep == DriverFlowStep.DRIVER_HOME) {
             viewModel.fetchPendingRides { list ->
                 if (list.isNotEmpty()) {
-                    incomingRide = list.first()
+                    val ride = list.first()
+                    incomingRide = ride
                     driverStep = DriverFlowStep.INCOMING_REQUEST
+                    // Notify driver of new ride (shows even if app is minimised)
+                    NotificationHelper.showNewRideRequestNotification(
+                        context = context,
+                        pickup = ride.pickupAddress,
+                        destination = ride.destinationAddress,
+                        offer = "$${String.format(java.util.Locale.US, "%.2f", ride.riderOffer)}"
+                    )
+                    // Horn beep for driver
+                    ArrivalSoundManager.playSingleHornBeep(context)
                 }
             }
             delay(3500)
@@ -496,39 +518,9 @@ fun BajajRideScreen(
                                     driverStep = DriverFlowStep.ON_TRIP_NAV
                                 }
                             },
-                            onCounterOffer = {
-                                driverStep = DriverFlowStep.COUNTER_OFFER
-                            },
                             onDecline = {
                                 incomingRide = null
                                 driverStep = DriverFlowStep.DRIVER_HOME
-                            }
-                        )
-                    }
-
-                    DriverFlowStep.COUNTER_OFFER -> {
-                        // Screen 6: Counter Offer
-                        DriverCounterOfferScreen(
-                            currentOffer = counterOfferText,
-                            onOfferChange = { counterOfferText = it },
-                            onSendOffer = {
-                                val rId = incomingRide?.id
-                                val counterVal = counterOfferText.toDoubleOrNull() ?: 2.00
-                                if (rId != null) {
-                                    viewModel.acceptRide(rId, counterVal) {
-                                        driverTodayEarnings += counterVal
-                                        driverTodayTrips += 1
-                                        driverStep = DriverFlowStep.ON_TRIP_NAV
-                                    }
-                                } else {
-                                    driverTodayEarnings += counterVal
-                                    driverTodayTrips += 1
-                                    driverStep = DriverFlowStep.ON_TRIP_NAV
-                                }
-                                Toast.makeText(context, "Dalabkaaga $$counterOfferText ayaa loo diray rakaabka!", Toast.LENGTH_SHORT).show()
-                            },
-                            onCancel = {
-                                driverStep = DriverFlowStep.INCOMING_REQUEST
                             }
                         )
                     }
@@ -1108,7 +1100,7 @@ private fun RiderBidsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Darawallada aqbalay / Gorgortanka (Bids):",
+            text = "Darawallada u dhow ee soo aqbalay:",
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp,
             color = BrandBlack
@@ -1172,14 +1164,6 @@ private fun RiderBidsScreen(
                                     fontWeight = FontWeight.SemiBold,
                                     color = TrafficOpenGreen
                                 )
-                                if (bid.isCounterOffer) {
-                                    Text(
-                                        text = "Counter-Offer: \$${bid.offeredPrice}",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = GoBajaajBlue
-                                    )
-                                }
                             }
                         }
 
@@ -1187,12 +1171,12 @@ private fun RiderBidsScreen(
                             onClick = { onAcceptBid(bid) },
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (bid.isCounterOffer) GoBajaajBlue else GoBajaajGreen
+                                containerColor = GoBajaajGreen
                             ),
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                text = "Accept \$${bid.offeredPrice}",
+                                text = "Aqbal \$${bid.offeredPrice}",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -1210,7 +1194,7 @@ private fun RiderBidsScreen(
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth().height(48.dp)
         ) {
-            Text("Cancel Request", color = TrafficHeavyRed, fontWeight = FontWeight.Bold)
+            Text("Jooji Dalabka", color = TrafficHeavyRed, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -1230,6 +1214,11 @@ private fun RiderLiveTrackingScreen(
     onCompleteTripSimulation: () -> Unit,
     onCancel: () -> Unit
 ) {
+    // Simulate driver position: approaching from pickup offset, arrives at pickup when isDriverArrived
+    val baseLat = userLocation?.first ?: 2.0371
+    val baseLng = userLocation?.second ?: 45.3283
+    val driverLat = if (isDriverArrived) baseLat else baseLat + 0.0035
+    val driverLng = if (isDriverArrived) baseLng else baseLng - 0.0040
     var acknowledgedArrival by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1251,15 +1240,19 @@ private fun RiderLiveTrackingScreen(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (isDriverArrived) "📯 BAJAAJLIHII WUU SOO GAARAY GURIGAAGA!" else "On Trip • Darawalka ayaa kusoo socda",
+                        text = if (isDriverArrived) "📯 BAJAAJLIHII WUU SOO GAARAY!" else "Darawalka ayaa kusoo socda",
                         color = Color.White,
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = 13.5.sp
+                        fontSize = 13.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (isDriverArrived) "Darawalku wuxuu ku sugayaa bannaanka: $pickup" else "Soo gaarista: ${driver.etaMinutes} daqiiqo ➔ $pickup",
+                        text = if (isDriverArrived) "Wuxuu sugayaa bannaanka: $pickup" else "ETA: ${driver.etaMinutes} daq ➔ $pickup",
                         color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 11.sp
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
@@ -1292,14 +1285,17 @@ private fun RiderLiveTrackingScreen(
             }
         }
 
-        // Live Map view
+        // Live Map view — shows both rider (blue) and approaching driver (yellow Bajaaj pin)
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             SomaliInteractiveMap(
                 intersections = intersections,
                 modifier = Modifier.fillMaxSize(),
                 userLatitude = userLocation?.first ?: 2.0371,
                 userLongitude = userLocation?.second ?: 45.3283,
-                customUserPinLabel = "Gurigaaga ($pickup)"
+                customUserPinLabel = "Adigu (${pickup})",
+                driverLatitude = driverLat,
+                driverLongitude = driverLng,
+                driverPinLabel = "📯 ${driver.name}"
             )
 
             // Arrival Notification Dialog / Banner overlay when driver arrives
@@ -1867,7 +1863,6 @@ private fun DriverRideRequestAlertScreen(
     intersections: List<Intersection> = emptyList(),
     userLocation: Pair<Double, Double>? = null,
     onAccept: () -> Unit,
-    onCounterOffer: () -> Unit,
     onDecline: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1915,16 +1910,38 @@ private fun DriverRideRequestAlertScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "$pickup ➔ $destination",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = BrandBlack
-                        )
+                        // Pickup
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(GoBajaajGreen))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = pickup,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                                color = BrandBlack,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(TrafficHeavyRed))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = destination,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.sp,
+                                color = BrandBlack,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Rider offer: $riderOffer",
-                            fontSize = 16.sp,
+                            text = "Qiimaha rakaabka: $riderOffer",
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = GoBajaajGreen
                         )
@@ -1933,25 +1950,16 @@ private fun DriverRideRequestAlertScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 3 Action Buttons: [Accept $1.50], [Counter Offer], [Decline]
+                // 2 Action Buttons: [Aqbal] and [Diid] — Gorgortan removed
                 Button(
                     onClick = onAccept,
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = GoBajaajGreen),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
                 ) {
-                    Text("Accept $riderOffer", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Button(
-                    onClick = onCounterOffer,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GoBajaajBlue),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
-                ) {
-                    Text("Counter Offer", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("✅ Aqbal Dalabka ($riderOffer)", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -1962,104 +1970,14 @@ private fun DriverRideRequestAlertScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = TrafficHeavyRed),
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("Decline", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Diid Dalabka", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
     }
 }
 
-@Composable
-private fun DriverCounterOfferScreen(
-    currentOffer: String,
-    onOfferChange: (String) -> Unit,
-    onSendOffer: () -> Unit,
-    onCancel: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = "Counter Offer",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = BrandBlack
-                )
-                Text(
-                    text = "Your offer to rider",
-                    fontSize = 13.sp,
-                    color = TextMutedDark
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                OutlinedTextField(
-                    value = currentOffer,
-                    onValueChange = onOfferChange,
-                    leadingIcon = {
-                        Text("$", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = GoBajaajBlue)
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        color = BrandBlack,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = BrandBlack,
-                        unfocusedTextColor = BrandBlack,
-                        focusedContainerColor = Color(0xFFF8FAFC),
-                        unfocusedContainerColor = Color(0xFFF8FAFC),
-                        focusedBorderColor = GoBajaajBlue,
-                        unfocusedBorderColor = Color(0xFFCBD5E1),
-                        cursorColor = GoBajaajBlue
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Rider will be notified of your counter offer.",
-                    fontSize = 12.sp,
-                    color = TextMutedDark
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = onSendOffer,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GoBajaajBlue),
-                    modifier = Modifier.fillMaxWidth().height(50.dp)
-                ) {
-                    Text("Send Offer", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                OutlinedButton(
-                    onClick = onCancel,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth().height(50.dp)
-                ) {
-                    Text("Cancel", color = TextMutedDark, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-    }
-}
+// DriverCounterOfferScreen removed — gorgortan (bidding) has been disabled per product decision.
 
 @Composable
 private fun DriverTripInProgressScreen(

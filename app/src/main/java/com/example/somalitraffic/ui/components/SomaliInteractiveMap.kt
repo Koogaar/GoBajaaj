@@ -58,6 +58,10 @@ fun SomaliInteractiveMap(
     routePointsJson: String? = null,
     centerOnUserLocation: Boolean = false,
     customUserPinLabel: String? = null,
+    /** Bajaajlaha location pin (shown on rider's tracking screen) */
+    driverLatitude: Double? = null,
+    driverLongitude: Double? = null,
+    driverPinLabel: String? = null,
     modifier: Modifier = Modifier
 ) {
     val effectiveBlinkingSet = remember(blinkingIntersectionId, blinkingIntersectionIds) {
@@ -84,6 +88,9 @@ fun SomaliInteractiveMap(
             userLongitude = userLongitude ?: 45.3283,
             centerOnUserLocation = centerOnUserLocation,
             customUserPinLabel = customUserPinLabel,
+            driverLatitude = driverLatitude,
+            driverLongitude = driverLongitude,
+            driverPinLabel = driverPinLabel,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -99,6 +106,9 @@ fun NativeMogadishuVectorMap(
     userLongitude: Double?,
     centerOnUserLocation: Boolean = false,
     customUserPinLabel: String?,
+    driverLatitude: Double? = null,
+    driverLongitude: Double? = null,
+    driverPinLabel: String? = null,
     modifier: Modifier = Modifier
 ) {
     var scale by remember { mutableFloatStateOf(1.15f) }
@@ -438,11 +448,11 @@ fun NativeMogadishuVectorMap(
                 val isBlinking = blinkingIntersectionIds.contains(item.id) || isSelected
                 val status = TrafficStatus.fromString(item.currentStatus)
                 val baseColor = when (status) {
-                    TrafficStatus.FURAN -> Color(0xFF16A34A)
-                    TrafficStatus.DHEXDHEXAAD -> Color(0xFFEAB308)
-                    TrafficStatus.MASHQUUL -> Color(0xFFF97316)
-                    TrafficStatus.SAXMAD_BADAN -> Color(0xFFDC2626)
-                    TrafficStatus.XIRAN -> Color(0xFF000000)
+                    TrafficStatus.FURAN -> Color(0xFF16A34A)       // Cagaar — Green
+                    TrafficStatus.DHEXDHEXAAD -> Color(0xFFEAB308) // Jaale — Yellow
+                    TrafficStatus.MASHQUUL -> Color(0xFFDC2626)    // Guduud — Red
+                    TrafficStatus.SAXMAD_BADAN -> Color(0xFFDC2626)// Guduud aad u daran — Red
+                    TrafficStatus.XIRAN -> Color(0xFF0F172A)        // Madow — Black
                     else -> Color(0xFF16A34A)
                 }
 
@@ -480,7 +490,55 @@ fun NativeMogadishuVectorMap(
                 }
             }
 
-            // 9. User GPS Location Pin (Pulsing Radar + Pin)
+            // 9. Driver Bajaaj Location Pin (Yellow moving dot)
+            if (driverLatitude != null && driverLongitude != null) {
+                val dx = mapX(driverLongitude)
+                val dy = mapY(driverLatitude)
+
+                // Pulse ring for driver
+                drawCircle(
+                    color = Color(0xFFFFB703).copy(alpha = pulseAlpha),
+                    radius = (22f * pulseAnim) * scale,
+                    center = Offset(dx, dy)
+                )
+                drawCircle(
+                    color = Color(0xFF0A1128),
+                    radius = 13f * scale,
+                    center = Offset(dx, dy)
+                )
+                drawCircle(
+                    color = Color(0xFFFFB703),
+                    radius = 9f * scale,
+                    center = Offset(dx, dy)
+                )
+
+                val driverLabel = driverPinLabel ?: "📯 Bajaajlaha"
+                val driverTextPaint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.WHITE
+                    textSize = (10f * scale).coerceIn(9f, 17f) * density
+                    typeface = android.graphics.Typeface.DEFAULT_BOLD
+                    isAntiAlias = true
+                    textAlign = android.graphics.Paint.Align.CENTER
+                }
+                val driverBgPaint = android.graphics.Paint().apply {
+                    color = android.graphics.Color.parseColor("#FFB703")
+                    isAntiAlias = true
+                    setShadowLayer(4f, 0f, 2f, android.graphics.Color.parseColor("#50000000"))
+                }
+                val dTw = driverTextPaint.measureText(driverLabel)
+                drawIntoCanvas { canvas ->
+                    val bgRect = android.graphics.RectF(
+                        dx - dTw / 2 - 12f,
+                        dy - (35f * scale),
+                        dx + dTw / 2 + 12f,
+                        dy - (13f * scale)
+                    )
+                    canvas.nativeCanvas.drawRoundRect(bgRect, 8f, 8f, driverBgPaint)
+                    canvas.nativeCanvas.drawText(driverLabel, dx, dy - (20f * scale), driverTextPaint)
+                }
+            }
+
+            // 10. User GPS Location Pin (Pulsing Radar + Pin)
             if (userLatitude != null && userLongitude != null) {
                 val ux = mapX(userLongitude)
                 val uy = mapY(userLatitude)
@@ -570,7 +628,7 @@ fun NativeMogadishuVectorMap(
             }
         }
 
-        // Traffic status legend (Bottom Start)
+        // Traffic status legend (Bottom Start) — 4 correct statuses
         Surface(
             shape = RoundedCornerShape(14.dp),
             color = Color.White.copy(alpha = 0.98f),
@@ -581,8 +639,8 @@ fun NativeMogadishuVectorMap(
                 .padding(14.dp)
         ) {
             Column(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Text(
                     text = "Xaaladda Waddooyinka",
@@ -590,24 +648,36 @@ fun NativeMogadishuVectorMap(
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF64748B)
                 )
+                // Row 1: Furan + Dhexdhexaad
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFF16A34A)))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Furan", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Furan", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFFEAB308)))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Dhex", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Dhexdhexaad", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
                     }
+                }
+                // Row 2: Mashquul + Xiran
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFFDC2626)))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Xiran", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Mashquul", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFF0F172A)))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Xiran", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
                     }
                 }
             }
