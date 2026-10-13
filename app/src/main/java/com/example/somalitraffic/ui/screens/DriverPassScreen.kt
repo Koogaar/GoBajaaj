@@ -83,48 +83,74 @@ fun DriverPassScreen(
 
     var selectedMethod by remember { mutableStateOf(paymentMethods[0]) }
     var currentStep by remember { mutableStateOf(PaymentStep.SELECT_METHOD) }
+    var isAwaitingAdminApproval by remember { mutableStateOf(false) }
 
     var senderPhone by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var submittedDate by remember { mutableStateOf("") }
 
-    // Sync state if user already has an active, pending, or rejected subscription
+    val isPassActive = viewModel.isSubscriptionActive(currentSub)
+    val isExpired24h = viewModel.isSubscription24hExpired(currentSub)
+
+    // Sync state if user already has an active, pending, or rejected subscription.
+    // Only auto-advance to APPROVED_STATUS if the subscription has a valid senderPhone
+    // (meaning the user actually went through the payment flow in this session or previously).
     LaunchedEffect(currentSub) {
         val sub = currentSub
         if (sub != null) {
             when (sub.status.lowercase()) {
                 "active", "completed", "approved" -> {
-                    currentStep = PaymentStep.APPROVED_STATUS
+                    // Only jump to APPROVED if user genuinely has a senderPhone (proof of payment) and pass is active
+                    if (isPassActive && !sub.senderPhone.isNullOrBlank()) {
+                        isAwaitingAdminApproval = false
+                        currentStep = PaymentStep.APPROVED_STATUS
+                        if (!sub.senderPhone.isNullOrBlank()) senderPhone = sub.senderPhone
+                    } else if (!isPassActive && !isAwaitingAdminApproval) {
+                        // Pass expired and not waiting for newly submitted approval; send to payment selection
+                        currentStep = PaymentStep.SELECT_METHOD
+                    }
                 }
                 "pending" -> {
+                    // Stay on PENDING_STATUS while waiting for Admin Approval
                     currentStep = PaymentStep.PENDING_STATUS
                     if (!sub.senderPhone.isNullOrBlank()) {
                         senderPhone = sub.senderPhone
                     }
                 }
                 "rejected", "failed" -> {
+                    isAwaitingAdminApproval = false
                     currentStep = PaymentStep.REJECTED_STATUS
                 }
+                else -> {
+                    if (!isAwaitingAdminApproval) {
+                        currentStep = PaymentStep.SELECT_METHOD
+                    }
+                }
+            }
+        } else {
+            if (!isAwaitingAdminApproval) {
+                currentStep = PaymentStep.SELECT_METHOD
             }
         }
     }
 
-    // Continuous Live Sync: Polls Supabase every 2 seconds so when Admin approves on Web, the app unlocks immediately!
-    LaunchedEffect(senderPhone) {
-        val phoneToSync = senderPhone.ifBlank { currentSub?.senderPhone }
-        viewModel.syncCurrentSubscription(phoneToSync) { isApproved, _ ->
-            if (isApproved) {
-                currentStep = PaymentStep.APPROVED_STATUS
-            }
-        }
-        while (isActive) {
-            delay(2000)
+    // Live Sync: Only poll Supabase when we are in PENDING_STATUS (i.e. user has submitted payment
+    // and is waiting for admin approval). Poll frequently so approval is detected immediately.
+    LaunchedEffect(currentStep, senderPhone) {
+        if (currentStep != PaymentStep.PENDING_STATUS) return@LaunchedEffect
+        // Small initial delay to avoid race with state setup
+        delay(1000)
+        while (isActive && currentStep == PaymentStep.PENDING_STATUS) {
             val currentPhone = senderPhone.ifBlank { currentSub?.senderPhone }
-            viewModel.syncCurrentSubscription(currentPhone) { isApproved, _ ->
-                if (isApproved) {
-                    currentStep = PaymentStep.APPROVED_STATUS
+            if (!currentPhone.isNullOrBlank()) {
+                viewModel.syncCurrentSubscription(currentPhone) { isApproved, _ ->
+                    if (isApproved) {
+                        isAwaitingAdminApproval = false
+                        currentStep = PaymentStep.APPROVED_STATUS
+                    }
                 }
             }
+            delay(1500)
         }
     }
 
@@ -173,40 +199,20 @@ fun DriverPassScreen(
                         Spacer(modifier = Modifier.width(14.dp))
                         Column {
                             Text(
-                                text = "Adeegga Maalinlaha ah ($0.25)",
+                                text = "Ku Shubashada Adeegga ($0.25)",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
+                            Spacer(modifier = Modifier.height(3.dp))
                             Text(
-                                text = "Kharashka: $0.25 USD (05:00 AM ilaa 05:00 AM)",
-                                fontSize = 12.sp,
+                                text = "La Soco Jaamka Inta Aadan Dhaqaaqin",
+                                fontSize = 13.sp,
                                 color = GoBajaajYellow,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-                    HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // 2 Key Exclusive Driver Features List
-                    Text(
-                        text = "Faa'iidooyinka Gaarka ah ee Darwalka:",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "• ⏰ Shift A/B: Lacagta aad shubato waxay shaqaynaysaa ilaa 05:00 AM ee subaxda berri.\n" +
-                               "• 🚦 Xogta Waddooyinka: Ka fiirso waddooyinka saxmadda leh inta aadan bixin si aad u doorato jidka ugu habboon.\n" +
-                               "• 🚖 Dalabaadka Rakaabka: Hel dhammaan dalabaadka tooska ah ee GoBajaaj.",
-                        fontSize = 11.5.sp,
-                        color = Color.White.copy(alpha = 0.9f),
-                        lineHeight = 17.sp
-                    )
                 }
             }
 
@@ -413,34 +419,25 @@ fun DriverPassScreen(
                 }
 
                 PaymentStep.INPUT_DETAILS -> {
-                    // STEP 3: SUBMIT DETAILS (Phone + Reference)
+                    // STEP 3: SUBMIT DETAILS (Phone)
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = "3. Geli Lambarka Soo Diray",
-                            fontSize = 16.sp,
+                            text = "Geli Numberka Lacagta Ka soo Dirtay",
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextBlack
-                        )
-                        Text(
-                            text = "App-ku wuxuu u diri doonaa faahfaahinta Admin-ka si loo xaqiijiyo.",
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+                            color = TextBlack,
+                            modifier = Modifier.padding(bottom = 12.dp)
                         )
 
-                        Text("Lambarka aad lacagta ka soo dirtay *", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = TextBlack)
-                        Text(
-                            text = "Geli kaliya lambarka aad lacagta ka soo wareejisay si Admin-ku kuugu xaqiijiyo.",
-                            fontSize = 11.sp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
-                        )
                         OutlinedTextField(
                             value = senderPhone,
                             onValueChange = { senderPhone = it; errorMessage = null },
-                            placeholder = { Text("Tusaale: 61XXXXXXX ama 061XXXXXXX") },
+                            placeholder = { Text("61XXXXXXX") },
                             modifier = Modifier.fillMaxWidth().testTag("input_sender_phone"),
                             shape = RoundedCornerShape(12.dp),
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                            ),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = BrandRedPrimary,
                                 unfocusedBorderColor = BrandBorder
@@ -475,6 +472,7 @@ fun DriverPassScreen(
                                     destinationPhone = selectedMethod.accountNo,
                                     paymentMethod = selectedMethod.name,
                                     onSuccess = {
+                                        isAwaitingAdminApproval = true
                                         currentStep = PaymentStep.PENDING_STATUS
                                     },
                                     onError = { message ->
@@ -507,92 +505,18 @@ fun DriverPassScreen(
                 }
 
                 PaymentStep.PENDING_STATUS -> {
-                    // STEP 4: PENDING SCREEN (Sugaya Ansixinta Admin-ka)
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(76.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFFFEF3C7)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.AccessTime,
-                                contentDescription = null,
-                                tint = Color(0xFFD97706),
-                                modifier = Modifier.size(42.dp)
-                            )
-                        }
+                    // STEP 4: PENDING SCREEN (Sugaya Ansixinta Admin-ka) - FULL DARK BLUE UI
+                    val isRefreshing by viewModel.isRefreshingSubscription.collectAsState()
+                    var refreshMsg by remember { mutableStateOf<String?>(null) }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = "Lacag-bixintaada waa la helay",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextBlack,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "Waxaan xaqiijinaynaa lambarka aad ka soo dirtay. Fadlan sug inta Admin-ku ka ansixinayo.",
-                            fontSize = 13.sp,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 6.dp, bottom = 20.dp)
-                        )
-
-                        Surface(
-                            color = Color(0xFFF9FAFB),
-                            shape = RoundedCornerShape(16.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BrandBorder),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(20.dp)) {
-                                DetailRow("Lambarka laga diray:", senderPhone.ifBlank { currentSub?.senderPhone ?: "61XXXXXXX" })
-                                DetailRow("Lacagta:", "$0.25 USD")
-                                DetailRow("Habka:", selectedMethod.name)
-                                DetailRow("Xaaladda:", "SUGAYSA (Awaiting Admin)", color = Color(0xFFD97706))
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        // Automatic listener indicator
-                        Surface(
-                            color = Color(0xFFEFF6FF),
-                            shape = RoundedCornerShape(14.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CircularProgressIndicator(
-                                    color = Color(0xFF2563EB),
-                                    strokeWidth = 2.5.dp,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "Shaashaddu si toos ah (automatically) ayay isu beddelaysaa marka Admin-ku ansixiyo...",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF1E40AF),
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        val isRefreshing by viewModel.isRefreshingSubscription.collectAsState()
-                        var refreshMsg by remember { mutableStateOf<String?>(null) }
-
-                        OutlinedButton(
-                            onClick = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(550.dp) // Large enough to look like full screen inside the Card
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(GoBajaajNavy)
+                            .clickable {
+                                // Secret manual refresh on tap
                                 refreshMsg = null
                                 val phoneToSync = senderPhone.ifBlank { currentSub?.senderPhone }
                                 viewModel.syncCurrentSubscription(phoneToSync) { isApproved, msg ->
@@ -602,39 +526,122 @@ fun DriverPassScreen(
                                     }
                                 }
                             },
-                            enabled = !isRefreshing,
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Background Skyline at the bottom
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp)
+                                .height(200.dp)
+                                .align(Alignment.BottomCenter)
+                                .background(
+                                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                        colors = listOf(Color.Transparent, Color(0xFF061530))
+                                    )
+                                )
                         ) {
-                            if (isRefreshing) {
-                                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = GoBajaajNavy)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Waa la hubinayaa...", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            } else {
-                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Cusbooneysii Status-ka (Refresh)", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        if (refreshMsg != null) {
-                            Text(
-                                text = refreshMsg!!,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (currentStep == PaymentStep.APPROVED_STATUS) Color(0xFF10B981) else Color(0xFFD97706),
-                                modifier = Modifier.padding(top = 8.dp),
-                                textAlign = TextAlign.Center
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_gobajaaj_splash_bg),
+                                contentDescription = "Mogadishu Skyline",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                                alpha = 0.5f
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // Logo Box
+                            Surface(
+                                shape = RoundedCornerShape(24.dp),
+                                color = Color.White,
+                                modifier = Modifier.size(110.dp)
+                            ) {
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_gobajaaj_logo),
+                                    contentDescription = "GoBajaaj Logo",
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
 
-                        com.example.somalitraffic.ui.components.GoBajaajContactMiniRow(
-                            label = "Caawinaad degdeg ah ama ansixin:"
-                        )
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            // "GoBajaaj" Text
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Go",
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF00C853) // Green
+                                )
+                                Text(
+                                    text = "Bajaaj",
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(56.dp))
+
+                            // Circular Progress + Shield
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(120.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Color(0xFF0091EA), // Light Blue
+                                    trackColor = Color(0xFF0091EA).copy(alpha = 0.2f),
+                                    strokeWidth = 6.dp,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+
+                                Box(
+                                    modifier = Modifier
+                                        .size(60.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF0091EA)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.VerifiedUser, // Shield Check
+                                        contentDescription = "Shield",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(32.dp))
+
+                            // Text Label
+                            Text(
+                                text = "Sug Admin Approval",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Codsigaagu wuxuu sugayaa in Admin-ku xaqiijiyo. Halkaan ayaad joogaysaa ilaa lagaa aqbalo.",
+                                fontSize = 13.sp,
+                                color = Color.White.copy(alpha = 0.85f),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 24.dp)
+                            )
+
+                            if (refreshMsg != null && currentStep != PaymentStep.APPROVED_STATUS) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = refreshMsg!!,
+                                    color = GoBajaajYellow,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
                 }
 

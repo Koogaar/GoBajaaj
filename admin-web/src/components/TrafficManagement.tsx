@@ -3,6 +3,9 @@ import { TrafficCone, MapPin, AlertTriangle, RefreshCw, Plus, Edit, ShieldAlert,
 import { Intersection, TrafficReport } from '../types';
 import { supabase } from '../supabase';
 import { ConfirmationModal } from './ConfirmationModal';
+import { ActiveRides } from './ActiveRides';
+
+type IntersectionStatus = 'Furan' | 'Normal' | 'Jaam' | 'Xeran';
 
 interface TrafficManagementProps {
   actorName: string;
@@ -21,13 +24,13 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
   const [latitude, setLatitude] = useState('2.0335');
   const [longitude, setLongitude] = useState('45.3190');
   const [allowedRadius, setAllowedRadius] = useState('400');
-  const [status, setStatus] = useState<'Furan' | 'Dhexdhexaad' | 'Mashquul' | 'Saxmad badan' | 'Xiran' | 'Wuu xiranyahay'>('Furan');
+  const [status, setStatus] = useState<IntersectionStatus>('Furan');
 
   // Confirmation modal for status change
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     intersectionId: string;
-    newStatus: 'Furan' | 'Dhexdhexaad' | 'Mashquul' | 'Saxmad badan' | 'Xiran' | 'Wuu xiranyahay';
+    newStatus: IntersectionStatus;
     name: string;
   }>({ isOpen: false, intersectionId: '', newStatus: 'Furan', name: '' });
 
@@ -210,6 +213,9 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
 
   return (
     <div className="space-y-6">
+      {/* GoBajaaj Active Rides (LIVE DRIVER TRACKING) */}
+      <ActiveRides actorName={actorName} />
+
       {/* Header Banner */}
       <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -218,7 +224,7 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
             <h2 className="text-lg sm:text-xl font-black text-black">Maamulka Isgoysyada & Saxmadda (Traffic Management)</h2>
           </div>
           <p className="text-xs text-neutral-600 mt-1">
-            Kormeer oo cusbooneysii xaaladaha isgoysyada Muqdisho (Furan, Dhexdhexaad, Mashquul, Saxmad badan).
+            Kormeer oo cusbooneysii xaaladaha isgoysyada Muqdisho (Furan, Normal, Jaam, Xeran).
           </p>
         </div>
 
@@ -300,9 +306,9 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                   <div className="flex items-center space-x-2 shrink-0">
                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
                       int.current_status === 'Furan' ? 'bg-emerald-100 text-emerald-800' :
-                      int.current_status === 'Dhexdhexaad' ? 'bg-amber-100 text-amber-800' :
-                      int.current_status === 'Mashquul' ? 'bg-orange-100 text-orange-800' :
-                      (int.current_status === 'Xiran' || int.current_status === 'Wuu xiranyahay') ? 'bg-neutral-950 text-white border border-black' :
+                      int.current_status === 'Normal' ? 'bg-amber-100 text-amber-800' :
+                      int.current_status === 'Jaam' ? 'bg-orange-100 text-orange-800' :
+                      int.current_status === 'Xeran' ? 'bg-neutral-950 text-white border border-black' :
                       'bg-red-100 text-red-800'
                     }`}>
                       {int.current_status}
@@ -322,7 +328,7 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                 {canManage && (
                   <div className="flex flex-wrap items-center gap-1 pt-2 border-t border-neutral-200">
                     <span className="text-[11px] text-neutral-500 font-semibold mr-1">Badel:</span>
-                    {(['Furan', 'Dhexdhexaad', 'Mashquul', 'Saxmad badan', 'Xiran'] as const).map((st) => (
+                    {(['Furan', 'Normal', 'Jaam', 'Xeran'] as const).map((st) => (
                       <button
                         key={st}
                         onClick={() => setConfirmModal({
@@ -380,8 +386,8 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                     <td className="p-4">
                       <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
                         tr.status === 'Furan' ? 'bg-emerald-100 text-emerald-800' :
-                        tr.status === 'Dhexdhexaad' ? 'bg-amber-100 text-amber-800' :
-                        tr.status === 'Mashquul' ? 'bg-orange-100 text-orange-800' :
+                        tr.status === 'Normal' ? 'bg-amber-100 text-amber-800' :
+                        tr.status === 'Jaam' ? 'bg-orange-100 text-orange-800' :
                         'bg-red-100 text-red-800'
                       }`}>
                         {tr.status}
@@ -491,10 +497,9 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                   className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black bg-white font-bold"
                 >
                   <option value="Furan">Furan (🟢 Saxmad la'aan)</option>
-                  <option value="Dhexdhexaad">Dhexdhexaad (🟡 Dhexdhexaad)</option>
-                  <option value="Mashquul">Mashquul (🟠 Mashquul)</option>
-                  <option value="Saxmad badan">Saxmad badan (🔴 Saxmad Daran)</option>
-                  <option value="Xiran">Waddada waa xirantahay (⚫ Waa xiranyahay)</option>
+                  <option value="Normal">Normal (🟡 Gaadiid dhexdhexaad)</option>
+                  <option value="Jaam">Jaam (🟠 Saxmad/Jam Culus)</option>
+                  <option value="Xeran">Xeran / Waddo Xiran (🔴 Waa xiranyahay)</option>
                 </select>
               </div>
 
@@ -526,7 +531,7 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
         message={`Ma hubtaa inaad beddelo xaaladda "${confirmModal.name}" oo aad ka dhigto "${confirmModal.newStatus}"?`}
         confirmLabel="Xaqiiji"
         cancelLabel="Jooji"
-        isDanger={confirmModal.newStatus === 'Saxmad badan'}
+        isDanger={confirmModal.newStatus === 'Jaam' || confirmModal.newStatus === 'Xeran'}
         isLoading={isLoading}
         onConfirm={handleExecuteStatusChange}
         onCancel={() => setConfirmModal({ isOpen: false, intersectionId: '', newStatus: 'Furan', name: '' })}

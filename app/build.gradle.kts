@@ -17,14 +17,23 @@ android {
     applicationId = "com.aistudio.gobajaaj.app"
     minSdk = 24
     targetSdk = 36
-    versionCode = 24
-    versionName = "3.2"
+    versionCode = 32
+    versionName = "3.5.0"
 
     val supabaseUrl = System.getenv("SUPABASE_URL") ?: "https://lcigjbtprkloopvzpaxy.supabase.co"
     val supabaseKey = System.getenv("SUPABASE_ANON_KEY") ?: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjaWdqYnRwcmtsb29wdnpwYXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTA5MDUsImV4cCI6MjEwNDg2NjkwNX0.5cx8A-3Hhh4Z5AuYDt0-AWdMYmAe_x3gz6DVqWY8IuM"
-
     buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
     buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseKey\"")
+
+    // GoBajaaj map/routing stack: Google Maps tiles + OSRM road routing.
+    val osrmBaseUrl = System.getenv("OSRM_BASE_URL")
+        ?: (project.findProperty("OSRM_BASE_URL") as String?)
+        ?: "https://router.project-osrm.org"
+    val mapTileUrl = System.getenv("MAP_TILE_URL")
+        ?: (project.findProperty("MAP_TILE_URL") as String?)
+        ?: "https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+    buildConfigField("String", "OSRM_BASE_URL", "\"$osrmBaseUrl\"")
+    buildConfigField("String", "MAP_TILE_URL", "\"$mapTileUrl\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -132,6 +141,8 @@ dependencies {
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
   implementation(libs.play.services.location)
+  // Spec §7: OpenStreetMap rendering for the GoBajaaj map via MapLibre (no Google Maps SDK)
+  implementation("org.maplibre.gl:android-sdk:13.6.1")
   implementation(libs.retrofit)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)

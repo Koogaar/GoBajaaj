@@ -87,6 +87,45 @@ object ArrivalSoundManager {
         }
     }
 
+    /**
+     * Navigation Cue: Short double-beep tone alerting driver that turn is approaching.
+     * 100% audio tones, no speech / no music as requested.
+     */
+    fun playNavigationTurnBeep(context: Context) {
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 85)
+                toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 120)
+                delay(160)
+                toneGen.stopTone()
+                delay(60)
+                toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 140)
+                delay(180)
+                toneGen.stopTone()
+                toneGen.release()
+            } catch (e: Exception) {
+                Log.w(TAG, "Turn beep error: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Rerouting Alert: Short chime when route recalculates.
+     */
+    fun playRerouteBeep(context: Context) {
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 80)
+                toneGen.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 150)
+                delay(190)
+                toneGen.stopTone()
+                toneGen.release()
+            } catch (e: Exception) {
+                Log.w(TAG, "Reroute beep error: ${e.message}")
+            }
+        }
+    }
+
     private fun triggerVibration(context: Context, durationMs: Long = 400) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

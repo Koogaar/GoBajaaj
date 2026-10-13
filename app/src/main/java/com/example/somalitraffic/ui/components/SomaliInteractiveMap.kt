@@ -61,7 +61,20 @@ fun SomaliInteractiveMap(
     /** Bajaajlaha location pin (shown on rider's tracking screen) */
     driverLatitude: Double? = null,
     driverLongitude: Double? = null,
+    driverBearing: Float? = null,
+    driverSpeed: Double? = null,
     driverPinLabel: String? = null,
+    followDriver: Boolean = false,
+    pickupLatitude: Double? = null,
+    pickupLongitude: Double? = null,
+    pickupLabel: String? = null,
+    destinationLatitude: Double? = null,
+    destinationLongitude: Double? = null,
+    destinationLabel: String? = null,
+    navigationSteps: List<com.example.somalitraffic.data.remote.OsmRoutingService.NavigationStep> = emptyList(),
+    routeDistanceMeters: Double? = null,
+    routeDurationSeconds: Double? = null,
+    onReroute: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val effectiveBlinkingSet = remember(blinkingIntersectionId, blinkingIntersectionIds) {
@@ -79,18 +92,35 @@ fun SomaliInteractiveMap(
             .background(Color(0xFFE2E8F0))
             .testTag("real_production_map")
     ) {
-        NativeMogadishuVectorMap(
+        // Spec §7: real OpenStreetMap road data rendered by MapLibre.
+        // Falls back to the native Canvas map inside OsmMapLibreMap when the
+        // native stack cannot start, so users always get a working map.
+        OsmMapLibreMap(
             intersections = intersections,
             selectedIntersectionId = selectedIntersectionId,
             blinkingIntersectionIds = effectiveBlinkingSet,
             onIntersectionClick = onIntersectionClick,
             userLatitude = userLatitude ?: 2.0371,
             userLongitude = userLongitude ?: 45.3283,
+            routePointsJson = routePointsJson,
             centerOnUserLocation = centerOnUserLocation,
             customUserPinLabel = customUserPinLabel,
             driverLatitude = driverLatitude,
             driverLongitude = driverLongitude,
+            driverBearing = driverBearing,
+            driverSpeed = driverSpeed,
             driverPinLabel = driverPinLabel,
+            followDriver = followDriver,
+            pickupLatitude = pickupLatitude,
+            pickupLongitude = pickupLongitude,
+            pickupLabel = pickupLabel,
+            destinationLatitude = destinationLatitude,
+            destinationLongitude = destinationLongitude,
+            destinationLabel = destinationLabel,
+            navigationSteps = navigationSteps,
+            routeDistanceMeters = routeDistanceMeters,
+            routeDurationSeconds = routeDurationSeconds,
+            onReroute = onReroute,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -121,13 +151,13 @@ fun NativeMogadishuVectorMap(
         } else {
             listOf(
                 Intersection(id = "1", name = "Isgoyska KM4", latitude = 2.0290, longitude = 45.3180, currentStatus = "FURAN", roadNames = "Wadada Maka Al-Mukarama & Airport"),
-                Intersection(id = "2", name = "Isgoyska Zoobe (KM5)", latitude = 2.0315, longitude = 45.3130, currentStatus = "DHEXDHEXAAD", roadNames = "Wadada Zoobe - Hodan"),
-                Intersection(id = "3", name = "Isgoyska Banaadir", latitude = 2.0340, longitude = 45.3080, currentStatus = "MASHQUUL", roadNames = "Wadada Wadnaha & Digfeer"),
+                Intersection(id = "2", name = "Isgoyska Zoobe (KM5)", latitude = 2.0315, longitude = 45.3130, currentStatus = "NORMAL", roadNames = "Wadada Zoobe - Hodan"),
+                Intersection(id = "3", name = "Isgoyska Banaadir", latitude = 2.0340, longitude = 45.3080, currentStatus = "JAAM", roadNames = "Wadada Wadnaha & Digfeer"),
                 Intersection(id = "4", name = "Isgoyska Taleex", latitude = 2.0335, longitude = 45.3150, currentStatus = "FURAN", roadNames = "Wadada Taleex - Hodan"),
                 Intersection(id = "5", name = "Isgoyska Shaqaalaha", latitude = 2.0350, longitude = 45.3235, currentStatus = "FURAN", roadNames = "Maka Al-Mukarama"),
-                Intersection(id = "6", name = "Isgoyska Dabka", latitude = 2.0390, longitude = 45.3280, currentStatus = "DHEXDHEXAAD", roadNames = "Waberi & Hodan"),
-                Intersection(id = "7", name = "Taallada Sayidka", latitude = 2.0430, longitude = 45.3330, currentStatus = "SAXMAD_BADAN", roadNames = "Wadada Madaxtooyada"),
-                Intersection(id = "8", name = "Suuqa Bakaaraha", latitude = 2.0450, longitude = 45.3200, currentStatus = "MASHQUUL", roadNames = "Wadada Wadnaha"),
+                Intersection(id = "6", name = "Isgoyska Dabka", latitude = 2.0390, longitude = 45.3280, currentStatus = "NORMAL", roadNames = "Waberi & Hodan"),
+                Intersection(id = "7", name = "Taallada Sayidka", latitude = 2.0430, longitude = 45.3330, currentStatus = "XERAN", roadNames = "Wadada Madaxtooyada"),
+                Intersection(id = "8", name = "Suuqa Bakaaraha", latitude = 2.0450, longitude = 45.3200, currentStatus = "JAAM", roadNames = "Wadada Wadnaha"),
                 Intersection(id = "9", name = "Isgoyska Hawlwadaag", latitude = 2.0410, longitude = 45.3240, currentStatus = "FURAN", roadNames = "Hawlwadaag Road"),
                 Intersection(id = "10", name = "Isgoyska Tarbuunka", latitude = 2.0400, longitude = 45.3050, currentStatus = "FURAN", roadNames = "Hodan Tarbuunka"),
                 Intersection(id = "11", name = "Garoonka Aden Adde", latitude = 2.0160, longitude = 45.3060, currentStatus = "FURAN", roadNames = "Wadada Garoonka"),
@@ -449,11 +479,9 @@ fun NativeMogadishuVectorMap(
                 val status = TrafficStatus.fromString(item.currentStatus)
                 val baseColor = when (status) {
                     TrafficStatus.FURAN -> Color(0xFF16A34A)       // Cagaar — Green
-                    TrafficStatus.DHEXDHEXAAD -> Color(0xFFEAB308) // Jaale — Yellow
-                    TrafficStatus.MASHQUUL -> Color(0xFFDC2626)    // Guduud — Red
-                    TrafficStatus.SAXMAD_BADAN -> Color(0xFFDC2626)// Guduud aad u daran — Red
-                    TrafficStatus.XIRAN -> Color(0xFF0F172A)        // Madow — Black
-                    else -> Color(0xFF16A34A)
+                    TrafficStatus.NORMAL -> Color(0xFFEAB308)     // Jaale — Yellow
+                    TrafficStatus.JAAM -> Color(0xFFDC2626)        // Guduud — Red
+                    TrafficStatus.XERAN -> Color(0xFFDC2626)       // Guduud aad u daran — Red
                 }
 
                 if (isBlinking) {
@@ -648,7 +676,7 @@ fun NativeMogadishuVectorMap(
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF64748B)
                 )
-                // Row 1: Furan + Dhexdhexaad
+                // Row 1: Furan + Normal
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -661,10 +689,10 @@ fun NativeMogadishuVectorMap(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFFEAB308)))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Dhexdhexaad", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
+                        Text("Normal", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
                     }
                 }
-                // Row 2: Mashquul + Xiran
+                // Row 2: Jaam + Xeran
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -672,12 +700,12 @@ fun NativeMogadishuVectorMap(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFFDC2626)))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Mashquul", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
+                        Text("Jaam", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFF0F172A)))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Xiran", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
+                        Text("Xeran", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandBlack)
                     }
                 }
             }

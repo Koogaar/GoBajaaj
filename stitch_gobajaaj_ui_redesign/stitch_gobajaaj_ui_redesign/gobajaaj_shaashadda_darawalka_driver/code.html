@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="so"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;min-height:100vh;margin:0;padding:0;}body{overscroll-behavior:none;font-family:'Plus Jakarta Sans',sans-serif;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-variant": "#31353e", "primary-fixed": "#ffdad5", "inverse-surface": "#dfe2ee", "tertiary": "#4edea3", "on-tertiary-container": "#e8ffef", "on-primary-fixed": "#410001", "surface-dim": "#0f131c", "secondary-fixed": "#ffddb8", "on-primary-container": "#fff7f6", "surface-container-lowest": "#0a0e16", "on-tertiary-fixed-variant": "#005236", "outline": "#af8782", "tertiary-container": "#00835a", "secondary-container": "#ee9800", "error": "#ffb4ab", "on-tertiary-fixed": "#002113", "surface": "#0f131c", "inverse-primary": "#c0000c", "surface-container": "#1c2028", "inverse-on-surface": "#2c3039", "on-secondary-container": "#5b3800", "on-surface": "#dfe2ee", "on-surface-variant": "#e9bcb6", "on-background": "#dfe2ee", "on-secondary-fixed-variant": "#653e00", "secondary": "#ffb95f", "tertiary-fixed-dim": "#4edea3", "outline-variant": "#5e3f3b", "on-secondary": "#472a00", "secondary-fixed-dim": "#ffb95f", "primary": "#ffb4aa", "surface-tint": "#ffb4aa", "primary-fixed-dim": "#ffb4aa", "on-primary": "#690003", "primary-container": "#e50914", "surface-bright": "#353942", "on-secondary-fixed": "#2a1700", "on-error": "#690005", "on-primary-fixed-variant": "#930007", "tertiary-fixed": "#6ffbbe", "surface-container-high": "#262a33", "on-error-container": "#ffdad6", "surface-container-highest": "#31353e", "on-tertiary": "#003824", "background": "#0f131c", "surface-container-low": "#181c24", "error-container": "#93000a" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "gutter": "1rem", "space-xl": "2rem", "margin-desktop": "2rem", "margin": "1rem", "space-md": "1rem", "space-lg": "1.5rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "gutter-mobile": "0.75rem" }, "fontFamily": { "body-lg": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "title-md": ["Plus Jakarta Sans"], "display-lg-mobile": ["Plus Jakarta Sans"], "body-sm": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "title-lg": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "display-lg": ["Plus Jakarta Sans"], "label-lg": ["Plus Jakarta Sans"] }, "fontSize": { "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "title-md": ["16px", { "lineHeight": "22px", "fontWeight": "600" }], "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }], "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "display-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "700" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface text-on-surface antialiased flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.45)]"><div class="h-16 px-4 flex items-center justify-between gap-2"><div class="flex items-center gap-2.5 min-w-0"><img alt="GoBajaaj Brand Logo" class="h-8 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxTyE9lhpknPBAtBBnu2XfnGYun3OV7cS5JS1dU4WprutuLFwzaxuSdtIkI1_PzsGH3hiqYBLNx49G4ulTA_TVD4GHm6vbX4aBIKdG44EoeeXKTnQBRQ7vTmr0VeB0H77UqEkj7n9gxLnORvE-6JBuMlXU2t7Bkt7HkR3G0b4OwQRBk1aqCWtA7KlUCMKIqoDQSSDUggXv52raLM_MHfB9cDQUUvHe6q5rNs9jNpN5pd0TGapCzHTMFg"/><div class="flex flex-col min-w-0"><div class="flex items-center gap-1.5"><span class="font-title-md text-title-md text-on-surface font-bold tracking-tight truncate">GoBajaaj</span><span class="font-label-sm text-label-sm text-primary font-bold tracking-wide uppercase px-1.5 py-0.5 rounded-full bg-primary-container/20">Guudmar</span></div><div class="flex items-center gap-1 text-on-surface-variant"><span class="material-symbols-outlined text-[13px] text-tertiary">location_on</span><span class="font-label-sm text-label-sm truncate">Muqdisho, Soomaaliya</span></div></div></div><div class="flex items-center gap-2 flex-shrink-0"><div class="flex items-center bg-surface-container rounded-full p-0.5 shadow-inner"><button class="px-2 py-1 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-bold min-h-[28px] transition-colors" type="button">Rakaab</button><button class="px-2 py-1 rounded-full text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm font-semibold min-h-[28px] transition-colors" type="button">Darawal</button></div><button aria-label="Traffic Alerts" class="relative w-11 h-11 flex items-center justify-center rounded-full bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2 right-2 w-2.5 h-2.5 bg-primary-container rounded-full ring-2 ring-surface animate-pulse"></span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface"><div class="flex flex-col w-full pb-8">
+<!-- Driver Identity & Online Toggle Bar -->
+<section class="px-4 py-3 bg-surface-container-low flex flex-col gap-3">
+<div class="flex items-center justify-between gap-3">
+<div class="flex items-center gap-3 min-w-0">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-tertiary text-[28px]" style="font-variation-settings: 'FILL' 1;">electric_rickshaw</span>
+</div>
+<span class="absolute -bottom-1 -right-1 w-4 h-4 bg-tertiary-container rounded-full flex items-center justify-center">
+<span class="w-2 h-2 bg-tertiary rounded-full animate-ping"></span>
+</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate">Cabdi Cali</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary font-label-sm text-label-sm uppercase tracking-wider">M-7777</span>
+</div>
+<span class="font-label-md text-label-md text-tertiary flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary inline-block"></span>
+            Diyaar u ah Rakaabka (ONLINE)
+          </span>
+</div>
+</div>
+<!-- Tactile Status Switch -->
+<button aria-label="Bedel Xaaladda Shaqada" class="relative flex items-center justify-between w-28 h-10 px-2 rounded-full bg-tertiary-container/40 transition-colors shadow-inner" id="statusToggleBtn" type="button">
+<span class="font-label-sm text-label-sm text-tertiary font-bold pl-1" id="statusLabel">ONLINE</span>
+<div class="w-7 h-7 rounded-full bg-tertiary flex items-center justify-center shadow-md transition-transform" id="statusKnob">
+<span class="material-symbols-outlined text-surface text-[18px]">power_settings_new</span>
+</div>
+</button>
+</div>
+</section>
+<!-- Live Incoming Passenger Request Modal / Card (High Urgency) -->
+<section class="px-4 mt-3">
+<div class="relative overflow-hidden rounded-xl bg-surface-container-high shadow-xl">
+<!-- Ambient kinetic pulse accent -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-container via-secondary-container to-primary-container animate-pulse"></div>
+<div class="p-4 flex flex-col gap-3.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[20px] animate-bounce">ring_volume</span>
+</span>
+<div>
+<span class="font-title-md text-title-md text-on-surface block">Codsiga Rakaabka: Degdeg!</span>
+<span class="font-label-sm text-label-sm text-primary">Imaansho degdeg ah • 45s haray</span>
+</div>
+</div>
+<div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-lowest">
+<span class="material-symbols-outlined text-secondary text-[16px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-label-sm text-label-sm text-on-surface">4.9</span>
+</div>
+</div>
+<!-- Trip Path Visualizer -->
+<div class="bg-surface-container-lowest rounded-xl p-3 flex flex-col gap-2.5">
+<div class="flex items-center gap-3">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-tertiary text-[18px]">radio_button_checked</span>
+<div class="w-0.5 h-6 bg-surface-variant my-0.5"></div>
+<span class="material-symbols-outlined text-primary-container text-[18px]">location_on</span>
+</div>
+<div class="flex-1 flex flex-col justify-between h-full gap-2">
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ka qaad: Faadumo Xasan</span>
+<span class="font-title-md text-title-md text-on-surface truncate">KM4 Roundabout</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Geey: Isgoyska Dabka</span>
+<span class="font-title-md text-title-md text-on-surface truncate">Waddada Maka Al-Mukarama (2.1 km)</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 mt-1 bg-surface-container-low px-3 py-2 rounded-lg">
+<span class="font-label-md text-label-md text-on-surface-variant">Qiimaha Safarka</span>
+<div class="flex items-center gap-1.5">
+<span class="font-headline-sm text-headline-sm text-tertiary font-bold">$1.00</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant px-1.5 py-0.5 rounded bg-surface-variant">Cash / EVC</span>
+</div>
+</div>
+</div>
+<!-- Decision Buttons -->
+<div class="grid grid-cols-3 gap-2 pt-1">
+<button class="col-span-1 h-12 rounded-lg bg-surface-container hover:bg-surface-variant text-on-surface font-label-lg text-label-lg flex items-center justify-center transition-colors" id="declineBtn" type="button">
+            Dhaaf
+          </button>
+<button class="col-span-2 h-12 rounded-lg bg-primary-container hover:bg-inverse-primary text-on-primary-container font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-[0.98]" id="acceptBtn" type="button">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+            Aqbal Safarka (Accept)
+          </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Driver Pass Status & Renewal Box -->
+<section class="px-4 mt-4 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<span class="font-title-md text-title-md text-on-surface font-bold">Driver Pass (Ogolaanshaha Maanta)</span>
+<span class="font-label-sm text-label-sm text-tertiary bg-tertiary-container/20 px-2 py-0.5 rounded-full">Firfircoon (Active)</span>
+</div>
+<!-- Pass Expiry Card -->
+<div class="rounded-xl bg-surface-container p-4 flex flex-col gap-3">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary-container/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[24px]">badge</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">$0.25 Maalinle</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Taargo: M-7777 • Nidaamka Guudmar</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-secondary font-bold block">Dhacaysa:</span>
+<span class="font-label-md text-label-md text-on-surface">18 saac (05:00 AM)</span>
+</div>
+</div>
+<!-- Quick Renewal Accordion / Trigger Panel -->
+<div class="rounded-lg bg-surface-container-low p-3 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface">Cusboonaysii Pass-ka (Renewal)</span>
+<span class="font-label-sm text-label-sm text-secondary">*712*... / Sahal</span>
+</div>
+<!-- Payment Mode Selectors -->
+<div class="grid grid-cols-2 gap-2">
+<button class="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-surface-variant text-on-surface font-label-md text-label-md shadow-sm" type="button">
+<span class="material-symbols-outlined text-tertiary text-[18px]">account_balance_wallet</span>
+            EVC Plus (*712*)
+          </button>
+<button class="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-lg bg-surface-container-high text-on-surface-variant font-label-md text-label-md" type="button">
+<span class="material-symbols-outlined text-secondary text-[18px]">payments</span>
+            Sahal Account
+          </button>
+</div>
+<!-- Phone Verification Input & Submit -->
+<div class="flex flex-col gap-1.5 mt-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="senderPhone">Lambarka lacagta laga soo diray</label>
+<div class="flex gap-2">
+<div class="relative flex-1">
+<span class="absolute inset-y-0 left-3 flex items-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">smartphone</span>
+</span>
+<input class="w-full h-11 pl-9 pr-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-md text-body-md focus:outline-none" id="senderPhone" placeholder="25261XXXXXXX" type="tel" value="252619888777"/>
+</div>
+<button class="h-11 px-3.5 rounded-lg bg-surface-variant hover:bg-surface-bright text-on-surface font-label-md text-label-md flex items-center justify-center gap-1 transition-colors whitespace-nowrap" id="renewPassBtn" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary">send</span>
+              U Dir Admin
+            </button>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary hidden" id="renewFeedback">Codsiga cusboonaysiinta waa la diray! Xaqiijin ayaa socota.</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Mogadishu Live Traffic & Road Status for Drivers -->
+<section class="px-4 mt-5 flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-[20px]">traffic</span>
+<span class="font-title-md text-title-md text-on-surface font-bold">Xaaladda Jidadka Muqdisho</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Toos • Live Feed</span>
+</div>
+<!-- Junction Feed Bento Grid -->
+<div class="grid grid-cols-2 gap-2.5">
+<!-- Junction 1: KM4 -->
+<div class="p-3 rounded-xl bg-surface-container flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">KM4</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-container/20 text-tertiary font-label-sm text-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+            Furan
+          </span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-headline-sm text-headline-sm text-on-surface">40</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">km/h xawaare</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Dhaqdhaqaaq deggan</span>
+</div>
+<!-- Junction 2: Banaadir -->
+<div class="p-3 rounded-xl bg-surface-container flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Banaadir</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary-container/20 text-tertiary font-label-sm text-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+            Furan
+          </span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-headline-sm text-headline-sm text-on-surface">38</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">km/h xawaare</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Isgoys caadi ah</span>
+</div>
+<!-- Junction 3: Tarbuunka -->
+<div class="p-3 rounded-xl bg-surface-container flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Tarbuunka</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container/20 text-secondary font-label-sm text-label-sm">
+            Saxmad
+          </span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-headline-sm text-headline-sm text-secondary font-bold">+6</span>
+<span class="font-label-sm text-label-sm text-secondary">daq dib-u-dhac</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ilaali dhabarka Tarbuun</span>
+</div>
+<!-- Junction 4: Digfeer -->
+<div class="p-3 rounded-xl bg-surface-container flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<span class="font-label-lg text-label-lg text-on-surface font-bold">Digfeer</span>
+<span class="px-2 py-0.5 rounded-full bg-error-container/30 text-error font-label-sm text-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+            Xiran
+          </span>
+</div>
+<div class="flex items-baseline gap-1 mt-1">
+<span class="font-title-md text-title-md text-error font-bold">Lama mari karo</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">Waddo kale qaado</span>
+</div>
+</div>
+</section>
+<!-- Driver Daily Earnings & Statistics -->
+<section class="px-4 mt-5 flex flex-col gap-2.5">
+<span class="font-title-md text-title-md text-on-surface font-bold">Dakhliga &amp; Guulaha Maanta</span>
+<div class="p-4 rounded-xl bg-surface-container flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Dakhliga Guud (Earnings)</span>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg-mobile text-display-lg-mobile text-on-surface font-extrabold">$14.50</span>
+<span class="font-label-md text-label-md text-tertiary">Maanta</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Heerka Darawalka</span>
+<div class="flex items-center gap-1 bg-surface-container-high px-2.5 py-1 rounded-full mt-0.5">
+<span class="material-symbols-outlined text-secondary text-[18px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="font-title-md text-title-md text-on-surface font-bold">4.85</span>
+</div>
+</div>
+</div>
+<!-- Quick Metrics Strip -->
+<div class="grid grid-cols-3 gap-2 pt-2 bg-surface-container-lowest p-2.5 rounded-lg">
+<div class="flex flex-col items-center">
+<span class="font-title-md text-title-md text-on-surface font-bold">12</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-center">Safaro dhammaaday</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-title-md text-title-md text-on-surface font-bold">34.8</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-center">Km La Jaray</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-title-md text-title-md text-tertiary font-bold">5h 20m</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant text-center">Saacadood Online</span>
+</div>
+</div>
+<!-- Driver Emergency Action Button -->
+<button class="w-full h-12 rounded-lg bg-surface-container-high hover:bg-error-container/20 text-error font-label-lg text-label-lg flex items-center justify-center gap-2 transition-colors" id="sosIncidentBtn" type="button">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+        Gudbi Cilad ama Shil Waddo (Report Incident / SOS)
+      </button>
+</div>
+</section>
+<!-- Driver Operational Tab Sub-Bar (In-context Driver Navigation) -->
+<div class="px-4 mt-6">
+<div class="flex items-center justify-around p-1.5 rounded-xl bg-surface-container-low shadow-sm">
+<button class="flex-1 py-2 px-1 rounded-lg bg-surface-variant text-on-surface font-label-sm text-label-sm font-bold flex flex-col items-center gap-1 shadow-inner" type="button">
+<span class="material-symbols-outlined text-[20px] text-tertiary">work</span>
+<span>Shaqada</span>
+</button>
+<button class="flex-1 py-2 px-1 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex flex-col items-center gap-1 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">explore</span>
+<span>Khariiradda</span>
+</button>
+<button class="flex-1 py-2 px-1 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex flex-col items-center gap-1 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">confirmation_number</span>
+<span>Driver Pass</span>
+</button>
+<button class="flex-1 py-2 px-1 rounded-lg text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm flex flex-col items-center gap-1 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+<span>Dakhliga</span>
+</button>
+</div>
+</div>
+</div>
+<script>
+  // Status switch toggle logic
+  const statusToggleBtn = document.getElementById('statusToggleBtn');
+  const statusLabel = document.getElementById('statusLabel');
+  const statusKnob = document.getElementById('statusKnob');
+  let isOnline = true;
+
+  if (statusToggleBtn) {
+    statusToggleBtn.addEventListener('click', () => {
+      isOnline = !isOnline;
+      if (isOnline) {
+        statusLabel.textContent = 'ONLINE';
+        statusLabel.className = 'font-label-sm text-label-sm text-tertiary font-bold pl-1';
+        statusToggleBtn.className = 'relative flex items-center justify-between w-28 h-10 px-2 rounded-full bg-tertiary-container/40 transition-colors shadow-inner';
+        statusKnob.style.transform = 'translateX(0px)';
+        statusKnob.className = 'w-7 h-7 rounded-full bg-tertiary flex items-center justify-center shadow-md transition-transform';
+      } else {
+        statusLabel.textContent = 'OFFLINE';
+        statusLabel.className = 'font-label-sm text-label-sm text-on-surface-variant font-bold pr-1 order-last';
+        statusToggleBtn.className = 'relative flex items-center justify-between w-28 h-10 px-2 rounded-full bg-surface-variant transition-colors shadow-inner';
+        statusKnob.style.transform = 'translateX(0px)';
+        statusKnob.className = 'w-7 h-7 rounded-full bg-outline flex items-center justify-center shadow-md transition-transform';
+      }
+    });
+  }
+
+  // Pass renewal confirmation feedback
+  const renewPassBtn = document.getElementById('renewPassBtn');
+  const renewFeedback = document.getElementById('renewFeedback');
+  if (renewPassBtn && renewFeedback) {
+    renewPassBtn.addEventListener('click', () => {
+      renewFeedback.classList.remove('hidden');
+      setTimeout(() => {
+        renewFeedback.classList.add('hidden');
+      }, 4000);
+    });
+  }
+
+  // Request Accept / Decline micro-interactions
+  const acceptBtn = document.getElementById('acceptBtn');
+  const declineBtn = document.getElementById('declineBtn');
+  if (acceptBtn) {
+    acceptBtn.addEventListener('click', () => {
+      acceptBtn.innerHTML = '<span class="material-symbols-outlined text-[20px]">done_all</span> Safarka waa la aqbalay!';
+      acceptBtn.classList.replace('bg-primary-container', 'bg-tertiary-container');
+    });
+  }
+  if (declineBtn) {
+    declineBtn.addEventListener('click', () => {
+      declineBtn.closest('section').style.display = 'none';
+    });
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.5)]" data-active-classes="text-primary-container font-bold [&amp;&gt;div]:bg-primary-container/15 [&amp;&gt;div]:text-primary-container"><div class="flex justify-around items-center h-16 px-2"><a class="flex flex-col items-center justify-center flex-1 h-full py-1 text-on-surface-variant hover:text-on-surface transition-all" data-path="guudmar" href="#"><div class="flex items-center justify-center w-12 h-7 rounded-full transition-colors"><span class="material-symbols-outlined text-[22px]">dashboard</span></div><span class="font-label-sm text-label-sm mt-0.5">Guudmar</span></a><a class="flex flex-col items-center justify-center flex-1 h-full py-1 text-on-surface-variant hover:text-on-surface transition-all" data-path="khariiradda" href="#"><div class="flex items-center justify-center w-12 h-7 rounded-full transition-colors"><span class="material-symbols-outlined text-[22px]">map</span></div><span class="font-label-sm text-label-sm mt-0.5">Khariiradda</span></a><a class="flex flex-col items-center justify-center flex-1 h-full py-1 text-on-surface-variant hover:text-on-surface transition-all" data-path="dalbo-bajaaj" href="#"><div class="flex items-center justify-center w-12 h-7 rounded-full transition-colors"><span class="material-symbols-outlined text-[22px]">electric_rickshaw</span></div><span class="font-label-sm text-label-sm mt-0.5">Dalbo</span></a><a class="flex flex-col items-center justify-center flex-1 h-full py-1 text-on-surface-variant hover:text-on-surface transition-all" data-path="akoonka" href="#"><div class="flex items-center justify-center w-12 h-7 rounded-full transition-colors"><span class="material-symbols-outlined text-[22px]">account_circle</span></div><span class="font-label-sm text-label-sm mt-0.5">Akoonka</span></a></div></nav></body></html>

@@ -31,8 +31,26 @@ class SomaliTrafficRepository(private val context: Context) {
         return getSafeApiKey()
     }
 
-    private fun getSafeAuthHeader(): String {
+    private fun getSafeAuthHeader(): String = getEffectiveAuthHeader()
+
+    /**
+     * Effective Bearer token: prefers the signed-in user's JWT so that
+     * Supabase RLS (auth.uid()) works correctly for bajaj_rides /
+     * driver_presence. Falls back to the anon key when no valid JWT is
+     * stored (a placeholder like "auth_token_<ts>" is rejected by shape).
+     */
+    private fun getEffectiveAuthHeader(): String {
+        val jwt = prefs.getAuthToken()
+        if (!jwt.isNullOrBlank() && jwt.count { it == '.' } >= 2 && jwt.startsWith("eyJ")) {
+            return "Bearer $jwt"
+        }
         return "Bearer ${getSafeApiKey()}"
+    }
+
+    /** True when we have a real user JWT (needed for RLS-guarded writes). */
+    private fun hasUserJwt(): Boolean {
+        val jwt = prefs.getAuthToken()
+        return !jwt.isNullOrBlank() && jwt.count { it == '.' } >= 2 && jwt.startsWith("eyJ")
     }
 
     private fun getSafeApiKey(): String {
@@ -241,7 +259,8 @@ class SomaliTrafficRepository(private val context: Context) {
         otpCode: String,
         isDriver: Boolean,
         plateNumber: String? = null,
-        vehicleModel: String? = null
+        vehicleModel: String? = null,
+        referralCode: String? = null
     ): Result<UserProfile> = withContext(Dispatchers.IO) {
         try {
             val cleanName = fullName.trim()
@@ -318,6 +337,9 @@ class SomaliTrafficRepository(private val context: Context) {
                 if (isDriver) {
                     profilePayload["subscription_status"] = "pending"
                 }
+                if (!referralCode.isNullOrBlank()) {
+                    profilePayload["referred_by"] = referralCode.trim().uppercase()
+                }
 
                 try {
                     var profResp = service.upsertProfile(apiKey, authHeader, "resolution=merge-duplicates,return=representation", profilePayload)
@@ -328,10 +350,29 @@ class SomaliTrafficRepository(private val context: Context) {
                     android.util.Log.w("SomaliTrafficRepo", "Profile upsert warning: ${e.message}")
                 }
 
-                // IMPORTANT: Do not create a payment/subscription during registration.
-                // The Driver Pass payment is created only after the driver actually submits
-                // the sender phone on DriverPassScreen. This prevents fake/duplicate pending
-                // payments from appearing in Admin before money was sent.
+                // If driver registered with referral code, record it in audit_logs so marketing staff & admin see it
+                if (!referralCode.isNullOrBlank()) {
+                    val cleanCode = referralCode.trim().uppercase()
+                    try {
+                        val auditPayload = mapOf(
+                            "action" to "REFERRAL_REGISTRATION",
+                            "actor_name" to cleanCode,
+                            "target_type" to "driver",
+                            "target_id" to finalUserId,
+                            "metadata" to mapOf(
+                                "referral_code" to cleanCode,
+                                "driver_id" to finalUserId,
+                                "driver_name" to cleanName,
+                                "driver_phone" to e164,
+                                "plate_number" to (plateNumber ?: ""),
+                                "role" to (if (isDriver) "driver" else "passenger")
+                            )
+                        )
+                        service.insertAuditLog(apiKey, getSafeAuthHeader(), auditPayload)
+                    } catch (auditEx: Exception) {
+                        android.util.Log.w("SomaliTrafficRepo", "Referral audit log insert error: ${auditEx.message}")
+                    }
+                }
             }
 
             logAudit("REGISTER_SMS_OTP", "user", user.id, "New ${if (isDriver) "driver" else "passenger"} registered with SMS OTP: $cleanName")
@@ -428,7 +469,38 @@ class SomaliTrafficRepository(private val context: Context) {
                     android.util.Log.w("GoBajaajRepo", "Profile lookup error: ${e.message}")
                 }
 
-                // 2. If not found in profiles, check admin_users table
+                // 2. If not found in profiles, check subscriptions or payment_transactions for sender_phone linkage
+                if (remoteRole == null && normalizedPhone.isNotBlank()) {
+                    try {
+                        val subResp = service.getSubscriptionsByPhone(apiKey, "Bearer $apiKey", "eq.$cleanIdentifier")
+                        var linkedUserId: String? = null
+                        if (subResp.isSuccessful && !subResp.body().isNullOrEmpty()) {
+                            linkedUserId = subResp.body()!!.first()["user_id"]?.toString()
+                        }
+                        if (linkedUserId.isNullOrBlank()) {
+                            val txResp = service.getPaymentTransactionsByPhone(apiKey, "Bearer $apiKey", "eq.$cleanIdentifier")
+                            if (txResp.isSuccessful && !txResp.body().isNullOrEmpty()) {
+                                linkedUserId = txResp.body()!!.first()["user_id"]?.toString()
+                            }
+                        }
+
+                        if (!linkedUserId.isNullOrBlank()) {
+                            val profResp = service.getProfileById(apiKey, "Bearer $apiKey", "eq.$linkedUserId")
+                            if (profResp.isSuccessful && !profResp.body().isNullOrEmpty()) {
+                                val prof = profResp.body()!!.first()
+                                remoteUserId = prof["id"]?.toString()
+                                remoteFullName = prof["full_name"]?.toString()
+                                remotePlate = prof["plate_number"]?.toString()
+                                remoteVehicle = prof["bajaaj_model"]?.toString()
+                                remoteRole = UserRole.DRIVER
+                            }
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.w("GoBajaajRepo", "Linked sender phone lookup error: ${e.message}")
+                    }
+                }
+
+                // 3. If not found in profiles or payments, check admin_users table
                 if (remoteRole == null) {
                     try {
                         val adminOrQuery = "(username.ilike.$cleanIdentifier,email.ilike.$cleanIdentifier,phone.eq.$cleanIdentifier,phone.eq.$normalizedPhone)"
@@ -544,7 +616,8 @@ class SomaliTrafficRepository(private val context: Context) {
         password: String = "",
         isDriver: Boolean = true,
         plateNumber: String? = null,
-        vehicleModel: String? = null
+        vehicleModel: String? = null,
+        referralCode: String? = null
     ): Result<UserProfile> = withContext(Dispatchers.IO) {
         verifyPhoneOtpAndRegister(
             fullName = fullName,
@@ -552,7 +625,8 @@ class SomaliTrafficRepository(private val context: Context) {
             otpCode = "123456",
             isDriver = isDriver,
             plateNumber = plateNumber,
-            vehicleModel = vehicleModel
+            vehicleModel = vehicleModel,
+            referralCode = referralCode
         )
     }
 
@@ -600,6 +674,109 @@ class SomaliTrafficRepository(private val context: Context) {
         } catch (e: Exception) {
             false
         }
+    }
+
+    fun isDateValidInFuture(dateStr: String?): Boolean {
+        if (dateStr.isNullOrBlank()) return false
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        for (fmt in formats) {
+            try {
+                val df = SimpleDateFormat(fmt, Locale.US).apply {
+                    timeZone = if (fmt.endsWith("'Z'")) TimeZone.getTimeZone("UTC") else TimeZone.getTimeZone("Africa/Mogadishu")
+                }
+                val parsed = df.parse(dateStr.trim())
+                if (parsed != null) {
+                    val somaliaTz = TimeZone.getTimeZone("Africa/Mogadishu")
+                    val now = Calendar.getInstance(somaliaTz).time
+                    return parsed.after(now)
+                }
+            } catch (_: Exception) {}
+        }
+        return false
+    }
+
+    fun isTimestampWithin24Hours(timestampStr: String?): Boolean {
+        if (timestampStr.isNullOrBlank()) return false
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        for (fmt in formats) {
+            try {
+                val df = SimpleDateFormat(fmt, Locale.US).apply {
+                    timeZone = if (fmt.endsWith("'Z'")) TimeZone.getTimeZone("UTC") else TimeZone.getTimeZone("Africa/Mogadishu")
+                }
+                val parsed = df.parse(timestampStr.trim())
+                if (parsed != null) {
+                    val somaliaTz = TimeZone.getTimeZone("Africa/Mogadishu")
+                    val now = Calendar.getInstance(somaliaTz).timeInMillis
+                    val diff = now - parsed.time
+                    return diff in 0..(24 * 60 * 60 * 1000L)
+                }
+            } catch (_: Exception) {}
+        }
+        return false
+    }
+
+    fun isSubscription24hExpired(sub: Subscription?): Boolean {
+        if (sub == null) return true
+        val somaliaTz = TimeZone.getTimeZone("Africa/Mogadishu")
+        val now = Calendar.getInstance(somaliaTz).time
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        // 1. If endDate is present, check if now is after endDate
+        val endStr = sub.endDate?.trim()
+        if (!endStr.isNullOrBlank()) {
+            for (fmt in formats) {
+                try {
+                    val df = SimpleDateFormat(fmt, Locale.US).apply {
+                        timeZone = if (fmt.endsWith("'Z'")) TimeZone.getTimeZone("UTC") else somaliaTz
+                    }
+                    val parsed = df.parse(endStr)
+                    if (parsed != null) {
+                        return now.after(parsed)
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+        // 2. If startDate is present, check if 24 hours have elapsed
+        val startStr = sub.startDate?.trim()
+        if (!startStr.isNullOrBlank()) {
+            for (fmt in formats) {
+                try {
+                    val df = SimpleDateFormat(fmt, Locale.US).apply {
+                        timeZone = if (fmt.endsWith("'Z'")) TimeZone.getTimeZone("UTC") else somaliaTz
+                    }
+                    val parsed = df.parse(startStr)
+                    if (parsed != null) {
+                        val diffMillis = now.time - parsed.time
+                        return diffMillis >= 24 * 60 * 60 * 1000L
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+        return false
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -701,7 +878,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 val driverProfilePayload = mutableMapOf<String, Any>(
                     "id" to targetUserId,
                     "full_name" to (currentUser.fullName.ifBlank { "Darawal GoBajaaj" }),
-                    "phone_number" to effectivePhone,
+                    "phone_number" to currentUser.phoneNumber.ifBlank { effectivePhone },
                     "role" to "driver",
                     "status" to "active",
                     "subscription_status" to "pending"
@@ -966,18 +1143,26 @@ class SomaliTrafficRepository(private val context: Context) {
                     val resp = service.getSubscriptionForUser(apiKey, authHeader, "eq.${user.id}")
                     if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
                         val subs = resp.body()!!
-                        val activeOne = subs.find { 
-                            val st = it["status"]?.toString()?.lowercase()
-                            st == "active" || st == "completed" || st == "approved"
-                        } ?: subs.first()
+                        // Find latest subscription by sorting if available
+                        val latestSub = subs.maxByOrNull { it["created_at"]?.toString() ?: "" } ?: subs.first()
+                        val st = latestSub["status"]?.toString()?.lowercase() ?: ""
+                        val subEnd = latestSub["end_date"]?.toString()
 
-                        remoteStatus = if (activeOne["status"]?.toString()?.lowercase() in listOf("active", "completed", "approved")) "active" else activeOne["status"]?.toString()
-                        remoteSubId = activeOne["id"]?.toString()
-                        startDate = activeOne["start_date"]?.toString()
-                        endDate = activeOne["end_date"]?.toString()
-                        method = activeOne["payment_method"]?.toString()
-                        ref = activeOne["payment_reference"]?.toString()
-                        sPhone = activeOne["sender_phone"]?.toString()
+                        if (st in listOf("active", "completed", "approved")) {
+                            if (!subEnd.isNullOrBlank() && isDateValidInFuture(subEnd)) {
+                                remoteStatus = "active"
+                            } else {
+                                remoteStatus = "expired"
+                            }
+                        } else {
+                            remoteStatus = st
+                        }
+                        remoteSubId = latestSub["id"]?.toString()
+                        startDate = latestSub["start_date"]?.toString()
+                        endDate = subEnd
+                        method = latestSub["payment_method"]?.toString()
+                        ref = latestSub["payment_reference"]?.toString()
+                        sPhone = latestSub["sender_phone"]?.toString()
                     }
                 } catch (e: Exception) {
                     // Ignore
@@ -990,18 +1175,27 @@ class SomaliTrafficRepository(private val context: Context) {
                             val resp = service.getSubscriptionsByPhone(apiKey, authHeader, "eq.$phone")
                             if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
                                 val subs = resp.body()!!
-                                val activeOne = subs.find { 
-                                    val st = it["status"]?.toString()?.lowercase()
-                                    st == "active" || st == "completed" || st == "approved"
-                                }
-                                if (activeOne != null) {
-                                    remoteStatus = "active"
-                                    remoteSubId = activeOne["id"]?.toString() ?: remoteSubId
-                                    startDate = activeOne["start_date"]?.toString() ?: startDate
-                                    endDate = activeOne["end_date"]?.toString() ?: endDate
-                                    method = activeOne["payment_method"]?.toString() ?: method
-                                    ref = activeOne["payment_reference"]?.toString() ?: ref
-                                    sPhone = activeOne["sender_phone"]?.toString() ?: sPhone
+                                val latestSub = subs.maxByOrNull { it["created_at"]?.toString() ?: "" } ?: subs.first()
+                                val st = latestSub["status"]?.toString()?.lowercase() ?: ""
+                                val subEnd = latestSub["end_date"]?.toString()
+
+                                if (st in listOf("active", "completed", "approved")) {
+                                    if (!subEnd.isNullOrBlank() && isDateValidInFuture(subEnd)) {
+                                        remoteStatus = "active"
+                                        remoteSubId = latestSub["id"]?.toString() ?: remoteSubId
+                                        startDate = latestSub["start_date"]?.toString() ?: startDate
+                                        endDate = subEnd
+                                        method = latestSub["payment_method"]?.toString() ?: method
+                                        ref = latestSub["payment_reference"]?.toString() ?: ref
+                                        sPhone = latestSub["sender_phone"]?.toString() ?: sPhone
+                                        break
+                                    } else {
+                                        remoteStatus = "expired"
+                                    }
+                                } else if (st == "pending") {
+                                    remoteStatus = "pending"
+                                    remoteSubId = latestSub["id"]?.toString() ?: remoteSubId
+                                    sPhone = latestSub["sender_phone"]?.toString() ?: sPhone
                                     break
                                 }
                             }
@@ -1011,24 +1205,27 @@ class SomaliTrafficRepository(private val context: Context) {
                     }
                 }
 
-                // 3. Check payment_transactions table by user_id
+                // 3. Check payment_transactions table by user_id (Must be within last 24h)
                 if (remoteStatus != "active") {
                     try {
                         val txResp = service.getPaymentTransactionsByUserId(apiKey, authHeader, "eq.${user.id}")
                         if (txResp.isSuccessful && !txResp.body().isNullOrEmpty()) {
                             val txList = txResp.body()!!
-                            val activeTx = txList.find { 
-                                val st = it["status"]?.toString()?.lowercase()
-                                st == "completed" || st == "approved" || st == "active"
-                            }
-                            if (activeTx != null) {
-                                remoteStatus = "active"
-                            } else {
-                                val latestTx = txList.first()
-                                val txStatus = latestTx["status"]?.toString()
-                                if (txStatus.equals("rejected", ignoreCase = true) || txStatus.equals("failed", ignoreCase = true)) {
-                                    remoteStatus = "rejected"
+                            val latestTx = txList.maxByOrNull { it["created_at"]?.toString() ?: "" } ?: txList.first()
+                            val st = latestTx["status"]?.toString()?.lowercase() ?: ""
+                            val txCreatedAt = latestTx["created_at"]?.toString()
+
+                            if (st in listOf("completed", "approved", "active")) {
+                                if (isTimestampWithin24Hours(txCreatedAt)) {
+                                    remoteStatus = "active"
+                                    startDate = txCreatedAt
+                                } else {
+                                    remoteStatus = "expired"
                                 }
+                            } else if (st == "pending") {
+                                remoteStatus = "pending"
+                            } else if (st in listOf("rejected", "failed")) {
+                                remoteStatus = "rejected"
                             }
                         }
                     } catch (e: Exception) {
@@ -1043,12 +1240,20 @@ class SomaliTrafficRepository(private val context: Context) {
                             val txResp = service.getPaymentTransactionsByPhone(apiKey, authHeader, "eq.$phone")
                             if (txResp.isSuccessful && !txResp.body().isNullOrEmpty()) {
                                 val txList = txResp.body()!!
-                                val activeTx = txList.find { 
-                                    val st = it["status"]?.toString()?.lowercase()
-                                    st == "completed" || st == "approved" || st == "active"
-                                }
-                                if (activeTx != null) {
-                                    remoteStatus = "active"
+                                val latestTx = txList.maxByOrNull { it["created_at"]?.toString() ?: "" } ?: txList.first()
+                                val st = latestTx["status"]?.toString()?.lowercase() ?: ""
+                                val txCreatedAt = latestTx["created_at"]?.toString()
+
+                                if (st in listOf("completed", "approved", "active")) {
+                                    if (isTimestampWithin24Hours(txCreatedAt)) {
+                                        remoteStatus = "active"
+                                        startDate = txCreatedAt
+                                        break
+                                    } else {
+                                        remoteStatus = "expired"
+                                    }
+                                } else if (st == "pending") {
+                                    remoteStatus = "pending"
                                     break
                                 }
                             }
@@ -1064,14 +1269,18 @@ class SomaliTrafficRepository(private val context: Context) {
                         val idProfResp = service.getProfileById(apiKey, authHeader, "eq.${user.id}")
                         if (idProfResp.isSuccessful && !idProfResp.body().isNullOrEmpty()) {
                             val prof = idProfResp.body()!!.first()
-                            val profSubStatus = prof["subscription_status"]?.toString()
+                            val profSubStatus = prof["subscription_status"]?.toString()?.lowercase() ?: ""
                             val profExpiry = prof["subscription_expiry"]?.toString()
                             if (!profExpiry.isNullOrBlank()) {
                                 endDate = profExpiry
                             }
-                            if (profSubStatus.equals("active", ignoreCase = true) || profSubStatus.equals("completed", ignoreCase = true) || profSubStatus.equals("approved", ignoreCase = true)) {
-                                remoteStatus = "active"
-                            } else if (profSubStatus.equals("rejected", ignoreCase = true) || profSubStatus.equals("failed", ignoreCase = true)) {
+                            if (profSubStatus in listOf("active", "completed", "approved")) {
+                                if (!profExpiry.isNullOrBlank() && isDateValidInFuture(profExpiry)) {
+                                    remoteStatus = "active"
+                                } else {
+                                    remoteStatus = "expired"
+                                }
+                            } else if (profSubStatus in listOf("rejected", "failed")) {
                                 remoteStatus = "rejected"
                             }
                         }
@@ -1086,15 +1295,19 @@ class SomaliTrafficRepository(private val context: Context) {
                             val profResp = service.getProfileByPhone(apiKey, authHeader, "eq.$phone")
                             if (profResp.isSuccessful && !profResp.body().isNullOrEmpty()) {
                                 val prof = profResp.body()!!.first()
-                                val profSubStatus = prof["subscription_status"]?.toString()
+                                val profSubStatus = prof["subscription_status"]?.toString()?.lowercase() ?: ""
                                 val profExpiry = prof["subscription_expiry"]?.toString()
                                 if (!profExpiry.isNullOrBlank()) {
                                     endDate = profExpiry
                                 }
-                                if (profSubStatus.equals("active", ignoreCase = true) || profSubStatus.equals("completed", ignoreCase = true) || profSubStatus.equals("approved", ignoreCase = true)) {
-                                    remoteStatus = "active"
-                                    break
-                                } else if (profSubStatus.equals("rejected", ignoreCase = true) || profSubStatus.equals("failed", ignoreCase = true)) {
+                                if (profSubStatus in listOf("active", "completed", "approved")) {
+                                    if (!profExpiry.isNullOrBlank() && isDateValidInFuture(profExpiry)) {
+                                        remoteStatus = "active"
+                                        break
+                                    } else {
+                                        remoteStatus = "expired"
+                                    }
+                                } else if (profSubStatus in listOf("rejected", "failed")) {
                                     remoteStatus = "rejected"
                                     break
                                 }
@@ -1105,34 +1318,9 @@ class SomaliTrafficRepository(private val context: Context) {
                     }
                 }
 
-                // Verify if active status has actually expired
-                if (remoteStatus == "active" && !endDate.isNullOrBlank()) {
-                    val isStillValid = try {
-                        val formats = listOf(
-                            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                            "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                            "yyyy-MM-dd'T'HH:mm:ss.SSS",
-                            "yyyy-MM-dd'T'HH:mm:ss",
-                            "yyyy-MM-dd HH:mm:ss",
-                            "yyyy-MM-dd"
-                        )
-                        var parsed: Date? = null
-                        for (fmt in formats) {
-                            try {
-                                val df = SimpleDateFormat(fmt, Locale.US).apply {
-                                    timeZone = if (fmt.endsWith("'Z'")) TimeZone.getTimeZone("UTC") else TimeZone.getTimeZone("Africa/Mogadishu")
-                                }
-                                parsed = df.parse(endDate)
-                                if (parsed != null) break
-                            } catch (_: Exception) {}
-                        }
-                        val somaliaTz = TimeZone.getTimeZone("Africa/Mogadishu")
-                        val now = Calendar.getInstance(somaliaTz).time
-                        parsed != null && parsed.after(now)
-                    } catch (e: Exception) {
-                        false
-                    }
-                    if (!isStillValid) {
+                // Strict Expiry Verification: An active pass MUST have a valid future expiration
+                if (remoteStatus == "active") {
+                    if (endDate.isNullOrBlank() || !isDateValidInFuture(endDate)) {
                         remoteStatus = "expired"
                     }
                 }
@@ -1522,7 +1710,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 deviceName = "${Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${Build.MODEL}",
                 deviceModel = Build.MODEL,
                 platform = "Android",
-                appVersion = "1.0.0",
+                appVersion = "3.3",
                 deviceFingerprint = deviceFingerprint,
                 isProtected = existing?.isProtected ?: true,
                 isLost = existing?.isLost ?: false,
@@ -1604,7 +1792,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 deviceName = deviceName.trim().ifEmpty { if (cleanPlatform == "iOS") "iPhone 15 Pro" else "Android Device" },
                 deviceModel = deviceModel.trim().ifEmpty { if (cleanPlatform == "iOS") "iPhone" else "Android" },
                 platform = cleanPlatform,
-                appVersion = "1.0.0",
+                appVersion = "3.3",
                 deviceFingerprint = "DEV-${UUID.randomUUID().toString().take(8)}",
                 isProtected = true,
                 isLost = false,
@@ -2000,7 +2188,11 @@ class SomaliTrafficRepository(private val context: Context) {
         pickup: String,
         destination: String,
         vehicleType: String,
-        offeredPrice: Double
+        offeredPrice: Double,
+        pickupLat: Double? = null,
+        pickupLng: Double? = null,
+        destLat: Double? = null,
+        destLng: Double? = null
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             val user = prefs.getCurrentUser()
@@ -2009,7 +2201,7 @@ class SomaliTrafficRepository(private val context: Context) {
             val userName = user?.fullName ?: "Rakaab Macmiil"
             val userPhone = user?.phoneNumber ?: "610000000"
 
-            val rideMap = mapOf(
+            val rideMap = mutableMapOf<String, Any>(
                 "id" to rideId,
                 "passenger_id" to userId,
                 "passenger_name" to userName,
@@ -2020,6 +2212,10 @@ class SomaliTrafficRepository(private val context: Context) {
                 "offered_price" to offeredPrice,
                 "status" to "pending"
             )
+            pickupLat?.let { rideMap["pickup_lat"] = it }
+            pickupLng?.let { rideMap["pickup_lng"] = it }
+            destLat?.let { rideMap["dest_lat"] = it }
+            destLng?.let { rideMap["dest_lng"] = it }
             
             // 1. Sync to Supabase
             try {
@@ -2045,7 +2241,11 @@ class SomaliTrafficRepository(private val context: Context) {
                 vehicleType = vehicleType,
                 riderOffer = offeredPrice,
                 status = "pending",
-                createdAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date())
+                createdAt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date()),
+                pickupLat = pickupLat,
+                pickupLng = pickupLng,
+                destLat = destLat,
+                destLng = destLng
             )
             rideDao.insertRide(entity)
 
@@ -2056,34 +2256,61 @@ class SomaliTrafficRepository(private val context: Context) {
         }
     }
 
+    /** Token for Supabase Realtime (user JWT when available, else anon key). */
+    fun realtimeAccessToken(): String {
+        val jwt = prefs.getAuthToken()
+        return if (!jwt.isNullOrBlank() && jwt.count { it == '.' } >= 2 && jwt.startsWith("eyJ")) {
+            jwt
+        } else {
+            getSafeApiKey()
+        }
+    }
+
+    /** Maps a `bajaj_rides` REST row (incl. live-tracking columns) to RideEntity. */
+    fun mapRideRow(map: Map<String, Any?>, fallbackId: String = UUID.randomUUID().toString()): RideEntity {
+        fun num(key: String): Double? = (map[key] as? Number)?.toDouble()
+        fun str(key: String): String? = map[key]?.toString()?.takeIf { it != "null" }
+        return RideEntity(
+            id = str("id") ?: fallbackId,
+            riderId = str("passenger_id") ?: "",
+            riderName = str("passenger_name") ?: "",
+            riderPhone = str("passenger_phone") ?: "",
+            pickupAddress = str("pickup_location") ?: "",
+            destinationAddress = str("destination") ?: "",
+            vehicleType = str("vehicle_type") ?: "BAJAAJ",
+            riderOffer = num("offered_price") ?: 1.50,
+            agreedFare = num("agreed_fare") ?: num("offered_price"),
+            status = str("status") ?: "pending",
+            assignedDriverId = str("driver_id"),
+            assignedDriverName = str("driver_name"),
+            assignedDriverPhone = str("driver_phone"),
+            assignedDriverPlate = str("plate_number"),
+            assignedDriverRating = num("driver_rating") ?: 4.9,
+            createdAt = str("created_at") ?: "",
+            updatedAt = str("updated_at") ?: "",
+            pickupLat = num("pickup_lat"),
+            pickupLng = num("pickup_lng"),
+            destLat = num("dest_lat"),
+            destLng = num("dest_lng"),
+            driverLat = num("driver_lat"),
+            driverLng = num("driver_lng"),
+            driverHeading = num("driver_heading"),
+            driverSpeed = num("driver_speed"),
+            driverLocationAt = str("driver_location_at"),
+            assignedAt = str("assigned_at")
+        )
+    }
+
     suspend fun getRideById(rideId: String): Result<RideEntity?> = withContext(Dispatchers.IO) {
         try {
             if (prefs.isSupabaseConfigured()) {
                 val resp = getApiService().getRideById(
                     apiKey = getSafeApiKey(),
-                    authHeader = getSafeAuthHeader(),
+                    authHeader = getEffectiveAuthHeader(),
                     idFilter = "eq.$rideId"
                 )
                 if (resp.isSuccessful && !resp.body().isNullOrEmpty()) {
-                    val map = resp.body()!!.first()
-                    val entity = RideEntity(
-                        id = map["id"]?.toString() ?: rideId,
-                        riderId = map["passenger_id"]?.toString() ?: "",
-                        riderName = map["passenger_name"]?.toString() ?: "",
-                        riderPhone = map["passenger_phone"]?.toString() ?: "",
-                        pickupAddress = map["pickup_location"]?.toString() ?: "",
-                        destinationAddress = map["destination"]?.toString() ?: "",
-                        vehicleType = map["vehicle_type"]?.toString() ?: "BAJAAJ",
-                        riderOffer = (map["offered_price"] as? Number)?.toDouble() ?: 1.50,
-                        agreedFare = (map["offered_price"] as? Number)?.toDouble(),
-                        status = map["status"]?.toString() ?: "pending",
-                        assignedDriverId = map["driver_id"]?.toString(),
-                        assignedDriverName = map["driver_name"]?.toString(),
-                        assignedDriverPhone = map["driver_phone"]?.toString(),
-                        assignedDriverPlate = map["plate_number"]?.toString(),
-                        assignedDriverRating = (map["driver_rating"] as? Number)?.toDouble() ?: 4.9,
-                        createdAt = map["created_at"]?.toString() ?: ""
-                    )
+                    val entity = mapRideRow(resp.body()!!.first(), rideId)
                     rideDao.insertRide(entity)
                     return@withContext Result.success(entity)
                 }
@@ -2104,20 +2331,7 @@ class SomaliTrafficRepository(private val context: Context) {
                     authHeader = getSafeAuthHeader()
                 )
                 if (response.isSuccessful && response.body() != null) {
-                    val list = response.body()!!.map { map ->
-                        RideEntity(
-                            id = map["id"]?.toString() ?: UUID.randomUUID().toString(),
-                            riderId = map["passenger_id"]?.toString() ?: "",
-                            riderName = map["passenger_name"]?.toString() ?: "Rakaab Macmiil",
-                            riderPhone = map["passenger_phone"]?.toString() ?: "",
-                            pickupAddress = map["pickup_location"]?.toString() ?: "",
-                            destinationAddress = map["destination"]?.toString() ?: "",
-                            vehicleType = map["vehicle_type"]?.toString() ?: "BAJAAJ",
-                            riderOffer = (map["offered_price"] as? Number)?.toDouble() ?: 1.50,
-                            status = map["status"]?.toString() ?: "pending",
-                            createdAt = map["created_at"]?.toString() ?: ""
-                        )
-                    }
+                    val list = response.body()!!.map { mapRideRow(it) }
                     if (list.isNotEmpty()) {
                         rideDao.insertRides(list)
                     }
@@ -2210,6 +2424,7 @@ class SomaliTrafficRepository(private val context: Context) {
             if (existing != null) {
                 rideDao.updateRide(existing.copy(status = "completed"))
             }
+            clearRideTracking(rideId)
             logAudit("RIDE_COMPLETED", "bajaj_rides", rideId, "Ride completed successfully")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -2231,6 +2446,7 @@ class SomaliTrafficRepository(private val context: Context) {
             if (existing != null) {
                 rideDao.updateRide(existing.copy(status = "cancelled"))
             }
+            clearRideTracking(rideId)
             logAudit("RIDE_CANCELLED", "bajaj_rides", rideId, "Ride cancelled")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -2241,6 +2457,198 @@ class SomaliTrafficRepository(private val context: Context) {
     fun getActiveRideFlow(): Flow<RideEntity?> = rideDao.getActiveRide()
     fun getAllRidesFlow(): Flow<List<RideEntity>> = rideDao.getAllRides()
     fun getPendingRidesFlow(): Flow<List<RideEntity>> = rideDao.getPendingRides()
+
+    // ================= GoBajaaj: matching / live tracking / presence =================
+
+    /** Auto-matches the nearest eligible driver server-side (SQL RPC). */
+    suspend fun matchDriversForRide(rideId: String, radiusMeters: Int = 5000): Result<Int> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (!prefs.isSupabaseConfigured() || !hasUserJwt()) return@withContext Result.success(0)
+                val resp = getApiService().matchDriversForRide(
+                    apiKey = getSafeApiKey(),
+                    authHeader = getEffectiveAuthHeader(),
+                    body = mapOf("p_ride_id" to rideId, "p_radius_m" to radiusMeters)
+                )
+                if (resp.isSuccessful) {
+                    val matched = (resp.body()?.get("matched") as? Number)?.toInt() ?: 0
+                    if (matched > 0) {
+                        val ride = rideDao.getRideByIdDirect(rideId)
+                        if (ride != null) rideDao.updateRide(ride.copy(status = "assigned"))
+                    }
+                    Result.success(matched)
+                } else {
+                    Result.success(0)
+                }
+            } catch (e: Exception) {
+                Result.success(0)
+            }
+        }
+
+    /** Driver declined an auto-assigned ride: release it so matching can continue. */
+    suspend fun declineRide(rideId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (prefs.isSupabaseConfigured() && hasUserJwt()) {
+                getApiService().releaseRideDriver(
+                    apiKey = getSafeApiKey(),
+                    authHeader = getEffectiveAuthHeader(),
+                    body = mapOf("p_ride_id" to rideId)
+                )
+            }
+            val existing = rideDao.getRideByIdDirect(rideId)
+            if (existing != null) {
+                rideDao.updateRide(
+                    existing.copy(
+                        status = "pending",
+                        assignedDriverId = null,
+                        assignedDriverName = null,
+                        assignedDriverPhone = null
+                    )
+                )
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Rides auto-assigned to this driver (status = assigned) waiting for accept/decline. */
+    suspend fun fetchRidesForDriver(statusFilter: String): Result<List<RideEntity>> =
+        withContext(Dispatchers.IO) {
+            try {
+                val user = prefs.getCurrentUser() ?: return@withContext Result.success(emptyList())
+                if (!prefs.isSupabaseConfigured()) return@withContext Result.success(emptyList())
+                val resp = getApiService().getRidesForDriver(
+                    apiKey = getSafeApiKey(),
+                    authHeader = getEffectiveAuthHeader(),
+                    driverId = "eq.${user.id}",
+                    statusFilter = statusFilter
+                )
+                if (resp.isSuccessful && resp.body() != null) {
+                    val list = resp.body()!!.map { mapRideRow(it) }
+                    if (list.isNotEmpty()) rideDao.insertRides(list)
+                    Result.success(list)
+                } else {
+                    Result.success(emptyList())
+                }
+            } catch (e: Exception) {
+                Result.success(emptyList())
+            }
+        }
+
+    /** Driver presence upsert: online/offline + last known GPS for the matching pool. */
+    suspend fun upsertDriverPresence(
+        online: Boolean,
+        lat: Double? = null,
+        lng: Double? = null,
+        heading: Double? = null,
+        speedKmh: Double? = null
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val user = prefs.getCurrentUser() ?: return@withContext Result.success(Unit)
+            if (!prefs.isSupabaseConfigured() || !hasUserJwt()) return@withContext Result.success(Unit)
+            val body = mutableMapOf<String, Any>(
+                "driver_id" to user.id,
+                "is_online" to online,
+                "updated_at" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).format(Date())
+            )
+            if (lat != null) body["latitude"] = lat
+            if (lng != null) body["longitude"] = lng
+            if (heading != null) body["heading"] = heading
+            if (speedKmh != null) body["speed"] = speedKmh
+            getApiService().upsertDriverPresence(
+                apiKey = getSafeApiKey(),
+                authHeader = getEffectiveAuthHeader(),
+                body = body
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Streams driver GPS into bajaj_rides (driver phone side, throttled). */
+    suspend fun updateDriverLiveLocation(
+        rideId: String,
+        lat: Double,
+        lng: Double,
+        heading: Double?,
+        speedKmh: Double?
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (!prefs.isSupabaseConfigured() || !hasUserJwt()) return@withContext Result.success(Unit)
+            val updates = mutableMapOf<String, Any>(
+                "driver_lat" to lat,
+                "driver_lng" to lng,
+                "driver_location_at" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).format(Date())
+            )
+            heading?.let { updates["driver_heading"] = it }
+            speedKmh?.let { updates["driver_speed"] = it }
+            getApiService().updateRideStatus(
+                apiKey = getSafeApiKey(),
+                authHeader = getEffectiveAuthHeader(),
+                idFilter = "eq.$rideId",
+                updates = updates
+            )
+            val local = rideDao.getRideByIdDirect(rideId)
+            if (local != null) {
+                rideDao.updateRide(
+                    local.copy(
+                        driverLat = lat,
+                        driverLng = lng,
+                        driverHeading = heading,
+                        driverSpeed = speedKmh,
+                        driverLocationAt = updates["driver_location_at"]?.toString()
+                    )
+                )
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Driver pressed "Bilow Safarka": transition to in_progress (arrived first, fallback direct). */
+    suspend fun startTrip(rideId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (prefs.isSupabaseConfigured()) {
+                val strict = getApiService().updateRideStatus(
+                    apiKey = getSafeApiKey(),
+                    authHeader = getEffectiveAuthHeader(),
+                    idFilter = "eq.$rideId&status=eq.arrived",
+                    updates = mapOf("status" to "in_progress")
+                )
+                if (!strict.isSuccessful) {
+                    getApiService().updateRideStatus(
+                        apiKey = getSafeApiKey(),
+                        authHeader = getEffectiveAuthHeader(),
+                        idFilter = "eq.$rideId",
+                        updates = mapOf("status" to "in_progress")
+                    )
+                }
+            }
+            val existing = rideDao.getRideByIdDirect(rideId)
+            if (existing != null) rideDao.updateRide(existing.copy(status = "in_progress"))
+            logAudit("RIDE_STARTED", "bajaj_rides", rideId, "Trip started by driver")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Clears live driver location server-side when a ride finishes. */
+    private suspend fun clearRideTracking(rideId: String) {
+        try {
+            if (prefs.isSupabaseConfigured()) {
+                getApiService().finishRideTracking(
+                    apiKey = getSafeApiKey(),
+                    authHeader = getEffectiveAuthHeader(),
+                    body = mapOf("p_ride_id" to rideId)
+                )
+            }
+        } catch (_: Exception) {
+        }
+    }
 
     // Distance in meters using Haversine
     private fun calculateDistanceInMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {

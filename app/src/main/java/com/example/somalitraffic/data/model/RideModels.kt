@@ -6,16 +6,60 @@ import androidx.room.PrimaryKey
 enum class RideStatus(val somaliTitle: String) {
     SEARCHING("Raadinaya Darawal..."),
     BIDDING("Dalabyo Darawal ayaa soo socda"),
-    DRIVER_ASSIGNED("Darawalku wuu soo socdaa"),
+    DRIVER_ASSIGNED("Darawal la ku qiriyay — wuu aqbalayaa"),
     GOING_TO_PICKUP("Darawalka ayaa kusoo socda"),
     ARRIVED("Darawalku wuu soo gaaray goobta"),
     ON_TRIP("Safarku wuu socdaa"),
-    COMPLETED("Safarku wuu dhammaaday"),
+    COMPLETED("Safarku wuu dhammaady"),
     CANCELLED("Dalabkii waa la joojiyay");
 
     companion object {
         fun fromString(status: String?): RideStatus {
             return entries.find { it.name.equals(status, ignoreCase = true) } ?: SEARCHING
+        }
+
+        /** Maps DB lifecycle values (incl. legacy ones) to the ride state machine. */
+        fun fromDb(status: String?): RideStatus = when (status?.lowercase()) {
+            "pending" -> SEARCHING
+            "searching" -> SEARCHING
+            "assigned" -> DRIVER_ASSIGNED
+            "accepted" -> GOING_TO_PICKUP
+            "arrived" -> ARRIVED
+            "in_progress" -> ON_TRIP
+            "completed" -> COMPLETED
+            "cancelled" -> CANCELLED
+            else -> SEARCHING
+        }
+    }
+}
+
+/** Road route from OSRM/OSRM-compatible engine (spec §7 - no Google required). */
+data class RouteInfo(
+    val distanceMeters: Double,
+    val durationSeconds: Double,
+    /** Compose-ready JSON string: [[lat,lng],...] for the map route layer */
+    val pointsJson: String,
+    val fromLat: Double,
+    val fromLng: Double,
+    val toLat: Double,
+    val toLng: Double,
+    val steps: List<com.example.somalitraffic.data.remote.OsmRoutingService.NavigationStep> = emptyList()
+) {
+    val etaMinutes: Int
+        get() = (durationSeconds / 60.0).coerceAtLeast(1.0).toInt()
+}
+
+/** Driver approach states derived from distance (DB stores no DRIVER_NEARBY row). */
+enum class ApproachState(val somaliText: String) {
+    ON_THE_WAY("Darawalka ayaa kuu soo socda"),
+    NEARBY("Darawalku wuu kuu dhow yahay"),
+    ARRIVED("Darawalku wuu yimid");
+
+    companion object {
+        fun fromDistanceMeters(m: Double?, arrived: Boolean): ApproachState {
+            if (arrived) return ARRIVED
+            if (m == null) return ON_THE_WAY
+            return if (m <= 150.0) NEARBY else ON_THE_WAY
         }
     }
 }
@@ -51,8 +95,25 @@ data class RideEntity(
     val assignedDriverRating: Double = 4.8,
     val etaMinutes: Int = 5,
     val createdAt: String = "",
-    val updatedAt: String = ""
-)
+    val updatedAt: String = "",
+    // --- Live tracking (GoBajaaj backend) ---
+    val pickupLat: Double? = null,
+    val pickupLng: Double? = null,
+    val destLat: Double? = null,
+    val destLng: Double? = null,
+    val driverLat: Double? = null,
+    val driverLng: Double? = null,
+    val driverHeading: Double? = null,
+    val driverSpeed: Double? = null,
+    val driverLocationAt: String? = null,
+    val assignedAt: String? = null
+) {
+    val isTerminal: Boolean
+        get() = status == "completed" || status == "cancelled"
+
+    val hasLiveDriverLocation: Boolean
+        get() = driverLat != null && driverLng != null
+}
 
 data class RideRequest(
     val id: String,

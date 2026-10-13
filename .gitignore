@@ -16,3 +16,7 @@
 local.properties
 .env
 debug.keystore
+
+# Large binary releases - distribute separately
+GoBajaaj_APK/*.apk
+GoBajaaj_APK/*.aab

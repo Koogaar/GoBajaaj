@@ -162,11 +162,11 @@ private fun RouteOptionCard(
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val color = when (status) {
-                        "Furan" -> TrafficOpenGreen
-                        "Dhexdhexaad" -> TrafficModerateYellow
-                        "Mashquul" -> TrafficBusyOrange
-                        "Saxmad badan" -> TrafficHeavyRed
+                    val color = when (status.trim().lowercase()) {
+                        "furan" -> TrafficOpenGreen
+                        "normal" -> TrafficModerateYellow
+                        "jaam" -> TrafficBusyOrange
+                        "xeran" -> TrafficHeavyRed
                         else -> Color.Gray
                     }
                     Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(color))

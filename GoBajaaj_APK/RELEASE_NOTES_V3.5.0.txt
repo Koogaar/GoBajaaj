@@ -1,0 +1,29 @@
+==============================================
+GOBAJAAJ - NOOCA CUSUB EE V3.5.0 (BUILD 32)
+RELEASE NOTES (GOOGLE PLAY CONSOLE & DIRECT INSTALL)
+==============================================
+Nooca: Version 3.5.0
+Build (versionCode): 32
+Taariikhda: 2026-10-13
+
+WIXII CUSUB EE V3.5.0:
+----------------------------------------------
+1. XALLINTA SHAASHADDA BOODDA (POP-UP / FLICKER 1-SECOND FIX):
+   - Waxaa si buuxda loo ciribtiray ciladdii ahayd in shaashadda Home-ku ay hal ilbiriqsi soo booddo (flicker) marka pass-ku dhacay.
+   - SplashScreen-ku hadda wuxuu hubiyaa xaaladda subscription-ka inta animated splash-ku socdo; darawalka pass-kiisu dhacay waxaa toos loo geeyaa DriverPassScreen iyadoon wax shaashad kale ah soo dhex gelin.
+
+2. HUBIN ADAG EE DHICITAANKA SUBSCRIPTION-KA (STRICT EXPIRY CHECK):
+   - Waxaa la xalliyay khaladkii hore ee akoonnada subscription-koodu shalay ama toddobaadkii hore dhacay u moodayay inay weli "active" yihiin.
+   - Hadda nidaamku wuxuu si adag u hubiyaa taariikhda iyo saacadda (UTC/Mogadishu Time); haddii ay dhacday waxaa toos loo furayaa fursad dib-u-shubasho oo PENDING ah.
+
+3. KOODHKA SUUQ-GEYNTA (REFERRAL CODE INTEGRATION):
+   - Shaashadda is-diiwaangelinta darawalka waxaa lagu kordhiyay goob ikhtiyaari ah (Optional): "Referral Code / Koodhka Suuq-geynta".
+   - Koodh kasta oo uu isticmaalo waxaa lagu xiraa profile-ka darawalka iyo audit logs, waxaana Admin-ku ka arki karaa dashboard-ka cusub ee Marketing-ka.
+
+4. MAAMULKA SUUQ-GEYNTA EE ADMIN DASHBOARD (MARKETING & REFERRAL SYSTEM):
+   - Admin-ku hadda wuxuu abuuri karaa shaqaalaha suuq-geynta (Username, Password, Code gaar ah).
+   - Waxaa Dashboard-ka lagu arkaa tirokoob toos ah: Inta darawal ee suuq-geeye kasta ku diiwaangashan iyo xaaladda akoonkooda.
+
+5. TIRTIRIDDA IYO HAKINTA AKOONNADA (DELETE & SUSPEND USERS):
+   - Admin Web-ka waxaa lagu daray awood buuxda oo lagu tirtiri karo (Delete User) ama lagu hakiyo (Suspend / Reactivate) macaamiisha iyo darawallada.
+==============================================

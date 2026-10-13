@@ -31,11 +31,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
+import com.example.somalitraffic.ui.components.DriverSecondaryTabBar
 import com.example.somalitraffic.ui.components.SomaliBottomNavigation
 import com.example.somalitraffic.ui.components.SomaliInteractiveMap
 import com.example.ui.theme.*
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +51,9 @@ fun HomeDashboardScreen(
     val intersections by viewModel.intersections.collectAsState()
     val userLocation by viewModel.userLocation.collectAsState()
     val isDriver = currentUser?.role == com.example.somalitraffic.data.model.UserRole.DRIVER
+
+    // Secondary tab state — Driver only (Shaqada=0, Khariiradda=1, Driver Pass=2, Dakhliga=3)
+    var selectedDriverTab by remember { mutableStateOf(0) }
 
     var currentAddressText by remember { mutableStateOf("Mogadishu, KM4") }
 
@@ -104,11 +110,14 @@ fun HomeDashboardScreen(
         bottomBar = {
             SomaliBottomNavigation(
                 currentRoute = "home",
-                onNavigate = onNavigate,
+                onNavigate = { route ->
+                    // Khariiradda tab -> live_traffic, Dalbo tab -> ride, Akoonka -> profile
+                    onNavigate(route)
+                },
                 isDriver = isDriver
             )
         },
-        containerColor = GoBajaajCardBg
+        containerColor = Color(0xFF0F131C) // surface dark
     ) { padding ->
         Column(
             modifier = Modifier
@@ -150,7 +159,7 @@ fun HomeDashboardScreen(
                                     color = Color.White
                                 )
                                 Text(
-                                    text = "Gaadiid • Waddooyin • Ammaan",
+                                    text = "Ka Badbaad Saxmada Waddooyinka",
                                     fontSize = 11.sp,
                                     color = GoBajaajYellow,
                                     fontWeight = FontWeight.SemiBold
@@ -177,7 +186,23 @@ fun HomeDashboardScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            // DriverSecondaryTabBar — Darwalka kaliya
+            if (isDriver) {
+                DriverSecondaryTabBar(
+                    selectedTab = selectedDriverTab,
+                    onTabSelected = { tab ->
+                        selectedDriverTab = tab
+                        when (tab) {
+                            1 -> onNavigate("live_traffic") // Khariiradda
+                            2 -> onNavigate("driver_pass")  // Driver Pass
+                            // 0 = Shaqada (current), 3 = Dakhliga (future)
+                        }
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             // ==============================================================
             // 3 CORE SERVICE BUTTONS (Matching Screen 3: Ride, Traffic, Lost Phone)
@@ -186,7 +211,7 @@ fun HomeDashboardScreen(
                 val subscription by viewModel.subscription.collectAsState()
                 val isPassActive = viewModel.isSubscriptionActive(subscription)
 
-                if (isDriver && subscription != null && !isPassActive) {
+                if (isDriver && !isPassActive) {
                     Surface(
                         color = Color(0xFFFEF2F2),
                         shape = RoundedCornerShape(16.dp),
@@ -245,41 +270,177 @@ fun HomeDashboardScreen(
                     }
                     Spacer(modifier = Modifier.height(14.dp))
                 } else if (isDriver && isPassActive) {
+                    val expiryFormatted = remember(subscription) {
+                        formatPassExpiry(subscription)
+                    }
                     Surface(
-                        color = Color(0xFFF0FDF4),
-                        shape = RoundedCornerShape(14.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA7F3D0)),
-                        modifier = Modifier.fillMaxWidth()
+                        color = Color(0xFF10281E),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigate("driver_pass") }
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF10B981))
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Adeegga Maalinlaha: WAA HAWLGELIYAY ($0.25) • Wuxuu ku egyahay 05:00 AM",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF047857)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF10B981))
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Now Active • $0.25 (24 Saac)",
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF4EDEA3)
+                                    )
+                                    Text(
+                                        text = expiryFormatted,
+                                        fontSize = 10.5.sp,
+                                        color = Color(0xFFDFE2EE).copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFF10B981).copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = "Faahfaahin",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF4EDEA3),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(14.dp))
                 }
 
+                // ==============================================================
+                // CURRENT & DESTINATION ROAD TRACKER (Waddada aad taagan tahay & Mida aad u socoto)
+                // ==============================================================
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF181C24)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigate("live_traffic") }
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Waddooyinka & Jidkaaga",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFDFE2EE).copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = "Khariiradda ➔",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF4EDEA3)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Indicator dots & connecting line
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(end = 12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF4EDEA3))
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.dp)
+                                        .height(28.dp)
+                                        .background(Color.White.copy(alpha = 0.15f))
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(10.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFE50914))
+                                )
+                            }
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                // 1. Waddada aad taagan tahay
+                                Text(
+                                    text = "Waddada aad taagan tahay (Hadda):",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFDFE2EE).copy(alpha = 0.6f)
+                                )
+                                Text(
+                                    text = nearestIntersection?.name ?: "KM4 Roundabout (Mogadishu)",
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // 2. Mida aad u socoto / Isgoyska xiga
+                                val nextIntersection = intersections.firstOrNull { it.id != nearestIntersection?.id }
+                                Text(
+                                    text = "Mida aad u socoto / Isgoyska xiga:",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFDFE2EE).copy(alpha = 0.6f)
+                                )
+                                Text(
+                                    text = nextIntersection?.let { "${it.name} (${if (it.currentStatus.isBlank() || it.currentStatus.equals("hadda", ignoreCase = true)) "Furan" else it.currentStatus})" } ?: "Dooro waddada aad u socoto",
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFDFE2EE),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // The two circled service cards placed directly below the road tracker!
                 Text(
                     text = "Adeegyada GoBajaaj",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = BrandBlack
+                    fontSize = 15.sp,
+                    color = Color.White
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 if (isDriver) {
                     Row(
@@ -535,5 +696,41 @@ private fun ServiceQuickCard(
                 color = Color.White.copy(alpha = 0.85f)
             )
         }
+    }
+}
+
+private fun formatPassExpiry(sub: com.example.somalitraffic.data.model.Subscription?): String {
+    if (sub == null) return "24 Saac firfircoon"
+    val endStr = sub.endDate?.trim()
+    if (endStr.isNullOrBlank()) return "Wuxuu shaqaynayaa 24 Saac"
+    return try {
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        var parsed: Date? = null
+        for (fmt in formats) {
+            try {
+                val df = SimpleDateFormat(fmt, Locale.US).apply {
+                    timeZone = if (fmt.endsWith("'Z'")) TimeZone.getTimeZone("UTC") else TimeZone.getTimeZone("Africa/Mogadishu")
+                }
+                parsed = df.parse(endStr)
+                if (parsed != null) break
+            } catch (_: Exception) {}
+        }
+        if (parsed != null) {
+            val outDf = SimpleDateFormat("hh:mm a (dd/MM)", Locale.US).apply {
+                timeZone = TimeZone.getTimeZone("Africa/Mogadishu")
+            }
+            "Wuxuu ku egyahay: ${outDf.format(parsed)}"
+        } else {
+            "Wuxuu shaqaynayaa 24 Saac"
+        }
+    } catch (_: Exception) {
+        "Wuxuu shaqaynayaa 24 Saac"
     }
 }

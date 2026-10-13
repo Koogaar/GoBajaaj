@@ -67,7 +67,7 @@ data class Device(
     val deviceName: String,
     val deviceModel: String,
     val platform: String = "Android", // "Android" or "iOS"
-    val appVersion: String = "1.0.0",
+    val appVersion: String = "3.3",
     val deviceFingerprint: String = "",
     val appInstallationId: String? = null,
     val pushToken: String? = null,

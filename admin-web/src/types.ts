@@ -5,7 +5,8 @@ export type AdminRole =
   | 'reporter_manager'
   | 'support_agent'
   | 'analyst'
-  | 'ride_admin';
+  | 'ride_admin'
+  | 'marketer';
 
 export type UserRole = 
   | AdminRole
@@ -13,7 +14,7 @@ export type UserRole =
   | 'reporter';
 
 export type PermissionKey =
-  | 'users.view' | 'users.create' | 'users.update' | 'users.suspend'
+  | 'users.view' | 'users.create' | 'users.update' | 'users.suspend' | 'users.delete'
   | 'payments.view' | 'payments.approve' | 'payments.reject' | 'payments.update'
   | 'subscriptions.view' | 'subscriptions.update'
   | 'traffic.view' | 'traffic.create' | 'traffic.update' | 'traffic.delete'
@@ -27,7 +28,8 @@ export type PermissionKey =
   | 'roles.view' | 'roles.create' | 'roles.update'
   | 'audit_logs.view'
   | 'settings.view' | 'settings.update'
-  | 'ride.view' | 'ride.manage';
+  | 'ride.view' | 'ride.manage'
+  | 'marketing.view' | 'marketing.manage';
 
 export interface Profile {
   id: string;
@@ -59,7 +61,7 @@ export interface Intersection {
   longitude: number;
   allowed_radius: number;
   city: string;
-  current_status: 'Furan' | 'Dhexdhexaad' | 'Mashquul' | 'Saxmad badan' | 'Xiran' | 'Wuu xiranyahay';
+  current_status: 'Furan' | 'Normal' | 'Jaam' | 'Xeran' | 'Dhexdhexaad' | 'Mashquul' | 'Saxmad badan' | 'Xiran' | 'Wuu xiranyahay';
   assigned_reporter_id?: string;
   assigned_reporter_name?: string;
   status?: 'active' | 'inactive';
@@ -108,9 +110,25 @@ export interface PaymentTransaction {
   payment_method: string;
   reference_number: string;
   phone_number: string;
+  account_phone?: string;
+  sender_phone?: string;
   status: 'completed' | 'pending' | 'failed' | 'rejected';
   rejection_reason?: string;
   created_at: string;
+}
+
+export interface MarketingAgent {
+  id: string;
+  user_id?: string;
+  username: string;
+  full_name: string;
+  phone?: string;
+  code: string;
+  password?: string;
+  status: 'active' | 'suspended' | 'disabled';
+  created_at: string;
+  referred_count?: number;
+  active_referred_count?: number;
 }
 
 export interface Device {

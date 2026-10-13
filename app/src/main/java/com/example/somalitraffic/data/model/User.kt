@@ -31,25 +31,26 @@ enum class UserRole(val code: String, val titleSomali: String) {
 }
 
 enum class TrafficStatus(val somaliName: String, val hexColor: Long, val hexColorString: String) {
-    FURAN("Furan", 0xFF16A34A, "#16A34A"),                // Furan - Cagaar (Green)
-    DHEXDHEXAAD("Dhexdhexaad", 0xFFEAB308, "#EAB308"),    // Normal/Moderate - Yellow (Jaalle)
-    MASHQUUL("Mashquul", 0xFFE50914, "#E50914"),          // Heavy Traffic - Red (Gaduud)
-    SAXMAD_BADAN("Saxmad daran", 0xFFE50914, "#E50914"),   // Heavy Traffic - Red (Gaduud)
-    XIRAN("Wuu xiranyahay", 0xFF000000, "#000000");       // Closed - Black (Madow)
+    FURAN("Furan", 0xFF16A34A, "#16A34A"),          // Furan - Cagaar (Green)
+    NORMAL("Normal", 0xFFEAB308, "#EAB308"),        // Normal - Jaale (Yellow)
+    JAAM("Jaam", 0xFFE50914, "#E50914"),            // Jaam (Culus) - Gaduud (Red)
+    XERAN("Xeran", 0xFFE50914, "#E50914");           // Xeran / Xiran - Gaduud (Red)
 
     val color: androidx.compose.ui.graphics.Color
         get() = androidx.compose.ui.graphics.Color(hexColor)
 
     companion object {
+        /** Parses one of the 4 live statuses (Furan, Normal, Jaam, Xeran),
+         *  keeping legacy synonyms working during/after migration. */
         fun fromString(status: String?): TrafficStatus {
             if (status == null) return FURAN
             val clean = status.trim().lowercase()
             return when {
                 clean.contains("furan") || clean.contains("clear") || clean.contains("open") -> FURAN
-                clean.contains("dhexdhexaad") || clean.contains("normal") || clean.contains("medium") -> DHEXDHEXAAD
-                clean.contains("mashquul") || clean.contains("busy") -> MASHQUUL
-                clean.contains("xiran") || clean.contains("closed") || clean.contains("blocked") || clean.contains("madow") -> XIRAN
-                clean.contains("saxmad") || clean.contains("heavy") || clean.contains("shil") || clean.contains("gaduud") -> SAXMAD_BADAN
+                clean.contains("normal") || clean.contains("dhexdhexaad") || clean.contains("medium") -> NORMAL
+                clean.contains("jaam") || clean.contains("mashquul") || clean.contains("busy") -> JAAM
+                clean.contains("xeran") || clean.contains("xiran") || clean.contains("closed") || clean.contains("blocked") || clean.contains("madow") -> XERAN
+                clean.contains("saxmad") || clean.contains("heavy") || clean.contains("shil") || clean.contains("gaduud") -> XERAN
                 else -> FURAN
             }
         }

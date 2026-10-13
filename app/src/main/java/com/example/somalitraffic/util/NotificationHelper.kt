@@ -26,6 +26,11 @@ object NotificationHelper {
     private const val NOTIF_NEW_RIDE = 2001
     private const val NOTIF_ARRIVAL = 2002
     private const val NOTIF_ACCEPTED = 2003
+    private const val NOTIF_ASSIGNED = 2004
+    private const val NOTIF_STARTED = 2005
+    private const val NOTIF_COMPLETED = 2006
+    private const val NOTIF_CANCELLED = 2007
+    private const val NOTIF_SUB_EXPIRED = 2008
 
     // ---------------------------------------------------------------
     // Channel creation (call once at app start / before any notification)
@@ -156,6 +161,115 @@ object NotificationHelper {
     }
 
     // ---------------------------------------------------------------
+    // 4. Auto-assigned ride -> DRIVER (actions: Aqbal / Iska dhaaf)
+    // ---------------------------------------------------------------
+    fun showAssignedRideNotification(
+        context: Context,
+        rideId: String,
+        pickup: String,
+        destination: String,
+        offer: String
+    ) {
+        createChannels(context)
+        val acceptIntent = Intent(context, com.example.RideActionReceiver::class.java).apply {
+            action = com.example.RideActionReceiver.ACTION_ACCEPT
+            putExtra(com.example.RideActionReceiver.EXTRA_RIDE_ID, rideId)
+            putExtra(com.example.RideActionReceiver.EXTRA_ACTION, com.example.RideActionReceiver.ACTION_ACCEPT)
+        }
+        val declineIntent = Intent(context, com.example.RideActionReceiver::class.java).apply {
+            action = com.example.RideActionReceiver.ACTION_DECLINE
+            putExtra(com.example.RideActionReceiver.EXTRA_RIDE_ID, rideId)
+            putExtra(com.example.RideActionReceiver.EXTRA_ACTION, com.example.RideActionReceiver.ACTION_DECLINE)
+        }
+        val acceptPi = PendingIntent.getBroadcast(
+            context, rideId.hashCode() + 1, acceptIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val declinePi = PendingIntent.getBroadcast(
+            context, rideId.hashCode() + 2, declineIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val n = NotificationCompat.Builder(context, CHANNEL_RIDES)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("📯 Dalab Cusub Bajaaj!")
+            .setContentText("$pickup ➔ $destination  •  $offer")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(
+                        "Dalab cusub ayaa ku qoran!\n" +
+                            "📍 Ka qaad: $pickup\n" +
+                            "🏁 U socda: $destination\n" +
+                            "💵 Qiimaha: $offer"
+                    )
+            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(buildMainActivityIntent(context, requestCode = 13))
+            .addAction(0, "✅ Aqbal", acceptPi)
+            .addAction(0, "❌ Iska dhaaf", declinePi)
+            .build()
+        safeNotify(context, NOTIF_ASSIGNED, n)
+    }
+
+    // ---------------------------------------------------------------
+    // 5. Trip lifecycle -> RIDER
+    // ---------------------------------------------------------------
+    fun showTripStartedNotification(context: Context) {
+        createChannels(context)
+        val n = NotificationCompat.Builder(context, CHANNEL_RIDES)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("🚗 Safarka wuu bilaabmay!")
+            .setContentText("Bajaajlaha wuu kaa soo bilaabay safarka. Nasiino wanaagsan!")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(buildMainActivityIntent(context, requestCode = 14))
+            .build()
+        safeNotify(context, NOTIF_STARTED, n)
+    }
+
+    fun showRideCompletedNotification(context: Context) {
+        createChannels(context)
+        val n = NotificationCompat.Builder(context, CHANNEL_RIDES)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("🏁 Safarkii wuu dhammaaday!")
+            .setContentText("Mahadsanid inaad GoBajaaj isticmaashay!")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(buildMainActivityIntent(context, requestCode = 15))
+            .build()
+        safeNotify(context, NOTIF_COMPLETED, n)
+    }
+
+    fun showRideCancelledNotification(context: Context) {
+        createChannels(context)
+        val n = NotificationCompat.Builder(context, CHANNEL_RIDES)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("❌ Safarka waa la joojiyay")
+            .setContentText("Darawalka wuu ka noqday dalabkaaga.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(buildMainActivityIntent(context, requestCode = 16))
+            .build()
+        safeNotify(context, NOTIF_CANCELLED, n)
+    }
+
+    // ---------------------------------------------------------------
+    // 6. Driver Pass (24h) expired -> DRIVER
+    // ---------------------------------------------------------------
+    fun showSubscriptionExpiredNotification(context: Context) {
+        createChannels(context)
+        val n = NotificationCompat.Builder(context, CHANNEL_RIDES)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("⏰ Muddada Driver Pass-ka waa dhammaatay")
+            .setContentText("Sii wadista waddooyinka waxay u baahan tahay cusbooneysiin.")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(buildMainActivityIntent(context, requestCode = 17))
+            .build()
+        safeNotify(context, NOTIF_SUB_EXPIRED, n)
+    }
+
+    // ---------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------
     private fun buildMainActivityIntent(context: Context, requestCode: Int): PendingIntent {
@@ -171,8 +285,8 @@ object NotificationHelper {
     private fun safeNotify(context: Context, id: Int, notification: android.app.Notification) {
         try {
             NotificationManagerCompat.from(context).notify(id, notification)
-        } catch (e: SecurityException) {
-            // POST_NOTIFICATIONS permission not granted — silently skip
+        } catch (_: Throwable) {
+            // Silently skip any notification error / missing permission on any Android device
         }
     }
 }

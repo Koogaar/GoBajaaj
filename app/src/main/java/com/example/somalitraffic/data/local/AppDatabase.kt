@@ -100,16 +100,16 @@ interface SupportDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTicket(ticket: SupportTicket)
 
-    @Query("SELECT * FROM subscriptions WHERE userId = :userId ORDER BY CASE WHEN status IN ('active', 'completed', 'approved') THEN 1 WHEN status = 'pending' THEN 2 ELSE 3 END, startDate DESC LIMIT 1")
+    @Query("SELECT * FROM subscriptions WHERE userId = :userId ORDER BY CASE WHEN status IN ('active', 'completed', 'approved') THEN 1 ELSE 2 END, startDate DESC LIMIT 1")
     fun getSubscriptionForUser(userId: String): Flow<Subscription?>
 
-    @Query("SELECT * FROM subscriptions WHERE userId = :userId OR (senderPhone IS NOT NULL AND senderPhone != '' AND (senderPhone = :phone OR :phone LIKE '%' || senderPhone OR senderPhone LIKE '%' || :phone)) ORDER BY CASE WHEN status IN ('active', 'completed', 'approved') THEN 1 WHEN status = 'pending' THEN 2 ELSE 3 END, startDate DESC LIMIT 1")
+    @Query("SELECT * FROM subscriptions WHERE userId = :userId OR (senderPhone IS NOT NULL AND senderPhone != '' AND (senderPhone = :phone OR :phone LIKE '%' || senderPhone OR senderPhone LIKE '%' || :phone)) ORDER BY CASE WHEN status IN ('active', 'completed', 'approved') THEN 1 ELSE 2 END, startDate DESC LIMIT 1")
     fun getSubscriptionForUserOrPhone(userId: String, phone: String): Flow<Subscription?>
 
-    @Query("SELECT * FROM subscriptions WHERE userId = :userId ORDER BY CASE WHEN status IN ('active', 'completed', 'approved') THEN 1 WHEN status = 'pending' THEN 2 ELSE 3 END, startDate DESC LIMIT 1")
+    @Query("SELECT * FROM subscriptions WHERE userId = :userId ORDER BY CASE WHEN status IN ('active', 'completed', 'approved') THEN 1 ELSE 2 END, startDate DESC LIMIT 1")
     suspend fun getSubscriptionForUserSync(userId: String): Subscription?
 
-    @Query("SELECT * FROM subscriptions WHERE userId = :userId OR (senderPhone IS NOT NULL AND senderPhone != '' AND (senderPhone = :phone OR :phone LIKE '%' || senderPhone OR senderPhone LIKE '%' || :phone)) ORDER BY CASE WHEN status IN ('active', 'completed', 'approved') THEN 1 WHEN status = 'pending' THEN 2 ELSE 3 END, startDate DESC LIMIT 1")
+    @Query("SELECT * FROM subscriptions WHERE userId = :userId OR (senderPhone IS NOT NULL AND senderPhone != '' AND (senderPhone = :phone OR :phone LIKE '%' || senderPhone OR senderPhone LIKE '%' || :phone)) ORDER BY CASE WHEN status IN ('active', 'completed', 'approved') THEN 1 ELSE 2 END, startDate DESC LIMIT 1")
     suspend fun getSubscriptionForUserOrPhoneSync(userId: String, phone: String): Subscription?
 
     @Query("UPDATE subscriptions SET status = :status WHERE userId = :userId")
@@ -177,7 +177,7 @@ interface RideDao {
         AuditLog::class,
         RideEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

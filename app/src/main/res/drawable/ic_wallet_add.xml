@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp"
+    android:height="32dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Wallet body -->
+    <path
+        android:fillColor="#FF0F172A"
+        android:pathData="M18,4H5C3.34,4 2,5.34 2,7v10c0,1.66 1.34,3 3,3h7.5c-0.3,-0.6 -0.5,-1.28 -0.5,-2c0,-2.76 2.24,-5 5,-5h2V7C19,5.34 18.55,4 18,4zM16,11H5c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1h11c0.55,0 1,0.45 1,1s-0.45,1 -1,1z" />
+    <!-- Wallet flap -->
+    <path
+        android:fillColor="#FF0F172A"
+        android:pathData="M21,7.5h-5c-0.55,0 -1,0.45 -1,1v3c0,0.55 0.45,1 1,1h5c0.55,0 1,-0.45 1,-1v-3c0,-0.55 -0.45,-1 -1,-1zm-2,3c-0.55,0 -1,-0.45 -1,-1s0.45,-1 1,-1 1,0.45 1,1 -0.45,1 -1,1z" />
+    <!-- Plus Circle Badge at bottom right -->
+    <path
+        android:fillColor="#FF0F172A"
+        android:pathData="M18,14c-2.21,0 -4,1.79 -4,4s1.79,4 4,4 4,-1.79 4,-4 -1.79,-4 -4,-4zm2,4.5h-1.5V20h-1v-1.5H16v-1h1.5V16h1v1.5H20v1z" />
+</vector>

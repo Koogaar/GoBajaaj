@@ -60,6 +60,32 @@ class PreferencesManager(context: Context) {
         return prefs.getString(KEY_AUTH_TOKEN, null)
     }
 
+    // --- Active ride watched by the global poller (survives process death) ---
+    fun setActiveRideId(rideId: String?) {
+        if (rideId == null) {
+            prefs.edit().remove(KEY_ACTIVE_RIDE_ID).remove(KEY_RIDE_WATCH_STATUS).apply()
+        } else {
+            prefs.edit().putString(KEY_ACTIVE_RIDE_ID, rideId).apply()
+        }
+    }
+
+    fun getActiveRideId(): String? = prefs.getString(KEY_ACTIVE_RIDE_ID, null)
+
+    /** Last observed status of the active ride, used to detect transitions. */
+    fun getRideWatchStatus(): String? = prefs.getString(KEY_RIDE_WATCH_STATUS, null)
+
+    fun setRideWatchStatus(status: String?) {
+        if (status == null) prefs.edit().remove(KEY_RIDE_WATCH_STATUS).apply()
+        else prefs.edit().putString(KEY_RIDE_WATCH_STATUS, status).apply()
+    }
+
+    // --- Subscription expiry stamp (global poller checks it every minute) ---
+    fun getSubscriptionExpiryMs(): Long = prefs.getLong(KEY_SUB_EXPIRY_MS, 0L)
+
+    fun setSubscriptionExpiryMs(ms: Long) {
+        prefs.edit().putLong(KEY_SUB_EXPIRY_MS, ms).apply()
+    }
+
     fun clearSession() {
         prefs.edit()
             .remove(KEY_USER_ID)
@@ -263,6 +289,9 @@ class PreferencesManager(context: Context) {
         private const val KEY_LOCAL_DEVICE_ID = "local_device_hardware_id"
         private const val KEY_BOUND_DEVICE_PREFIX = "user_bound_dev_"
         private const val KEY_FCM_TOKEN = "fcm_token"
+        private const val KEY_ACTIVE_RIDE_ID = "active_ride_id"
+        private const val KEY_RIDE_WATCH_STATUS = "ride_watch_status"
+        private const val KEY_SUB_EXPIRY_MS = "sub_expiry_ms"
 
         // Default or user configurable Supabase endpoint
         const val DEFAULT_SUPABASE_URL = "https://lcigjbtprkloopvzpaxy.supabase.co"

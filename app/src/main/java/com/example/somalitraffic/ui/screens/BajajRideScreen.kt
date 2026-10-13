@@ -3,6 +3,8 @@ package com.example.somalitraffic.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -35,9 +37,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import com.example.somalitraffic.data.model.Intersection
 import com.example.somalitraffic.data.model.RideEntity
+import com.example.somalitraffic.data.model.RouteInfo
 import com.example.somalitraffic.data.model.VehicleType
+import com.example.somalitraffic.data.remote.OsmRoutingService
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
 import com.example.somalitraffic.ui.components.SomaliBottomNavigation
 import com.example.somalitraffic.ui.components.SomaliInteractiveMap
@@ -83,6 +90,10 @@ fun BajajRideScreen(
     val currentUser by viewModel.currentUser.collectAsState()
     val intersections by viewModel.intersections.collectAsState()
     val userLocation by viewModel.userLocation.collectAsState()
+    val liveRide by viewModel.liveRide.collectAsState()
+    val routeInfo by viewModel.routeInfo.collectAsState()
+    val driverGps by viewModel.driverGps.collectAsState()
+    val rideConnected by viewModel.rideConnected.collectAsState()
 
     // Mode Toggle: Rider vs Driver
     var isDriverMode by remember {
@@ -114,9 +125,79 @@ fun BajajRideScreen(
     var isDriverArrivedState by remember { mutableStateOf(false) }
     var arrivalSoundPlayedForRideId by remember { mutableStateOf<String?>(null) }
 
+    // Rider high-accuracy GPS coordinates & loading state
+    var riderPickupGps by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+    var isFetchingRiderLocation by remember { mutableStateOf(false) }
+
+    // ✅ GPS PERMISSION LAUNCHER: Auto-requests permission and fetches GPS after granted
+    val gpsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            isFetchingRiderLocation = true
+            viewModel.fetchFreshUserLocation(
+                context = context,
+                onSuccess = { coords ->
+                    riderPickupGps = coords
+                    if (pickupLocation.isBlank()) pickupLocation = "Goobtayda Hadda (GPS)"
+                    isFetchingRiderLocation = false
+                    Toast.makeText(context, "\uD83D\uDCCD Goobtaada GPS-ka si sax ah ayaa loo helay!", Toast.LENGTH_SHORT).show()
+                },
+                onError = { err ->
+                    isFetchingRiderLocation = false
+                    Toast.makeText(context, "\uD83D\uDCCD GPS: $err", Toast.LENGTH_SHORT).show()
+                }
+            )
+        } else {
+            Toast.makeText(context, "GPS-ka fasaxa la'aanteed ma shaqayn karo. Fadlan ogolow Location.", Toast.LENGTH_LONG).show()
+        }
+    }
+
     LaunchedEffect(Unit) {
         // Initialise system notification channels once
         NotificationHelper.createChannels(context)
+
+        // Check permission first, request if not granted, then fetch GPS
+        val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+        if (hasFine || hasCoarse) {
+            // Permission already granted - fetch GPS directly
+            isFetchingRiderLocation = true
+            viewModel.fetchFreshUserLocation(
+                context = context,
+                onSuccess = { coords ->
+                    riderPickupGps = coords
+                    if (pickupLocation.isBlank()) {
+                        pickupLocation = "Goobtayda Hadda (GPS)"
+                    }
+                    isFetchingRiderLocation = false
+                },
+                onError = {
+                    isFetchingRiderLocation = false
+                }
+            )
+        } else {
+            // No permission yet - request it (GPS fetch happens in launcher callback above)
+            gpsPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
+    // Keep riderPickupGps updated if userLocation updates
+    LaunchedEffect(userLocation) {
+        if (riderPickupGps == null && userLocation != null) {
+            riderPickupGps = userLocation
+            if (pickupLocation.isBlank()) {
+                pickupLocation = "Goobtayda Hadda (GPS)"
+            }
+        }
     }
 
     // Real-time Rider Polling for Driver Acceptance & Completion & Arrival Sound
@@ -132,7 +213,7 @@ fun BajajRideScreen(
                             rating = ride.assignedDriverRating,
                             reviewCount = 18,
                             vehicleModel = "Bajaj TVS",
-                            plateNumber = ride.assignedDriverPlate ?: "TR-1001",
+                            plateNumber = ride.assignedDriverPlate ?: "TR-" + (ride.assignedDriverId?.take(4) ?: "1001"),
                             distanceKm = 0.5,
                             etaMinutes = ride.etaMinutes,
                             offeredPrice = ride.agreedFare ?: ride.riderOffer,
@@ -142,10 +223,24 @@ fun BajajRideScreen(
                         NotificationHelper.showRideAcceptedNotification(
                             context = context,
                             driverName = ride.assignedDriverName ?: "Bajaajlaha",
-                            plate = ride.assignedDriverPlate ?: "TR-1001",
+                            plate = ride.assignedDriverPlate ?: "TR-" + (ride.assignedDriverId?.take(4) ?: "1001"),
                             etaMinutes = ride.etaMinutes
                         )
                         riderStep = RiderFlowStep.ON_TRIP_TRACKING
+                    } else if (riderStep == RiderFlowStep.LOOKING_FOR_DRIVERS && ride.status == "assigned" && selectedBidDriver == null) {
+                        // Auto-matched driver found; waiting for the driver to accept
+                        selectedBidDriver = BidDriverItem(
+                            id = ride.assignedDriverId ?: "drv-assigned",
+                            name = ride.assignedDriverName ?: "Darawal Bajaaj",
+                            rating = ride.assignedDriverRating,
+                            reviewCount = 18,
+                            vehicleModel = "Bajaj TVS",
+                            plateNumber = ride.assignedDriverPlate ?: "TR-" + (ride.assignedDriverId?.take(4) ?: "1001"),
+                            distanceKm = 0.5,
+                            etaMinutes = ride.etaMinutes,
+                            offeredPrice = ride.agreedFare ?: ride.riderOffer,
+                            phone = ride.assignedDriverPhone ?: "615000000"
+                        )
                     }
                     
                     if (riderStep == RiderFlowStep.ON_TRIP_TRACKING) {
@@ -183,23 +278,45 @@ fun BajajRideScreen(
     var driverRating by remember { mutableDoubleStateOf(5.0) }
     var counterOfferText by remember { mutableStateOf("2.00") }
 
+    // ✅ AUTO-REFRESH: Xaaladaha Wadooyinka cusboonsii 45-sn kasta marka Darawalku safar ku jiro
+    LaunchedEffect(driverStep) {
+        while (driverStep == DriverFlowStep.ON_TRIP_NAV) {
+            kotlinx.coroutines.delay(45_000L)
+            viewModel.refreshTrafficData()
+        }
+    }
+
     // Real-time Driver Polling for incoming pending rides
     LaunchedEffect(isDriverOnline, driverStep) {
         while (isDriverOnline && driverStep == DriverFlowStep.DRIVER_HOME) {
-            viewModel.fetchPendingRides { list ->
-                if (list.isNotEmpty()) {
-                    val ride = list.first()
-                    incomingRide = ride
+            // 1) Rides auto-matched specifically to this driver
+            viewModel.fetchAssignedRides { assigned ->
+                if (assigned.isNotEmpty()) {
+                    incomingRide = assigned.first()
                     driverStep = DriverFlowStep.INCOMING_REQUEST
-                    // Notify driver of new ride (shows even if app is minimised)
                     NotificationHelper.showNewRideRequestNotification(
                         context = context,
-                        pickup = ride.pickupAddress,
-                        destination = ride.destinationAddress,
-                        offer = "$${String.format(java.util.Locale.US, "%.2f", ride.riderOffer)}"
+                        pickup = assigned.first().pickupAddress,
+                        destination = assigned.first().destinationAddress,
+                        offer = "$${String.format(java.util.Locale.US, "%.2f", assigned.first().riderOffer)}"
                     )
-                    // Horn beep for driver
                     ArrivalSoundManager.playSingleHornBeep(context)
+                } else if (driverStep == DriverFlowStep.DRIVER_HOME) {
+                    // 2) Open pool rides
+                    viewModel.fetchPendingRides { list ->
+                        if (list.isNotEmpty()) {
+                            val ride = list.first()
+                            incomingRide = ride
+                            driverStep = DriverFlowStep.INCOMING_REQUEST
+                            NotificationHelper.showNewRideRequestNotification(
+                                context = context,
+                                pickup = ride.pickupAddress,
+                                destination = ride.destinationAddress,
+                                offer = "$${String.format(java.util.Locale.US, "%.2f", ride.riderOffer)}"
+                            )
+                            ArrivalSoundManager.playSingleHornBeep(context)
+                        }
+                    }
                 }
             }
             delay(3500)
@@ -319,17 +436,50 @@ fun BajajRideScreen(
                             },
                             offer = riderOfferText,
                             onOfferChange = { riderOfferText = it },
+                            isFetchingGps = isFetchingRiderLocation,
+                            pickupCoordinates = riderPickupGps ?: userLocation,
+                            onFetchGps = {
+                                isFetchingRiderLocation = true
+                                viewModel.fetchFreshUserLocation(
+                                    context = context,
+                                    onSuccess = { coords ->
+                                        riderPickupGps = coords
+                                        pickupLocation = "Goobtayda Hadda (GPS)"
+                                        isFetchingRiderLocation = false
+                                        Toast.makeText(context, "📍 Goobtaada GPS-ka si sax ah ayaa loo helay!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    onError = { err ->
+                                        isFetchingRiderLocation = false
+                                        Toast.makeText(context, err, Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            },
                             onRequestRide = {
                                 if (pickupLocation.trim().isEmpty()) {
                                     Toast.makeText(context, "Fadlan qor goobta lagaa qaadayo (Pickup)", Toast.LENGTH_SHORT).show()
                                 } else if (destinationLocation.trim().isEmpty()) {
                                     Toast.makeText(context, "Fadlan qor meesha aad u socoto (Destination)", Toast.LENGTH_SHORT).show()
                                 } else {
+                                    val resolvedPickup = riderPickupGps
+                                        ?: userLocation
+                                        ?: resolveIntersectionCoords(pickupLocation.trim(), intersections)
+                                        ?: (2.0371 to 45.3283)
+
+                                    val destCoords = resolveIntersectionCoords(destinationLocation.trim(), intersections)
+                                        ?: (2.0425 to 45.3411)
+
+                                    isDriverArrivedState = false
+                                    arrivalSoundPlayedForRideId = null
+                                    selectedBidDriver = null
                                     viewModel.createRideRequest(
                                         pickup = pickupLocation.trim(),
                                         destination = destinationLocation.trim(),
                                         vehicleType = selectedVehicle.name,
                                         offeredPrice = riderOfferText.toDoubleOrNull() ?: 1.50,
+                                        pickupLat = resolvedPickup.first,
+                                        pickupLng = resolvedPickup.second,
+                                        destLat = destCoords.first,
+                                        destLng = destCoords.second,
                                         onSuccess = { rideId ->
                                             activeRideId = rideId
                                             riderStep = RiderFlowStep.LOOKING_FOR_DRIVERS
@@ -347,6 +497,7 @@ fun BajajRideScreen(
                             destination = destinationLocation,
                             riderOffer = riderOfferText,
                             bids = availableBids,
+                            assignedDriver = if (selectedBidDriver != null && liveRide?.status == "assigned") selectedBidDriver else null,
                             onAcceptBid = { bid ->
                                 selectedBidDriver = bid
                                 riderStep = RiderFlowStep.ON_TRIP_TRACKING
@@ -355,9 +506,11 @@ fun BajajRideScreen(
                                 if (activeRideId != null) {
                                     viewModel.cancelRide(activeRideId!!) {
                                         activeRideId = null
+                                        selectedBidDriver = null
                                         riderStep = RiderFlowStep.REQUEST_FORM
                                     }
                                 } else {
+                                    selectedBidDriver = null
                                     riderStep = RiderFlowStep.REQUEST_FORM
                                 }
                             }
@@ -367,16 +520,16 @@ fun BajajRideScreen(
                     RiderFlowStep.ON_TRIP_TRACKING -> {
                         // Screen 6: Live Tracking
                         val driver = selectedBidDriver ?: BidDriverItem(
-                            id = "drv-active",
-                            name = "Darawalka Bajaajta",
-                            rating = 4.9,
+                            id = liveRide?.assignedDriverId ?: "drv-active",
+                            name = liveRide?.assignedDriverName ?: "Darawalka Bajaajta",
+                            rating = liveRide?.assignedDriverRating ?: 4.9,
                             reviewCount = 10,
                             vehicleModel = "Bajaj",
-                            plateNumber = "M-999",
+                            plateNumber = liveRide?.assignedDriverPlate ?: "M-999",
                             distanceKm = 0.5,
-                            etaMinutes = 3,
-                            offeredPrice = riderOfferText.toDoubleOrNull() ?: 1.50,
-                            phone = "615000000"
+                            etaMinutes = liveRide?.etaMinutes ?: 3,
+                            offeredPrice = liveRide?.agreedFare ?: (riderOfferText.toDoubleOrNull() ?: 1.50),
+                            phone = liveRide?.assignedDriverPhone ?: "615000000"
                         )
                         RiderLiveTrackingScreen(
                             driver = driver,
@@ -385,6 +538,9 @@ fun BajajRideScreen(
                             isDriverArrived = isDriverArrivedState,
                             intersections = intersections,
                             userLocation = userLocation,
+                            liveRide = liveRide,
+                            routeInfo = routeInfo,
+                            rideConnected = rideConnected,
                             onPlayArrivalSound = {
                                 ArrivalSoundManager.playDriverArrivalAlert(
                                     context = context,
@@ -399,6 +555,17 @@ fun BajajRideScreen(
                                     pickupLocation = pickupLocation.ifBlank { "Gurigaaga" }
                                 )
                                 Toast.makeText(context, "📯 Darawalku wuxuu soo gaaray gurigaaga!", Toast.LENGTH_LONG).show()
+                            },
+                            onOpenNavigation = {
+                                val navTargetLat = liveRide?.driverLat ?: liveRide?.pickupLat ?: riderPickupGps?.first ?: userLocation?.first
+                                val navTargetLng = liveRide?.driverLng ?: liveRide?.pickupLng ?: riderPickupGps?.second ?: userLocation?.second
+                                openGoogleMapsNavigation(
+                                    context = context,
+                                    lat = navTargetLat,
+                                    lng = navTargetLng,
+                                    label = "Bajaaj ${driver.name} (${driver.plateNumber})",
+                                    isDrivingMode = false
+                                )
                             },
                             onCallDriver = {
                                 val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${driver.phone}"))
@@ -428,9 +595,11 @@ fun BajajRideScreen(
                                 if (activeRideId != null) {
                                     viewModel.cancelRide(activeRideId!!) {
                                         activeRideId = null
+                                        selectedBidDriver = null
                                         riderStep = RiderFlowStep.REQUEST_FORM
                                     }
                                 } else {
+                                    selectedBidDriver = null
                                     riderStep = RiderFlowStep.REQUEST_FORM
                                 }
                             }
@@ -474,12 +643,16 @@ fun BajajRideScreen(
                         // Screen 4: Driver Home
                         DriverHomeScreen(
                             isOnline = isDriverOnline,
-                            onToggleOnline = { isDriverOnline = !isDriverOnline },
+                            onToggleOnline = {
+                                isDriverOnline = !isDriverOnline
+                                viewModel.setDriverOnline(isDriverOnline)
+                            },
                             todayTrips = driverTodayTrips,
                             todayEarnings = driverTodayEarnings,
                             rating = driverRating,
                             intersections = intersections,
                             userLocation = userLocation,
+                            driverGps = driverGps,
                             onSimulateIncomingRequest = {
                                 viewModel.fetchPendingRides { list ->
                                     if (list.isNotEmpty()) {
@@ -502,13 +675,26 @@ fun BajajRideScreen(
                             pickup = pLoc,
                             destination = dLoc,
                             riderOffer = "$${String.format(java.util.Locale.US, "%.2f", offerVal)}",
+                            pickupLat = incomingRide?.pickupLat,
+                            pickupLng = incomingRide?.pickupLng,
+                            destLat = incomingRide?.destLat,
+                            destLng = incomingRide?.destLng,
                             intersections = intersections,
                             userLocation = userLocation,
+                            driverGps = driverGps,
                             onAccept = {
                                 val rId = incomingRide?.id
                                 if (rId != null) {
-                                    viewModel.acceptRide(rId, offerVal) {
-                                        driverTodayEarnings += offerVal
+                                    viewModel.acceptRide(rId, incomingRide?.agreedFare ?: incomingRide?.riderOffer) {
+                                        viewModel.observeRide(rId)
+                                        // ✅ GPS streaming: billow u dir location-ka Supabase-ka
+                                        viewModel.startDriverRideTracking(rId)
+                                        val dLat = driverGps?.latitude ?: userLocation?.first ?: 2.0371
+                                        val dLng = driverGps?.longitude ?: userLocation?.second ?: 45.3283
+                                        val pLat = incomingRide?.pickupLat ?: 2.0371
+                                        val pLng = incomingRide?.pickupLng ?: 45.3283
+                                        viewModel.requestRoute(dLat, dLng, pLat, pLng)
+                                        driverTodayEarnings += incomingRide?.agreedFare ?: incomingRide?.riderOffer ?: offerVal
                                         driverTodayTrips += 1
                                         driverStep = DriverFlowStep.ON_TRIP_NAV
                                     }
@@ -519,27 +705,80 @@ fun BajajRideScreen(
                                 }
                             },
                             onDecline = {
+                                incomingRide?.id?.let { viewModel.declineRide(it) }
                                 incomingRide = null
+                                // ✅ GPS streaming: jooji marka la dido
+                                viewModel.stopDriverRideTracking(goOffline = false)
                                 driverStep = DriverFlowStep.DRIVER_HOME
                             }
                         )
                     }
 
                     DriverFlowStep.ON_TRIP_NAV -> {
-                        // Screen 7: Trip in Progress
+                        // Screen 7: Trip in Progress & Turn-by-Turn Navigation (Driver)
                         val riderPhoneStr = incomingRide?.riderPhone ?: "+252 615 000 000"
                         val destinationStr = incomingRide?.destinationAddress ?: "Hodan"
                         val pickupStr = incomingRide?.pickupAddress ?: "Guriga Macmiilka"
+                        val currentRide = liveRide
+
+                        val currentDriverLat = driverGps?.latitude ?: currentRide?.driverLat ?: userLocation?.first
+                        val currentDriverLng = driverGps?.longitude ?: currentRide?.driverLng ?: userLocation?.second
+                        val currentBearing = driverGps?.bearing ?: currentRide?.driverHeading?.toFloat() ?: 0f
+                        val currentSpeed = driverGps?.speedKmh ?: currentRide?.driverSpeed ?: 0.0
+
+                        val pLat = incomingRide?.pickupLat ?: currentRide?.pickupLat
+                        val pLng = incomingRide?.pickupLng ?: currentRide?.pickupLng
+                        val dLat = incomingRide?.destLat ?: currentRide?.destLat
+                        val dLng = incomingRide?.destLng ?: currentRide?.destLng
+
+                        val navLat = if (currentRide?.status == "in_progress") dLat else pLat
+                        val navLng = if (currentRide?.status == "in_progress") dLng else pLng
+
                         DriverTripInProgressScreen(
                             riderPhone = riderPhoneStr,
                             pickup = pickupStr,
                             destination = destinationStr,
+                            pickupLat = pLat,
+                            pickupLng = pLng,
+                            destLat = dLat,
+                            destLng = dLng,
                             intersections = intersections,
                             userLocation = userLocation,
+                            liveStatus = currentRide?.status ?: incomingRide?.status,
+                            driverLatitude = currentDriverLat,
+                            driverLongitude = currentDriverLng,
+                            driverBearing = currentBearing,
+                            driverSpeed = currentSpeed,
+                            routeInfo = routeInfo,
+                            onReroute = {
+                                val targetLat = if (currentRide?.status == "in_progress") dLat else pLat
+                                val targetLng = if (currentRide?.status == "in_progress") dLng else pLng
+                                if (currentDriverLat != null && currentDriverLng != null && targetLat != null && targetLng != null) {
+                                    viewModel.triggerReroute(currentDriverLat, currentDriverLng, targetLat, targetLng)
+                                }
+                            },
                             onCallRider = {
                                 val cleanPhone = incomingRide?.riderPhone ?: "615000000"
                                 val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$cleanPhone"))
                                 context.startActivity(intent)
+                            },
+                            onOpenNavigation = {
+                                openGoogleMapsNavigation(
+                                    context = context,
+                                    lat = navLat,
+                                    lng = navLng,
+                                    label = if (currentRide?.status == "in_progress") "Meesha Safarka ($destinationStr)" else "Goobta Pickup-ga ($pickupStr)",
+                                    isDrivingMode = true
+                                )
+                            },
+                            onStartTrip = {
+                                val rId = incomingRide?.id
+                                if (rId != null) {
+                                    viewModel.startTrip(rId)
+                                    if (currentDriverLat != null && currentDriverLng != null && dLat != null && dLng != null) {
+                                        viewModel.requestRoute(currentDriverLat, currentDriverLng, dLat, dLng)
+                                    }
+                                }
                             },
                             onArrivedAtPickup = {
                                 val rId = incomingRide?.id
@@ -557,12 +796,16 @@ fun BajajRideScreen(
                                 val rId = incomingRide?.id
                                 if (rId != null) {
                                     viewModel.completeRide(rId) {
+                                        // ✅ GPS streaming: jooji marka safarkii dhammaado
+                                        viewModel.stopDriverRideTracking(goOffline = false)
                                         Toast.makeText(context, "Safarkii wuu dhammaaday! Lacagta toos uga qaado rakaabka.", Toast.LENGTH_LONG).show()
                                         incomingRide = null
+                                        viewModel.stopObservingRide()
                                         driverStep = DriverFlowStep.DRIVER_HOME
                                     }
                                 } else {
-                                    Toast.makeText(context, "Safarkii wuu dhammaaday! Lacagta toos uga qaado rakaabka.", Toast.LENGTH_LONG).show()
+                                    // ✅ GPS streaming: jooji xaaladda kasta
+                                    viewModel.stopDriverRideTracking(goOffline = false)
                                     incomingRide = null
                                     driverStep = DriverFlowStep.DRIVER_HOME
                                 }
@@ -589,6 +832,9 @@ private fun RiderRequestFormScreen(
     onVehicleSelect: (VehicleType) -> Unit,
     offer: String,
     onOfferChange: (String) -> Unit,
+    isFetchingGps: Boolean = false,
+    pickupCoordinates: Pair<Double, Double>? = null,
+    onFetchGps: () -> Unit = {},
     onRequestRide: () -> Unit
 ) {
     val quickPresets = listOf("1.00", "1.50", "2.00", "2.50", "3.00")
@@ -609,36 +855,84 @@ private fun RiderRequestFormScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
-                    // Pickup Label
-                    Text(
-                        text = "Goobta lagaa qaadayo (Pickup)",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = GoBajaajNavy
-                    )
+                    // Pickup Label with GPS Action Chip
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Goobta lagaa qaadayo (Pickup)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GoBajaajNavy
+                        )
+                        Surface(
+                            onClick = onFetchGps,
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (pickupCoordinates != null) GoBajaajGreenLight else Color(0xFFEFF6FF)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (isFetchingGps) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(12.dp),
+                                        strokeWidth = 2.dp,
+                                        color = GoBajaajBlue
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.MyLocation,
+                                        contentDescription = null,
+                                        tint = if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (pickupCoordinates != null) "📍 GPS Sax ah" else "📍 Hel Goobtayda",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
                                 .size(24.dp)
                                 .clip(CircleShape)
-                                .background(GoBajaajBlue.copy(alpha = 0.15f)),
+                                .background(if (pickupCoordinates != null) GoBajaajGreen.copy(alpha = 0.15f) else GoBajaajBlue.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
                                     .size(10.dp)
                                     .clip(CircleShape)
-                                    .background(GoBajaajBlue)
+                                    .background(if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue)
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         OutlinedTextField(
                             value = pickup,
                             onValueChange = onPickupChange,
-                            placeholder = { Text("Geli goobta lagaa qaadayo...", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                            placeholder = { Text("Geli goobtaada ama isticmaal GPS...", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
+                            trailingIcon = {
+                                IconButton(onClick = onFetchGps) {
+                                    Icon(
+                                        imageVector = Icons.Default.GpsFixed,
+                                        contentDescription = "GPS",
+                                        tint = if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            },
                             textStyle = androidx.compose.ui.text.TextStyle(
                                 color = BrandBlack,
                                 fontSize = 14.sp,
@@ -649,10 +943,21 @@ private fun RiderRequestFormScreen(
                                 unfocusedTextColor = BrandBlack,
                                 focusedContainerColor = Color(0xFFF8FAFC),
                                 unfocusedContainerColor = Color(0xFFF8FAFC),
-                                focusedBorderColor = GoBajaajBlue,
-                                unfocusedBorderColor = Color(0xFFCBD5E1),
+                                focusedBorderColor = if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue,
+                                unfocusedBorderColor = if (pickupCoordinates != null) GoBajaajGreen.copy(alpha = 0.5f) else Color(0xFFCBD5E1),
                                 cursorColor = GoBajaajBlue
                             )
+                        )
+                    }
+
+                    if (pickupCoordinates != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "✓ GPS Coordinates: ${String.format(java.util.Locale.US, "%.5f, %.5f", pickupCoordinates.first, pickupCoordinates.second)} (Darawalku wuxuu kuugu imaanayaa halkan)",
+                            fontSize = 10.sp,
+                            color = GoBajaajGreen,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(start = 34.dp)
                         )
                     }
 
@@ -1039,6 +1344,7 @@ private fun RiderBidsScreen(
     destination: String,
     riderOffer: String,
     bids: List<BidDriverItem>,
+    assignedDriver: BidDriverItem? = null,
     onAcceptBid: (BidDriverItem) -> Unit,
     onCancelRequest: () -> Unit
 ) {
@@ -1072,28 +1378,62 @@ private fun RiderBidsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Searching banner animation
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = GoBajaajBlueLight),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically
+        // Searching banner animation -> assigned driver card when one is found
+        if (assignedDriver != null) {
+            Card(
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = GoBajaajYellow.copy(alpha = 0.18f)),
+                border = BorderStroke(1.5.dp, GoBajaajYellow),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(22.dp),
-                    color = GoBajaajBlue,
-                    strokeWidth = 2.5.dp
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Darawallada kuugu dhow ayaa arkay dalabkaaga...",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = GoBajaajBlueDark
-                )
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = GoBajaajNavy,
+                        strokeWidth = 2.5.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Darawal ayaa la helay!",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GoBajaajNavy
+                        )
+                        Text(
+                            text = "${assignedDriver.name} (${assignedDriver.plateNumber}) ayaa xaqiijinaya dalabkaaga...",
+                            fontSize = 12.sp,
+                            color = GoBajaajNavy.copy(alpha = 0.85f)
+                        )
+                    }
+                }
+            }
+        } else {
+            Card(
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = GoBajaajBlueLight),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = GoBajaajBlue,
+                        strokeWidth = 2.5.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Darawallada kuugu dhow ayaa arkay dalabkaaga...",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = GoBajaajBlueDark
+                    )
+                }
             }
         }
 
@@ -1207,18 +1547,37 @@ private fun RiderLiveTrackingScreen(
     isDriverArrived: Boolean = false,
     intersections: List<Intersection> = emptyList(),
     userLocation: Pair<Double, Double>? = null,
+    liveRide: RideEntity? = null,
+    routeInfo: RouteInfo? = null,
+    rideConnected: Boolean = false,
     onPlayArrivalSound: () -> Unit = {},
     onSimulateArrival: () -> Unit = {},
+    onOpenNavigation: () -> Unit = {},
     onCallDriver: () -> Unit,
     onShareTrip: () -> Unit,
     onCompleteTripSimulation: () -> Unit,
     onCancel: () -> Unit
 ) {
-    // Simulate driver position: approaching from pickup offset, arrives at pickup when isDriverArrived
+    // Live driver position from backend when available; otherwise fall back to a simulated approach
     val baseLat = userLocation?.first ?: 2.0371
     val baseLng = userLocation?.second ?: 45.3283
-    val driverLat = if (isDriverArrived) baseLat else baseLat + 0.0035
-    val driverLng = if (isDriverArrived) baseLng else baseLng - 0.0040
+    val liveLat = liveRide?.driverLat
+    val liveLng = liveRide?.driverLng
+    val driverLat = liveLat ?: (if (isDriverArrived) baseLat else baseLat + 0.0035)
+    val driverLng = liveLng ?: (if (isDriverArrived) baseLng else baseLng - 0.0040)
+    val etaMinutes = routeInfo?.etaMinutes ?: liveRide?.etaMinutes ?: driver.etaMinutes
+    val distanceLabel = routeInfo?.distanceMeters?.let { "• ${it / 1000.0} km" } ?: ""
+    val staleSeconds = run {
+        val at = liveRide?.driverLocationAt ?: return@run null
+        val parsed = try {
+            val t = at.replace("Z", " UTC")
+            java.time.OffsetDateTime.parse(t).toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            return@run null
+        }
+        ((System.currentTimeMillis() - parsed) / 1000L).toInt()
+    }
+    val staleActive = staleSeconds != null && staleSeconds > 90 && !isDriverArrived
     var acknowledgedArrival by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1248,7 +1607,7 @@ private fun RiderLiveTrackingScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = if (isDriverArrived) "Wuxuu sugayaa bannaanka: $pickup" else "ETA: ${driver.etaMinutes} daq ➔ $pickup",
+                        text = if (isDriverArrived) "Wuxuu sugayaa bannaanka: $pickup" else "ETA: $etaMinutes daq $distanceLabel ➔ $pickup",
                         color = Color.White.copy(alpha = 0.9f),
                         fontSize = 11.sp,
                         maxLines = 1,
@@ -1290,13 +1649,74 @@ private fun RiderLiveTrackingScreen(
             SomaliInteractiveMap(
                 intersections = intersections,
                 modifier = Modifier.fillMaxSize(),
-                userLatitude = userLocation?.first ?: 2.0371,
-                userLongitude = userLocation?.second ?: 45.3283,
+                userLatitude = liveRide?.pickupLat ?: userLocation?.first ?: 2.0371,
+                userLongitude = liveRide?.pickupLng ?: userLocation?.second ?: 45.3283,
                 customUserPinLabel = "Adigu (${pickup})",
+                routePointsJson = routeInfo?.pointsJson,
                 driverLatitude = driverLat,
                 driverLongitude = driverLng,
-                driverPinLabel = "📯 ${driver.name}"
+                driverBearing = liveRide?.driverHeading?.toFloat() ?: 0f,
+                driverSpeed = liveRide?.driverSpeed ?: 0.0,
+                driverPinLabel = "🛺 ${driver.name}"
             )
+
+            // Realtime connection + stale-location status chip
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = if (rideConnected && !staleActive) Color.White.copy(alpha = 0.95f) else TrafficHeavyRed.copy(alpha = 0.95f),
+                    shadowElevation = 3.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(if (rideConnected && !staleActive) GoBajaajGreen else TrafficHeavyRed)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = when {
+                                isDriverArrived -> "Darawalku wuu yimid"
+                                staleActive -> "Xiriirkii go'ay — cusboonayn"
+                                rideConnected -> "Realtime oo wacan"
+                                else -> "Realtime oo la sugayo"
+                            },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = BrandBlack
+                        )
+                    }
+                }
+            }
+
+            // External navigation button (Google Maps)
+            Surface(
+                onClick = onOpenNavigation,
+                shape = RoundedCornerShape(12.dp),
+                color = GoBajaajYellow,
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Navigation, contentDescription = null, tint = BrandBlack, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("🗺️ Ku Daawe Google Maps", fontSize = 12.sp, fontWeight = FontWeight.Black, color = BrandBlack)
+                }
+            }
 
             // Arrival Notification Dialog / Banner overlay when driver arrives
             if (isDriverArrived && !acknowledgedArrival) {
@@ -1424,6 +1844,19 @@ private fun RiderLiveTrackingScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = GoBajaajNavy
                             )
+                            if (liveRide?.hasLiveDriverLocation == true) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = buildString {
+                                        append(if (rideConnected) "Realtime oo wacan" else "Xiriir la'aan")
+                                        if (liveRide.driverSpeed != null) append(" • ")
+                                        if (liveRide.driverSpeed != null) append("${liveRide.driverSpeed.toInt()} km/h")
+                                        if (staleActive) append(" • Xig. saacadi hore")
+                                    },
+                                    fontSize = 10.sp,
+                                    color = if (staleActive) TrafficHeavyRed else GoBajaajGreen
+                                )
+                            }
                         }
                     }
 
@@ -1625,6 +2058,7 @@ private fun DriverHomeScreen(
     rating: Double,
     intersections: List<Intersection> = emptyList(),
     userLocation: Pair<Double, Double>? = null,
+    driverGps: SomaliTrafficViewModel.DriverGpsData? = null,
     onSimulateIncomingRequest: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -1748,9 +2182,15 @@ private fun DriverHomeScreen(
             SomaliInteractiveMap(
                 intersections = intersections,
                 modifier = Modifier.fillMaxSize(),
-                userLatitude = userLocation?.first ?: 2.0371,
-                userLongitude = userLocation?.second ?: 45.3283,
-                customUserPinLabel = "Goobtaada Hadda (Online)"
+                userLatitude = driverGps?.latitude ?: userLocation?.first ?: 2.0371,
+                userLongitude = driverGps?.longitude ?: userLocation?.second ?: 45.3283,
+                driverLatitude = driverGps?.latitude ?: userLocation?.first,
+                driverLongitude = driverGps?.longitude ?: userLocation?.second,
+                driverBearing = driverGps?.bearing ?: 0f,
+                driverSpeed = driverGps?.speedKmh ?: 0.0,
+                followDriver = isOnline,
+                driverPinLabel = "🛺 Darawal (Online)",
+                customUserPinLabel = "Goobtaada Hadda"
             )
 
             // Live status and check requests overlay
@@ -1860,8 +2300,13 @@ private fun DriverRideRequestAlertScreen(
     pickup: String,
     destination: String,
     riderOffer: String,
+    pickupLat: Double? = null,
+    pickupLng: Double? = null,
+    destLat: Double? = null,
+    destLng: Double? = null,
     intersections: List<Intersection> = emptyList(),
     userLocation: Pair<Double, Double>? = null,
+    driverGps: SomaliTrafficViewModel.DriverGpsData? = null,
     onAccept: () -> Unit,
     onDecline: () -> Unit
 ) {
@@ -1871,8 +2316,18 @@ private fun DriverRideRequestAlertScreen(
             SomaliInteractiveMap(
                 intersections = intersections,
                 modifier = Modifier.fillMaxSize(),
-                userLatitude = userLocation?.first ?: 2.0371,
-                userLongitude = userLocation?.second ?: 45.3283
+                userLatitude = driverGps?.latitude ?: userLocation?.first ?: 2.0371,
+                userLongitude = driverGps?.longitude ?: userLocation?.second ?: 45.3283,
+                driverLatitude = driverGps?.latitude ?: userLocation?.first,
+                driverLongitude = driverGps?.longitude ?: userLocation?.second,
+                driverBearing = driverGps?.bearing ?: 0f,
+                driverPinLabel = "🛺 Darawal",
+                pickupLatitude = pickupLat,
+                pickupLongitude = pickupLng,
+                pickupLabel = "📍 Ka qaad ($pickup)",
+                destinationLatitude = destLat,
+                destinationLongitude = destLng,
+                destinationLabel = "🏁 U socda ($destination)"
             )
         }
 
@@ -1984,14 +2439,35 @@ private fun DriverTripInProgressScreen(
     riderPhone: String,
     pickup: String = "KM4",
     destination: String,
+    pickupLat: Double? = null,
+    pickupLng: Double? = null,
+    destLat: Double? = null,
+    destLng: Double? = null,
     intersections: List<Intersection> = emptyList(),
     userLocation: Pair<Double, Double>? = null,
+    liveStatus: String? = null,
+    driverLatitude: Double? = null,
+    driverLongitude: Double? = null,
+    driverBearing: Float? = null,
+    driverSpeed: Double? = null,
+    routeInfo: RouteInfo? = null,
+    onReroute: (() -> Unit)? = null,
+    onOpenNavigation: () -> Unit = {},
     onCallRider: () -> Unit,
+    onStartTrip: () -> Unit = {},
     onArrivedAtPickup: () -> Unit = {},
     onPlayHornSound: () -> Unit = {},
     onFinishTrip: () -> Unit
 ) {
     var tripStatus by remember { mutableStateOf("GOING_TO_PICKUP") } // GOING_TO_PICKUP, ARRIVED, ON_TRIP
+    // Keep local trip phase in sync with the backend status
+    LaunchedEffect(liveStatus) {
+        tripStatus = when (liveStatus) {
+            "arrived" -> "ARRIVED"
+            "in_progress" -> "ON_TRIP"
+            else -> tripStatus
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top Banner (Matching Screen 7)
@@ -2071,10 +2547,55 @@ private fun DriverTripInProgressScreen(
             SomaliInteractiveMap(
                 intersections = intersections,
                 modifier = Modifier.fillMaxSize(),
-                userLatitude = userLocation?.first ?: 2.0371,
-                userLongitude = userLocation?.second ?: 45.3283,
-                customUserPinLabel = "Bajaaj (Live Nav)"
+                userLatitude = driverLatitude ?: userLocation?.first ?: 2.0371,
+                userLongitude = driverLongitude ?: userLocation?.second ?: 45.3283,
+                routePointsJson = routeInfo?.pointsJson,
+                driverLatitude = driverLatitude ?: userLocation?.first,
+                driverLongitude = driverLongitude ?: userLocation?.second,
+                driverBearing = driverBearing ?: 0f,
+                driverSpeed = driverSpeed ?: 0.0,
+                followDriver = true,
+                driverPinLabel = "🛺 Bajaaj (Live Nav)",
+                pickupLatitude = pickupLat,
+                pickupLongitude = pickupLng,
+                pickupLabel = "📍 Ka qaad ($pickup)",
+                destinationLatitude = destLat,
+                destinationLongitude = destLng,
+                destinationLabel = "🏁 U socda ($destination)",
+                navigationSteps = routeInfo?.steps ?: emptyList(),
+                routeDistanceMeters = routeInfo?.distanceMeters,
+                routeDurationSeconds = routeInfo?.durationSeconds,
+                onReroute = onReroute
             )
+
+            // Google Maps Navigation Button (Always accessible for driver)
+            Surface(
+                onClick = onOpenNavigation,
+                shape = RoundedCornerShape(12.dp),
+                color = GoBajaajYellow,
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Navigation, contentDescription = null, tint = BrandBlack, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = when (tripStatus) {
+                            "GOING_TO_PICKUP" -> "🗺️ Fur Google Maps (U Tag Macmiilka)"
+                            "ARRIVED" -> "🗺️ Fur Google Maps (Albaabka Macmiilka)"
+                            else -> "🗺️ Fur Google Maps (U Wad Meesha Loo Socdo)"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = BrandBlack
+                    )
+                }
+            }
         }
 
         // Bottom Rider Info & Controls Card (Matching Screen 7)
@@ -2085,6 +2606,54 @@ private fun DriverTripInProgressScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
+                // Live ETA & Distance & Speed Status Card (Realtime update)
+                if (routeInfo != null) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text("Distance", fontSize = 10.5.sp, color = TextMutedDark, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = OsmRoutingService.formatDistance(routeInfo.distanceMeters),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = BrandBlack
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("ETA", fontSize = 10.5.sp, color = TextMutedDark, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = OsmRoutingService.formatEta(routeInfo.durationSeconds),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GoBajaajGreen
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("Xawaaraha", fontSize = 10.5.sp, color = TextMutedDark, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = "${(driverSpeed ?: 0.0).toInt()} km/h",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GoBajaajNavy
+                                )
+                            }
+                        }
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -2148,7 +2717,10 @@ private fun DriverTripInProgressScreen(
                         }
 
                         Button(
-                            onClick = { tripStatus = "ON_TRIP" },
+                            onClick = {
+                                tripStatus = "ON_TRIP"
+                                onStartTrip()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = GoBajaajGreen),
                             modifier = Modifier.weight(0.55f).height(48.dp)
@@ -2169,4 +2741,90 @@ private fun DriverTripInProgressScreen(
             }
         }
     }
+}
+
+private fun resolveIntersectionCoords(text: String, intersections: List<Intersection>): Pair<Double, Double>? {
+    if (text.isBlank()) return null
+    val t = text.lowercase(java.util.Locale.US).trim()
+    return intersections.firstOrNull {
+        it.name.lowercase(java.util.Locale.US).contains(t) ||
+            t.contains(it.name.lowercase(java.util.Locale.US))
+    }?.let { it.latitude to it.longitude }
+}
+
+private fun openGoogleMapsNavigation(
+    context: android.content.Context,
+    lat: Double?,
+    lng: Double?,
+    label: String = "Goobta Safarka",
+    isDrivingMode: Boolean = true
+) {
+    val cleanLocation = label
+        .replace("Meesha Safarka (", "")
+        .replace("Goobta Pickup-ga (", "")
+        .replace("Albaabka Macmiilka (", "")
+        .replace(")", "")
+        .trim()
+        .ifBlank { "Mogadishu" }
+
+    val hasValidCoords = lat != null && lng != null && lat != 0.0 && lng != 0.0
+
+    val navUri = if (hasValidCoords) {
+        if (isDrivingMode) {
+            // Google Maps Turn-by-Turn Driving Navigation
+            Uri.parse("google.navigation:q=$lat,$lng&mode=d")
+        } else {
+            // Google Maps Direct Directions
+            Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving")
+        }
+    } else {
+        // Fallback: search place query in Mogadishu via Google Maps
+        val query = if (cleanLocation.contains("Mogadishu", ignoreCase = true)) cleanLocation else "$cleanLocation, Mogadishu"
+        Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${Uri.encode(query)}&travelmode=driving")
+    }
+
+    val mapIntent = Intent(Intent.ACTION_VIEW, navUri).apply {
+        setPackage("com.google.android.apps.maps")
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    }
+
+    try {
+        context.startActivity(mapIntent)
+    } catch (_: Exception) {
+        // Fallback 1: Web / universal intent (opens Google Maps or browser)
+        try {
+            val fallbackUri = if (hasValidCoords) {
+                Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving")
+            } else {
+                val query = if (cleanLocation.contains("Mogadishu", ignoreCase = true)) cleanLocation else "$cleanLocation, Mogadishu"
+                Uri.parse("https://www.google.com/maps/dir/?api=1&destination=${Uri.encode(query)}&travelmode=driving")
+            }
+            context.startActivity(Intent(Intent.ACTION_VIEW, fallbackUri).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            })
+        } catch (_: Exception) {
+            // Fallback 2: Geo scheme
+            try {
+                val geoUri = if (hasValidCoords) {
+                    Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(cleanLocation)})")
+                } else {
+                    Uri.parse("geo:0,0?q=${Uri.encode("$cleanLocation, Mogadishu")}")
+                }
+                context.startActivity(Intent(Intent.ACTION_VIEW, geoUri).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                })
+            } catch (_: Exception) {
+                Toast.makeText(context, "Fadlan soo degso ama fur app-ka Google Maps", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+}
+
+private fun openExternalNavigation(
+    context: android.content.Context,
+    lat: Double?,
+    lng: Double?,
+    label: String
+) {
+    openGoogleMapsNavigation(context, lat, lng, label, isDrivingMode = true)
 }

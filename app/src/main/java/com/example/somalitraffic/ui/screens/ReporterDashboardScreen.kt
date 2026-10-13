@@ -327,7 +327,7 @@ fun ReporterDashboardScreen(
 
                 // 1. BUTTON: CAADI / FURAN (Green - 1 Tap)
                 OneTapStatusButton(
-                    title = "FURAN / CAADI (Clear)",
+                    title = "FURAN (Clear)",
                     description = "Gaadiidku si habsami leh ayuu u socdaa, saxmad ma jirto",
                     icon = Icons.Default.CheckCircle,
                     backgroundColor = Color(0xFF16A34A),
@@ -336,31 +336,31 @@ fun ReporterDashboardScreen(
                     isLoading = isLoading
                 )
 
-                // 2. BUTTON: MASHQUUL (Yellow/Amber - 1 Tap)
+                // 2. BUTTON: NORMAL (Yellow/Amber - 1 Tap)
                 OneTapStatusButton(
-                    title = "MASHQUUL (Moderate)",
+                    title = "NORMAL (Moderate)",
                     description = "Gaadiidku waa badan yahay balse wuu socdaa",
                     icon = Icons.Default.DirectionsCar,
                     backgroundColor = Color(0xFFD97706),
                     textColor = Color.White,
-                    onClick = { submitQuickReport("Dhexdhexaad") },
+                    onClick = { submitQuickReport("Normal") },
                     isLoading = isLoading
                 )
 
-                // 3. BUTTON: SAXMAD / JAM (Red - 1 Tap)
+                // 3. BUTTON: JAAM (Red - 1 Tap)
                 OneTapStatusButton(
-                    title = "SAXMAD / JAM DARAN (Heavy)",
+                    title = "JAAM / SAXMAD (Heavy)",
                     description = "Isgoysku waa saxmad daran yahay oo gaadiidku waa xanniban yahay",
                     icon = Icons.Default.Traffic,
                     backgroundColor = Color(0xFFE50914),
                     textColor = Color.White,
-                    onClick = { submitQuickReport("Jam") },
+                    onClick = { submitQuickReport("Jaam") },
                     isLoading = isLoading
                 )
 
-                // 4. BUTTON: WADDADA WAA XIRAN TAHAY / SABAB (Dark/Black - Opens Cause Sheet)
+                // 4. BUTTON: XERAN / WADDADA XIRAN (Dark/Black - Opens Cause Sheet)
                 OneTapStatusButton(
-                    title = "WADDADA WAA XIRAN TAHAY (Closed Road)",
+                    title = "XERAN / WADDADA XIRAN (Closed Road)",
                     description = "Waddadu waa xiran tahay (Dhismo, Shil, Ciidan, iwm)",
                     icon = Icons.Default.Block,
                     backgroundColor = Color(0xFF1E293B),
@@ -490,7 +490,7 @@ fun ReporterDashboardScreen(
                         } else {
                             selectedPresetCause
                         }
-                        submitQuickReport("Xiran", finalCause)
+                        submitQuickReport("Xeran", finalCause)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
                     shape = RoundedCornerShape(10.dp)

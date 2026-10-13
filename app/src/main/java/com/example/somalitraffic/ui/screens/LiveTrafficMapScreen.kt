@@ -34,11 +34,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import com.example.somalitraffic.data.model.Intersection
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
 import com.example.somalitraffic.ui.components.SomaliBottomNavigation
 import com.example.somalitraffic.ui.components.SomaliInteractiveMap
+import com.example.somalitraffic.util.ArrivalSoundManager
 import com.example.ui.theme.*
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 
@@ -109,14 +116,52 @@ fun LiveTrafficMapScreen(
         }
     }
 
+    // Driver dynamic driving telemetry
+    var driverSpeedKmh by remember { mutableDoubleStateOf(0.0) }
+    var driverBearing by remember { mutableFloatStateOf(0f) }
+    var isAudioAlertEnabled by remember { mutableStateOf(true) }
+    var lastAlertedIntersectionId by remember { mutableStateOf<String?>(null) }
+
+    fun calcDistMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double =
+        com.example.somalitraffic.data.repository.IntersectionSearchEngine.calculateDistanceInMeters(lat1, lon1, lat2, lon2)
+
+    fun calcBearing(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
+        val phi1 = Math.toRadians(lat1)
+        val phi2 = Math.toRadians(lat2)
+        val deltaLambda = Math.toRadians(lon2 - lon1)
+        val y = Math.sin(deltaLambda) * Math.cos(phi2)
+        val x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda)
+        val theta = Math.atan2(y, x)
+        return ((Math.toDegrees(theta) + 360.0) % 360.0).toFloat()
+    }
+
+    fun diffBearing(b1: Float, b2: Float): Float =
+        Math.abs((b1 - b2 + 180f) % 360f - 180f)
+
+    fun openGoogleMapsForIntersection(lat: Double, lng: Double, label: String) {
+        try {
+            val uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d")
+            val mapIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+                setPackage("com.google.android.apps.maps")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(mapIntent)
+        } catch (_: Exception) {
+            try {
+                val webUri = Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving")
+                context.startActivity(Intent(Intent.ACTION_VIEW, webUri).apply { flags = Intent.FLAG_ACTIVITY_NEW_TASK })
+            } catch (_: Exception) {
+                Toast.makeText(context, "Fadlan fur app-ka Google Maps", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     // Nearest intersection (Current intersection where the driver is located / starting from)
     val currentOrNearestIntersection = remember(intersections, userLocation) {
         val uLat = userLocation?.first ?: 2.0371
         val uLng = userLocation?.second ?: 45.3283
         intersections.minByOrNull { item ->
-            com.example.somalitraffic.data.repository.IntersectionSearchEngine.calculateDistanceInMeters(
-                uLat, uLng, item.latitude, item.longitude
-            )
+            calcDistMeters(uLat, uLng, item.latitude, item.longitude)
         }
     }
 
@@ -126,45 +171,85 @@ fun LiveTrafficMapScreen(
         else {
             val uLat = userLocation?.first ?: 2.0371
             val uLng = userLocation?.second ?: 45.3283
-            com.example.somalitraffic.data.repository.IntersectionSearchEngine.calculateDistanceInMeters(
-                uLat, uLng, currentOrNearestIntersection.latitude, currentOrNearestIntersection.longitude
-            )
+            calcDistMeters(uLat, uLng, currentOrNearestIntersection.latitude, currentOrNearestIntersection.longitude)
         }
     }
 
-    // Next upcoming intersection (The immediate next intersection ahead on the route e.g. Zoobe when starting from KM4)
-    val nextUpcomingIntersection = remember(intersections, currentOrNearestIntersection, userLocation) {
+    // Next upcoming intersection ahead (Smart detection: Bearing-driven direction of travel + corridor map)
+    val nextUpcomingIntersection = remember(intersections, currentOrNearestIntersection, userLocation, driverBearing, driverSpeedKmh) {
         if (currentOrNearestIntersection == null) null
         else {
-            // Priority 1: Check connecting roads / corridor neighbors
-            val cName = currentOrNearestIntersection.name.lowercase()
-            val candidate = when {
-                cName.contains("km4") -> intersections.find { it.name.lowercase().contains("zoobe") }
-                    ?: intersections.find { it.name.lowercase().contains("shaqaalaha") }
-                cName.contains("zoobe") -> intersections.find { it.name.lowercase().contains("banaadir") }
-                    ?: intersections.find { it.name.lowercase().contains("km4") }
-                cName.contains("banaadir") -> intersections.find { it.name.lowercase().contains("tarbuunka") }
-                    ?: intersections.find { it.name.lowercase().contains("zoobe") }
-                cName.contains("tarbuunka") -> intersections.find { it.name.lowercase().contains("bakaraha") || it.name.lowercase().contains("bakaaraha") }
-                    ?: intersections.find { it.name.lowercase().contains("banaadir") }
-                cName.contains("shaqaalaha") -> intersections.find { it.name.lowercase().contains("dabka") }
-                    ?: intersections.find { it.name.lowercase().contains("km4") }
-                cName.contains("dabka") -> intersections.find { it.name.lowercase().contains("sayidka") }
-                    ?: intersections.find { it.name.lowercase().contains("shaqaalaha") }
+            val uLat = userLocation?.first ?: 2.0371
+            val uLng = userLocation?.second ?: 45.3283
+            val cName = currentOrNearestIntersection.name.lowercase(java.util.Locale.US)
+
+            // 1. Major road connection networks for Mogadishu
+            val connectedCandidates = when {
+                cName.contains("km4") -> intersections.filter {
+                    val n = it.name.lowercase(java.util.Locale.US)
+                    n.contains("zoobe") || n.contains("shaqaalaha") || n.contains("taleex") || n.contains("dabka") || n.contains("tarbuunka")
+                }
+                cName.contains("zoobe") -> intersections.filter {
+                    val n = it.name.lowercase(java.util.Locale.US)
+                    n.contains("banaadir") || n.contains("km4") || n.contains("digfeer") || n.contains("taleex")
+                }
+                cName.contains("banaadir") -> intersections.filter {
+                    val n = it.name.lowercase(java.util.Locale.US)
+                    n.contains("tarbuunka") || n.contains("zoobe") || n.contains("black sea") || n.contains("bakaraha")
+                }
+                cName.contains("tarbuunka") -> intersections.filter {
+                    val n = it.name.lowercase(java.util.Locale.US)
+                    n.contains("bakaraha") || n.contains("bakaaraha") || n.contains("banaadir") || n.contains("km4")
+                }
+                cName.contains("shaqaalaha") -> intersections.filter {
+                    val n = it.name.lowercase(java.util.Locale.US)
+                    n.contains("dabka") || n.contains("km4") || n.contains("sayidka")
+                }
+                cName.contains("dabka") -> intersections.filter {
+                    val n = it.name.lowercase(java.util.Locale.US)
+                    n.contains("sayidka") || n.contains("shaqaalaha") || n.contains("bakaraha")
+                }
+                cName.contains("sayidka") -> intersections.filter {
+                    val n = it.name.lowercase(java.util.Locale.US)
+                    n.contains("dabka") || n.contains("taalada sayidka") || n.contains("maka al-mukarama")
+                }
+                else -> emptyList()
+            }
+
+            // 2. If moving with speed and valid bearing, pick connected candidate matching direction of travel
+            val candidateByBearing = if (driverSpeedKmh > 3.0 && driverBearing != 0f && connectedCandidates.isNotEmpty()) {
+                connectedCandidates.minByOrNull { item ->
+                    val bearingToItem = calcBearing(uLat, uLng, item.latitude, item.longitude)
+                    diffBearing(driverBearing, bearingToItem)
+                }?.takeIf {
+                    val bearingToItem = calcBearing(uLat, uLng, it.latitude, it.longitude)
+                    diffBearing(driverBearing, bearingToItem) < 70f
+                }
+            } else null
+
+            // 3. Fallback to default Mogadishu primary corridor progression
+            val candidateByCorridor = when {
+                cName.contains("km4") -> intersections.find { it.name.lowercase(java.util.Locale.US).contains("zoobe") }
+                    ?: intersections.find { it.name.lowercase(java.util.Locale.US).contains("shaqaalaha") }
+                cName.contains("zoobe") -> intersections.find { it.name.lowercase(java.util.Locale.US).contains("banaadir") }
+                    ?: intersections.find { it.name.lowercase(java.util.Locale.US).contains("km4") }
+                cName.contains("banaadir") -> intersections.find { it.name.lowercase(java.util.Locale.US).contains("tarbuunka") }
+                    ?: intersections.find { it.name.lowercase(java.util.Locale.US).contains("zoobe") }
+                cName.contains("tarbuunka") -> intersections.find { it.name.lowercase(java.util.Locale.US).contains("bakaraha") || it.name.lowercase(java.util.Locale.US).contains("bakaaraha") }
+                    ?: intersections.find { it.name.lowercase(java.util.Locale.US).contains("banaadir") }
+                cName.contains("shaqaalaha") -> intersections.find { it.name.lowercase(java.util.Locale.US).contains("dabka") }
+                    ?: intersections.find { it.name.lowercase(java.util.Locale.US).contains("km4") }
+                cName.contains("dabka") -> intersections.find { it.name.lowercase(java.util.Locale.US).contains("sayidka") }
+                    ?: intersections.find { it.name.lowercase(java.util.Locale.US).contains("shaqaalaha") }
                 else -> null
             }
-            // Fallback: The second closest intersection to the driver
-            candidate ?: run {
-                val uLat = userLocation?.first ?: 2.0371
-                val uLng = userLocation?.second ?: 45.3283
-                intersections
-                    .filter { it.id != currentOrNearestIntersection.id }
-                    .minByOrNull { item ->
-                        com.example.somalitraffic.data.repository.IntersectionSearchEngine.calculateDistanceInMeters(
-                            uLat, uLng, item.latitude, item.longitude
-                        )
-                    }
-            }
+
+            // 4. Fallback to closest neighboring intersection
+            candidateByBearing ?: candidateByCorridor ?: intersections
+                .filter { it.id != currentOrNearestIntersection.id }
+                .minByOrNull { item ->
+                    calcDistMeters(uLat, uLng, item.latitude, item.longitude)
+                }
         }
     }
 
@@ -174,11 +259,13 @@ fun LiveTrafficMapScreen(
         else {
             val uLat = userLocation?.first ?: 2.0371
             val uLng = userLocation?.second ?: 45.3283
-            com.example.somalitraffic.data.repository.IntersectionSearchEngine.calculateDistanceInMeters(
-                uLat, uLng, nextUpcomingIntersection.latitude, nextUpcomingIntersection.longitude
-            )
+            calcDistMeters(uLat, uLng, nextUpcomingIntersection.latitude, nextUpcomingIntersection.longitude)
         }
     }
+
+    val nextStatus = com.example.somalitraffic.data.model.TrafficStatus.fromString(nextUpcomingIntersection?.currentStatus)
+    val isSevereAhead = nextStatus == com.example.somalitraffic.data.model.TrafficStatus.JAAM ||
+            nextStatus == com.example.somalitraffic.data.model.TrafficStatus.XERAN
 
     // Both current and next intersections blink on the map so the driver sees both immediately
     val effectiveBlinkingIds = remember(selectedIntersection, currentOrNearestIntersection, nextUpcomingIntersection) {
@@ -205,6 +292,72 @@ fun LiveTrafficMapScreen(
                         }
                     }
             } catch (_: SecurityException) {}
+        }
+    }
+
+    // ✅ CONTINUOUS HIGH-ACCURACY GPS TRACKING FOR DRIVER
+    DisposableEffect(context) {
+        val hasFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val hasCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+        val fused = LocationServices.getFusedLocationProviderClient(context)
+        var callback: LocationCallback? = null
+
+        if (hasFine || hasCoarse) {
+            val req = LocationRequest.Builder(
+                Priority.PRIORITY_HIGH_ACCURACY,
+                2_000L
+            ).setMinUpdateIntervalMillis(1_000L)
+                .setMinUpdateDistanceMeters(2f)
+                .build()
+
+            val cb = object : LocationCallback() {
+                override fun onLocationResult(result: LocationResult) {
+                    val loc = result.lastLocation ?: return
+                    viewModel.setUserLocation(loc.latitude, loc.longitude)
+                    if (loc.hasSpeed()) {
+                        driverSpeedKmh = loc.speed * 3.6
+                    }
+                    if (loc.hasBearing()) {
+                        driverBearing = loc.bearing
+                    }
+                }
+            }
+            callback = cb
+            try {
+                fused.requestLocationUpdates(req, cb, android.os.Looper.getMainLooper())
+            } catch (_: SecurityException) {}
+        } else {
+            permissionLauncher.launch(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            )
+        }
+
+        onDispose {
+            callback?.let {
+                try {
+                    fused.removeLocationUpdates(it)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    // ✅ EARLY WARNING AUDIO CHIME: Beeps once when driver is within 950m of a JAMMED or CLOSED road ahead
+    LaunchedEffect(nextUpcomingIntersection?.id, nextStatus, nextDistanceMeters, isAudioAlertEnabled) {
+        if (isAudioAlertEnabled && isSevereAhead && nextUpcomingIntersection != null) {
+            val dist = nextDistanceMeters ?: Double.MAX_VALUE
+            if (dist <= 950.0 && lastAlertedIntersectionId != nextUpcomingIntersection.id) {
+                lastAlertedIntersectionId = nextUpcomingIntersection.id
+                ArrivalSoundManager.playSingleHornBeep(context)
+            }
+        }
+    }
+
+    // ✅ FAST 15-SECOND AUTO-REFRESH: Automatically pulls latest reporter updates from Supabase
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(15_000L)
+            viewModel.refreshTrafficData()
         }
     }
 
@@ -296,41 +449,54 @@ fun LiveTrafficMapScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Segmented Tabs from blueprint
+                // Waddooyinka Xiran Action Card
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    shadowElevation = 4.dp,
-                    modifier = Modifier.fillMaxWidth()
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (mapMode == TrafficMapMode.ROAD_CLOSURES) GoBajaajNavy else Color.White,
+                    shadowElevation = 3.dp,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (mapMode == TrafficMapMode.ROAD_CLOSURES) GoBajaajAmber else Color(0xFFE2E8F0)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            mapMode = if (mapMode == TrafficMapMode.ROAD_CLOSURES) TrafficMapMode.TRAFFIC else TrafficMapMode.ROAD_CLOSURES
+                        }
                 ) {
                     Row(
-                        modifier = Modifier.padding(4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        SegmentTab(
-                            title = "Bajaaj",
-                            iconDrawableRes = com.example.R.drawable.ic_bajaaj_icon,
-                            isSelected = mapMode == TrafficMapMode.RIDES,
-                            onClick = {
-                                mapMode = TrafficMapMode.RIDES
-                                onNavigate("ride")
-                            },
-                            modifier = Modifier.weight(1f)
+                        Icon(
+                            imageVector = Icons.Default.Construction,
+                            contentDescription = null,
+                            tint = if (mapMode == TrafficMapMode.ROAD_CLOSURES) GoBajaajAmber else Color(0xFFDC2626),
+                            modifier = Modifier.size(18.dp)
                         )
-                        SegmentTab(
-                            title = "Waddooyinka",
-                            icon = Icons.Default.Traffic,
-                            isSelected = mapMode == TrafficMapMode.TRAFFIC,
-                            onClick = { mapMode = TrafficMapMode.TRAFFIC },
-                            modifier = Modifier.weight(1.1f)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (mapMode == TrafficMapMode.ROAD_CLOSURES) "Waddooyinka Xiran (Furantahay)" else "Waddooyinka Xiran",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (mapMode == TrafficMapMode.ROAD_CLOSURES) Color.White else BrandBlack
                         )
-                        SegmentTab(
-                            title = "Waddo Xiran",
-                            icon = Icons.Default.Construction,
-                            isSelected = mapMode == TrafficMapMode.ROAD_CLOSURES,
-                            onClick = { mapMode = TrafficMapMode.ROAD_CLOSURES },
-                            modifier = Modifier.weight(1.1f)
-                        )
+                        if (roadClosures.isNotEmpty()) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFDC2626)
+                            ) {
+                                Text(
+                                    text = "${roadClosures.size}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -389,36 +555,84 @@ fun LiveTrafficMapScreen(
                                             overflow = TextOverflow.Ellipsis
                                         )
                                         Text(
-                                            text = "Ka fiirso saxmadda waddooyinka inta aadan bixin",
+                                            text = "Hubi Saxmadda Jidadka",
                                             fontSize = 9.5.sp,
                                             color = Color(0xFF64748B),
-                                            fontWeight = FontWeight.Medium
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(20.dp),
-                                    color = Color(0xFFF0FDF4),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBBF7D0))
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                    if (driverSpeedKmh > 2.0) {
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = GoBajaajNavy
+                                        ) {
+                                            Text(
+                                                text = "⚡ ${driverSpeedKmh.toInt()} km/h",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = GoBajaajAmber,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(5.dp))
+                                    }
+                                    // Sound alert mute/unmute toggle button
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = if (isAudioAlertEnabled) Color(0xFFFEF3C7) else Color(0xFFF1F5F9),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isAudioAlertEnabled) Color(0xFFFDE68A) else Color(0xFFCBD5E1)),
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape)
+                                            .clickable {
+                                                isAudioAlertEnabled = !isAudioAlertEnabled
+                                                Toast.makeText(
+                                                    context,
+                                                    if (isAudioAlertEnabled) "Digniinta codka waa shidan tahay 🔔" else "Digniinta codka waa damisan tahay 🔕",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
                                     ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(7.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(0xFF16A34A))
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "GPS TOOS AH",
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color(0xFF15803D)
-                                        )
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = if (isAudioAlertEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                                                contentDescription = "Digniinta Codka",
+                                                tint = if (isAudioAlertEnabled) Color(0xFFD97706) else Color(0xFF64748B),
+                                                modifier = Modifier.size(13.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(5.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = Color(0xFFF0FDF4),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBBF7D0))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(6.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFF16A34A))
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "GPS TOOS",
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color(0xFF15803D)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -580,9 +794,8 @@ fun LiveTrafficMapScreen(
                                     if (nextDistanceMeters < 1000) "${nextDistanceMeters.toInt()}m" else String.format(java.util.Locale.US, "%.1fkm", nextDistanceMeters / 1000.0)
                                 } else "Ku xigta"
 
-                                val isSevere = nextStatus == com.example.somalitraffic.data.model.TrafficStatus.SAXMAD_BADAN ||
-                                        nextStatus == com.example.somalitraffic.data.model.TrafficStatus.MASHQUUL ||
-                                        nextStatus == com.example.somalitraffic.data.model.TrafficStatus.XIRAN
+val isSevere = nextStatus == com.example.somalitraffic.data.model.TrafficStatus.JAAM ||
+        nextStatus == com.example.somalitraffic.data.model.TrafficStatus.XERAN
 
                                 val nextCardBg = if (isSevere) Color(0xFFFFF1F2) else Color(0xFFF0FDF4)
                                 val nextBorderColor = if (isSevere) Color(0xFFFDA4AF) else Color(0xFF86EFAC)
@@ -697,6 +910,117 @@ fun LiveTrafficMapScreen(
 
                                             // Refined Modern Status Badge for Next Road
                                             ModernTrafficBadge(status = nextStatus, label = nextUpcomingIntersection.currentStatus)
+                                        }
+
+                                        // Flashing Early Warning Banner if Next Road is JAAM / XERAN
+                                        if (isSevere) {
+                                            Spacer(modifier = Modifier.height(10.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(10.dp),
+                                                color = Color(0xFFFFE4E6),
+                                                border = androidx.compose.foundation.BorderStroke(1.2.dp, Color(0xFFF43F5E)),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text(text = "🚨", fontSize = 15.sp)
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text(
+                                                            text = "DIGNIIN: ${nextUpcomingIntersection.name.uppercase()} WAA ${nextUpcomingIntersection.currentStatus.uppercase()}!",
+                                                            fontSize = 11.5.sp,
+                                                            fontWeight = FontWeight.Black,
+                                                            color = Color(0xFF9F1239)
+                                                        )
+                                                    }
+                                                    Spacer(modifier = Modifier.height(3.dp))
+                                                    if (!nextUpcomingIntersection.alternativeRoute.isNullOrBlank()) {
+                                                        Text(
+                                                            text = "💡 Waddo kale: ${nextUpcomingIntersection.alternativeRoute}",
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = Color(0xFF881337)
+                                                        )
+                                                    } else {
+                                                        Text(
+                                                            text = "Fadlan ka leexo inta aadan gaarin ($nextDistLabel kaa horeeya)",
+                                                            fontSize = 9.5.sp,
+                                                            color = Color(0xFF9F1239),
+                                                            fontWeight = FontWeight.Medium
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Reporter Verification Badge & Live Status Timestamp
+                                        if (nextUpcomingIntersection.verifiedByReporter || !nextUpcomingIntersection.latestVerifiedReport.isNullOrBlank()) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(6.dp),
+                                                    color = Color(0xFFECFDF5),
+                                                    border = androidx.compose.foundation.BorderStroke(0.8.dp, Color(0xFFA7F3D0))
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(
+                                                            text = "✓ XAQIIJIYAY WARIYE (LIVE)",
+                                                            fontSize = 8.5.sp,
+                                                            fontWeight = FontWeight.Black,
+                                                            color = Color(0xFF047857),
+                                                            letterSpacing = 0.3.sp
+                                                        )
+                                                    }
+                                                }
+                                                if (!nextUpcomingIntersection.latestVerifiedReport.isNullOrBlank()) {
+                                                    Text(
+                                                        text = nextUpcomingIntersection.latestVerifiedReport ?: "",
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = Color(0xFF64748B),
+                                                        maxLines = 1,
+                                                        overflow = TextOverflow.Ellipsis
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        // 1-Tap Google Maps Navigation to this Intersection
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Button(
+                                            onClick = {
+                                                openGoogleMapsForIntersection(
+                                                    nextUpcomingIntersection.latitude,
+                                                    nextUpcomingIntersection.longitude,
+                                                    nextUpcomingIntersection.name
+                                                )
+                                            },
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = if (isSevere) Color(0xFFE11D48) else GoBajaajNavy,
+                                                contentColor = Color.White
+                                            ),
+                                            shape = RoundedCornerShape(10.dp),
+                                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 7.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Directions,
+                                                contentDescription = null,
+                                                tint = GoBajaajAmber,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "🗺️ U Fur Google Maps (${nextUpcomingIntersection.name})",
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
                                         }
                                     }
                                 }
@@ -1121,7 +1445,7 @@ fun LiveTrafficMapScreen(
             }
 
             // Lock Barrier Modal if Driver Pass is Expired
-            if (isDriver && subscription != null && !isPassActive) {
+            if (isDriver && !isPassActive) {
                 AlertDialog(
                     onDismissRequest = { onNavigate("home") },
                     icon = {
@@ -1231,24 +1555,18 @@ private fun ModernTrafficBadge(
             Color(0xFF15803D),
             Icons.Default.CheckCircle
         )
-        com.example.somalitraffic.data.model.TrafficStatus.DHEXDHEXAAD -> Quadruple(
+        com.example.somalitraffic.data.model.TrafficStatus.NORMAL -> Quadruple(
             androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFFEF9C3), Color(0xFFFEF08A))),
             Color(0xFFFDE047),
             Color(0xFF854D0E),
             Icons.Default.Warning
         )
-        com.example.somalitraffic.data.model.TrafficStatus.SAXMAD_BADAN,
-        com.example.somalitraffic.data.model.TrafficStatus.MASHQUUL -> Quadruple(
+        com.example.somalitraffic.data.model.TrafficStatus.JAAM,
+        com.example.somalitraffic.data.model.TrafficStatus.XERAN -> Quadruple(
             androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFFEF4444), Color(0xFFDC2626))),
             Color(0xFFB91C1C),
             Color.White,
             Icons.Default.Dangerous
-        )
-        com.example.somalitraffic.data.model.TrafficStatus.XIRAN -> Quadruple(
-            androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF1E293B), Color(0xFF0F172A))),
-            Color(0xFF334155),
-            Color.White,
-            Icons.Default.Block
         )
     }
 

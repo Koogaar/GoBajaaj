@@ -1,12 +1,15 @@
 package com.example.somalitraffic.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.somalitraffic.data.model.UserRole
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
@@ -22,15 +25,32 @@ fun SomaliTrafficNavHost(
     AutomaticLocationChecker()
     val currentUser by viewModel.currentUser.collectAsState()
     val subscription by viewModel.subscription.collectAsState()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+
+    // ---- 24h Driver Pass lockdown: ONLY Drivers are locked out once the free
+    // 24-hour window (or their paid period) expires until a new pass is approved.
+    // Passengers (macaamiisha) and Admins NEVER get locked by Driver Pass.
+    val role = currentUser?.role
+    val isDriver = role == UserRole.DRIVER
+    val subscriptionActive = viewModel.isSubscriptionActive(subscription)
+    val loggedIn = currentUser != null
+    val locked = loggedIn && isDriver && !subscriptionActive
+    val topRoute = navBackStackEntry?.destination?.route
+    val lockExempt = topRoute == null || topRoute == NavRoutes.SPLASH || topRoute == NavRoutes.ONBOARDING ||
+        topRoute == NavRoutes.LOGIN || topRoute == NavRoutes.SIGN_UP ||
+        topRoute == NavRoutes.REGISTRATION_FORM || topRoute == NavRoutes.DRIVER_PASS ||
+        topRoute == NavRoutes.ADMIN_DASHBOARD || topRoute == NavRoutes.REPORTER_DASHBOARD
+    val showLock = locked && !lockExempt
 
     val safeNavigate: (String) -> Unit = { route ->
         navController.navigate(route)
     }
 
-    NavHost(
-        navController = navController,
-        startDestination = NavRoutes.SPLASH
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        NavHost(
+            navController = navController,
+            startDestination = NavRoutes.SPLASH
+        ) {
         // Screen 1: Splash
         composable(NavRoutes.SPLASH) {
             SplashScreen(
@@ -69,7 +89,7 @@ fun SomaliTrafficNavHost(
                         UserRole.TRAFFIC_MANAGER,
                         UserRole.REPORTER_MANAGER,
                         UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
-                        UserRole.DRIVER -> NavRoutes.HOME
+                        UserRole.DRIVER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
                         UserRole.PASSENGER -> NavRoutes.RIDE
                         else -> NavRoutes.RIDE
                     }
@@ -100,8 +120,8 @@ fun SomaliTrafficNavHost(
                 initialIsDriver = isDriver,
                 onBackClick = { navController.popBackStack() },
                 onSignUpSuccess = {
-                    val currentUser = viewModel.currentUser.value
-                    val isDriverRole = currentUser?.role == UserRole.DRIVER || isDriver
+                    val user = viewModel.currentUser.value
+                    val isDriverRole = if (user != null) user.role == UserRole.DRIVER else isDriver
                     if (isDriverRole) {
                         navController.navigate(NavRoutes.DRIVER_PASS) {
                             popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
@@ -124,7 +144,11 @@ fun SomaliTrafficNavHost(
                         popUpTo(NavRoutes.DRIVER_PASS) { inclusive = true }
                     }
                 },
-                onBackClick = { navController.popBackStack() }
+                onBackClick = {
+                    if (viewModel.isSubscriptionActive()) {
+                        navController.popBackStack()
+                    }
+                }
             )
         }
 
@@ -235,4 +259,31 @@ fun SomaliTrafficNavHost(
             )
         }
     }
+
+    if (showLock) {
+        DriverPassLockScreen(
+            viewModel = viewModel,
+            onPayNow = {
+                try {
+                    navController.navigate(NavRoutes.DRIVER_PASS) {
+                        popUpTo(NavRoutes.HOME) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("SomaliTrafficNavHost", "Navigate to DRIVER_PASS error", e)
+                }
+            },
+            onCheckAgain = {
+                viewModel.syncCurrentSubscription()
+            },
+            onLogout = {
+                viewModel.logout {
+                    navController.navigate(NavRoutes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            }
+        )
+    }
+}
 }

@@ -1,6 +1,7 @@
 package com.example.somalitraffic.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.somalitraffic.data.model.TrafficStatus
@@ -70,9 +72,8 @@ fun TrafficStatusBadge(
     val trafficStatus = TrafficStatus.fromString(status)
     val (bgColor, textColor, icon) = when (trafficStatus) {
         TrafficStatus.FURAN -> Triple(Color(0xFFDCFCE7), Color(0xFF16A34A), Icons.Default.CheckCircle)
-        TrafficStatus.DHEXDHEXAAD -> Triple(Color(0xFFFEF9C3), Color(0xFFCA8A04), Icons.Default.Warning)
-        TrafficStatus.MASHQUUL, TrafficStatus.SAXMAD_BADAN -> Triple(Color(0xFFFEE2E2), Color(0xFFE50914), Icons.Default.Traffic)
-        TrafficStatus.XIRAN -> Triple(Color(0xFFE5E5E5), Color(0xFF000000), Icons.Default.Block)
+        TrafficStatus.NORMAL -> Triple(Color(0xFFFEF9C3), Color(0xFFCA8A04), Icons.Default.Warning)
+        TrafficStatus.JAAM, TrafficStatus.XERAN -> Triple(Color(0xFFFEE2E2), Color(0xFFE50914), Icons.Default.Traffic)
     }
 
     Surface(
@@ -181,82 +182,163 @@ fun LoadingStateView(message: String = "Fadlan sug... Xogta ayaa la soo dejinaya
     }
 }
 
+// ─── Design-ka Cusub: Urban Mobility Dark Bottom Nav ────────────────────────
+// 4 tabs isku mid ah labada role (Driver + Passenger):
+//   Guudmar · Khariiradda · Dalbo · Akoonka
+// Active tab = casaan pill indicator + casaan icon/label
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val NavBgDark      = Color(0xFF0F131C)  // surface
+private val NavContainerLow = Color(0xFF181C24) // surface-container-low
+private val NavActiveRed   = Color(0xFFE50914)  // primary-container
+private val NavActiveRedBg = Color(0x26E50914)  // primary-container/15
+private val NavTextActive  = Color(0xFFDFE2EE)  // on-surface
+private val NavTextInactive = Color(0x99DFE2EE) // on-surface-variant
+
 @Composable
 fun SomaliBottomNavigation(
     currentRoute: String,
     onNavigate: (String) -> Unit,
     isDriver: Boolean = false
 ) {
-    val navColors = NavigationBarItemDefaults.colors(
-        selectedIconColor = GoBajaajBlue,
-        selectedTextColor = GoBajaajBlue,
-        indicatorColor = GoBajaajBlueLight,
-        unselectedIconColor = TextMutedDark,
-        unselectedTextColor = TextMutedDark
+    val tabs = listOf(
+        Triple("home",            Icons.Filled.Dashboard,      "Guudmar"),
+        Triple("live_traffic",   Icons.Filled.Map,            "Khariiradda"),
+        Triple("ride",           Icons.Filled.ElectricRickshaw, if (isDriver) "Dalabaadka" else "Dalbo"),
+        Triple("profile_settings", Icons.Filled.AccountCircle, "Akoonka")
     )
 
-    NavigationBar(
-        containerColor = Color.White,
-        tonalElevation = 8.dp,
-        windowInsets = NavigationBarDefaults.windowInsets
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(NavBgDark)
+            .navigationBarsPadding()
     ) {
-        // 1. Home
-        NavigationBarItem(
-            selected = currentRoute == "home",
-            onClick = { onNavigate("home") },
-            icon = {
-                Icon(
-                    imageVector = if (currentRoute == "home") Icons.Filled.Home else Icons.Outlined.Home,
-                    contentDescription = "Home"
-                )
-            },
-            label = { Text("Home", fontSize = 10.sp, fontWeight = if (currentRoute == "home") FontWeight.Bold else FontWeight.Medium) },
-            colors = navColors
+        // Top divider line subtle
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color.White.copy(alpha = 0.06f))
+                .align(Alignment.TopCenter)
         )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEach { (route, icon, label) ->
+                val selected = currentRoute == route
+                val iconTint = if (selected) NavActiveRed else NavTextInactive
+                val labelColor = if (selected) NavTextActive else NavTextInactive
+                val labelWeight = if (selected) FontWeight.Bold else FontWeight.Normal
 
-        // 2. Ride (Dalbo / Dalabaadka)
-        NavigationBarItem(
-            selected = currentRoute == "ride",
-            onClick = { onNavigate("ride") },
-            icon = {
-                Icon(
-                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_bajaaj_icon),
-                    contentDescription = "Ride",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text(if (isDriver) "Dalabaadka" else "Dalbo", fontSize = 10.sp, fontWeight = if (currentRoute == "ride") FontWeight.Bold else FontWeight.Medium) },
-            colors = navColors
-        )
-
-        // 3. Waddooyinka (Saxmadda) - ONLY FOR DRIVERS
-        if (isDriver) {
-            NavigationBarItem(
-                selected = currentRoute == "live_traffic",
-                onClick = { onNavigate("live_traffic") },
-                icon = {
-                    Icon(
-                        imageVector = if (currentRoute == "live_traffic") Icons.Filled.Traffic else Icons.Outlined.Traffic,
-                        contentDescription = "Waddooyinka"
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable { onNavigate(route) }
+                        .testTag("nav_${label.lowercase().replace(" ", "_")}"),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Active indicator pill behind icon
+                    Box(
+                        modifier = Modifier
+                            .width(48.dp)
+                            .height(28.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(if (selected) NavActiveRedBg else Color.Transparent),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (selected) icon else when (icon) {
+                                Icons.Filled.Dashboard      -> Icons.Outlined.Dashboard
+                                Icons.Filled.Map            -> Icons.Outlined.Map
+                                Icons.Filled.ElectricRickshaw -> Icons.Filled.ElectricRickshaw
+                                Icons.Filled.AccountCircle  -> Icons.Outlined.AccountCircle
+                                else                        -> icon
+                            },
+                            contentDescription = label,
+                            tint = iconTint,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = label,
+                        fontSize = 10.sp,
+                        fontWeight = labelWeight,
+                        color = labelColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                },
-                label = { Text("Waddooyinka", fontSize = 10.sp, fontWeight = if (currentRoute == "live_traffic") FontWeight.Bold else FontWeight.Medium) },
-                colors = navColors
-            )
+                }
+            }
         }
+    }
+}
 
-        // 4. Profile
-        NavigationBarItem(
-            selected = currentRoute == "profile_settings",
-            onClick = { onNavigate("profile_settings") },
-            icon = {
+// ─── Driver Secondary Tab Bar (Shaqada · Khariiradda · Driver Pass · Dakhliga) ─
+// Tan waa contextual tabs gudaha HomeDashboardScreen ee darwalka
+@Composable
+fun DriverSecondaryTabBar(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val tabs = listOf(
+        Pair(Icons.Filled.Work,                "Shaqada"),
+        Pair(Icons.Outlined.Explore,           "Khariiradda"),
+        Pair(Icons.Filled.ConfirmationNumber,  "Driver Pass"),
+        Pair(Icons.Filled.AccountBalanceWallet,"Dakhliga")
+    )
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFF181C24)) // surface-container-low
+            .padding(6.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        tabs.forEachIndexed { index, (icon, label) ->
+            val isSelected = selectedTab == index
+            val bgColor = if (isSelected) Color(0xFF262A33) else Color.Transparent
+            val iconTint = if (isSelected) Color(0xFF4EDEA3) else Color(0x99DFE2EE)
+            val textColor = if (isSelected) Color(0xFFDFE2EE) else Color(0x99DFE2EE)
+            val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(bgColor)
+                    .clickable { onTabSelected(index) }
+                    .padding(vertical = 8.dp, horizontal = 2.dp)
+                    .testTag("driver_tab_$index"),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Icon(
-                    imageVector = if (currentRoute == "profile_settings") Icons.Filled.Person else Icons.Outlined.Person,
-                    contentDescription = "Profile"
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
                 )
-            },
-            label = { Text("Profile", fontSize = 10.sp, fontWeight = if (currentRoute == "profile_settings") FontWeight.Bold else FontWeight.Medium) },
-            colors = navColors
-        )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = label,
+                    fontSize = 10.sp,
+                    fontWeight = fontWeight,
+                    color = textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }

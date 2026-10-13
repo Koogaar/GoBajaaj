@@ -30,11 +30,15 @@ import {
   Bike,
   Volume2,
   VolumeX,
-  Bell
+  Bell,
+  Megaphone,
+  Trash2,
+  ShieldOff,
+  ShieldCheck
 } from 'lucide-react';
 import { supabase } from './supabase';
 import { soundAlert } from './utils/soundAlert';
-import { AdminUser, Profile, AdminRole } from './types';
+import { AdminUser, Profile, AdminRole, MarketingAgent } from './types';
 import { ADMIN_ROLES, hasPermission, getRoleDisplay } from './rbac';
 import { LoginScreen } from './components/LoginScreen';
 import { AdminManagement } from './components/AdminManagement';
@@ -45,11 +49,37 @@ import { AnalyticsDashboard } from './components/AnalyticsDashboard';
 import { AuditLogsView } from './components/AuditLogsView';
 import { DeviceSupportManagement } from './components/DeviceSupportManagement';
 import { RideSupportManagement } from './components/RideSupportManagement';
+import { MarketingManagement } from './components/MarketingManagement';
+import { MarketerPortal } from './components/MarketerPortal';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
   const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(null);
+  const [marketingAgent, setMarketingAgent] = useState<MarketingAgent | null>(() => {
+    try {
+      const saved = localStorage.getItem('gobajaaj_marketing_agent');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const checkMarketingSession = () => {
+    try {
+      const saved = localStorage.getItem('gobajaaj_marketing_agent');
+      if (saved) {
+        setMarketingAgent(JSON.parse(saved));
+      }
+    } catch {
+      setMarketingAgent(null);
+    }
+  };
+
+  const handleMarketerLogout = () => {
+    localStorage.removeItem('gobajaaj_marketing_agent');
+    setMarketingAgent(null);
+  };
   
   // Tab State
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -79,6 +109,14 @@ export default function App() {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userFilter, setUserFilter] = useState<'all' | 'recent10' | 'driver' | 'user' | 'reporter'>('all');
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  // User action state
+  const [userActionModal, setUserActionModal] = useState<{
+    isOpen: boolean;
+    user: Profile | null;
+    action: 'delete' | 'suspend' | 'activate';
+    isProcessing: boolean;
+  }>({ isOpen: false, user: null, action: 'delete', isProcessing: false });
 
   // Sound Notification State
   const [isSoundOn, setIsSoundOn] = useState(soundAlert.isEnabled());
@@ -310,6 +348,39 @@ export default function App() {
     }
   };
 
+  const handleUserAction = async () => {
+    const { user, action } = userActionModal;
+    if (!user) return;
+    setUserActionModal(s => ({ ...s, isProcessing: true }));
+    try {
+      if (action === 'delete') {
+        await supabase.from('profiles').delete().eq('id', user.id);
+        await supabase.from('audit_logs').insert([{
+          actor_name: currentAdmin?.full_name || 'Admin',
+          action: 'DELETE_USER',
+          target_type: 'profile',
+          target_id: user.id,
+          metadata: { name: user.full_name, phone: user.phone_number }
+        }]).catch(() => {});
+      } else {
+        const newStatus = action === 'suspend' ? 'suspended' : 'active';
+        await supabase.from('profiles').update({ status: newStatus }).eq('id', user.id);
+        await supabase.from('audit_logs').insert([{
+          actor_name: currentAdmin?.full_name || 'Admin',
+          action: action === 'suspend' ? 'SUSPEND_USER' : 'ACTIVATE_USER',
+          target_type: 'profile',
+          target_id: user.id,
+          metadata: { name: user.full_name, phone: user.phone_number, new_status: newStatus }
+        }]).catch(() => {});
+      }
+      setUserActionModal({ isOpen: false, user: null, action: 'delete', isProcessing: false });
+      await fetchUsers();
+    } catch (err: any) {
+      alert('Cilad: ' + (err?.message || 'Ficilka kuma guulaysanin.'));
+      setUserActionModal(s => ({ ...s, isProcessing: false }));
+    }
+  };
+
   useEffect(() => {
     if (session && currentAdmin) {
       fetchOverviewMetrics(true);
@@ -361,13 +432,15 @@ export default function App() {
   }, [activeTab]);
 
   const handleLogout = async () => {
+    localStorage.removeItem('gobajaaj_marketing_agent');
+    setMarketingAgent(null);
     await supabase.auth.signOut();
     setSession(null);
     setCurrentAdmin(null);
   };
 
   // 1. Loading Initial State
-  if (isAuthChecking) {
+  if (isAuthChecking && !marketingAgent) {
     return (
       <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center p-4">
         <div className="w-16 h-16 border-4 border-[#E50914] border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -376,9 +449,14 @@ export default function App() {
     );
   }
 
-  // 2. Unauthenticated Screen
+  // 2. Marketer Portal: If logged in as Marketing Staff on Chrome, show dedicated portal
+  if (marketingAgent) {
+    return <MarketerPortal agent={marketingAgent} onLogout={handleMarketerLogout} />;
+  }
+
+  // 3. Unauthenticated Screen
   if (!session || !currentAdmin) {
-    return <LoginScreen onLoginSuccess={checkAuthSession} />;
+    return <LoginScreen onLoginSuccess={() => { checkAuthSession(); checkMarketingSession(); }} />;
   }
 
   // 3. Account Suspended / Disabled Screen
@@ -416,6 +494,7 @@ export default function App() {
     { id: 'payments', label: 'Lacagaha ($0.25 Pass)', icon: CreditCard, perm: hasPermission(role, 'payments.view') },
     { id: 'traffic', label: 'Saxmadda & Isgoysyada', icon: TrafficCone, perm: hasPermission(role, 'traffic.view') },
     { id: 'reporters', label: 'Shaqaalaha & Wariyeyaasha', icon: UserCheck, perm: hasPermission(role, 'reporters.view') },
+    { id: 'marketing', label: 'Suuq-geynta (Marketing)', icon: Megaphone, perm: hasPermission(role, 'marketing.view') || hasPermission(role, 'marketing.manage') },
     { id: 'analytics', label: 'Aqoonta Xogta (Analytics)', icon: BarChart3, perm: hasPermission(role, 'analytics.view') },
     { id: 'admins', label: 'Maamulayaasha', icon: Lock, perm: hasPermission(role, 'admins.view') },
     { id: 'audit', label: 'Audit Logs', icon: History, perm: hasPermission(role, 'audit_logs.view') },
@@ -982,20 +1061,50 @@ export default function App() {
                               </p>
                             </td>
                             <td className="p-4 text-right">
-                              {isDriver && !isPassActive && (
-                                <button
-                                  onClick={() => handleQuickApprovePass(u)}
-                                  disabled={isApproving}
-                                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow transition flex items-center space-x-1.5 ml-auto cursor-pointer"
-                                >
-                                  {isApproving ? (
-                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <div className="flex items-center justify-end space-x-1.5">
+                                {isDriver && !isPassActive && (
+                                  <button
+                                    onClick={() => handleQuickApprovePass(u)}
+                                    disabled={isApproving}
+                                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow transition flex items-center space-x-1 cursor-pointer"
+                                  >
+                                    {isApproving ? (
+                                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                    )}
+                                    <span>{isApproving ? 'Ansixinaya...' : 'Ansixi'}</span>
+                                  </button>
+                                )}
+                                {hasPermission(role, 'users.suspend') && (
+                                  u.status === 'suspended' ? (
+                                    <button
+                                      onClick={() => setUserActionModal({ isOpen: true, user: u, action: 'activate', isProcessing: false })}
+                                      className="p-1.5 hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 rounded-lg transition cursor-pointer"
+                                      title="Fur Akoonka"
+                                    >
+                                      <ShieldCheck className="w-4 h-4" />
+                                    </button>
                                   ) : (
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                  )}
-                                  <span>{isApproving ? 'Ansixinaya...' : '✓ Ansixi Pass'}</span>
-                                </button>
-                              )}
+                                    <button
+                                      onClick={() => setUserActionModal({ isOpen: true, user: u, action: 'suspend', isProcessing: false })}
+                                      className="p-1.5 hover:bg-amber-50 text-amber-500 hover:text-amber-700 rounded-lg transition cursor-pointer"
+                                      title="Haki Akoonka"
+                                    >
+                                      <ShieldOff className="w-4 h-4" />
+                                    </button>
+                                  )
+                                )}
+                                {hasPermission(role, 'users.delete') && (
+                                  <button
+                                    onClick={() => setUserActionModal({ isOpen: true, user: u, action: 'delete', isProcessing: false })}
+                                    className="p-1.5 hover:bg-red-50 text-red-400 hover:text-red-600 rounded-lg transition cursor-pointer"
+                                    title="Tirtir Akoonka"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1004,6 +1113,51 @@ export default function App() {
                   </table>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* User Action Confirmation Modal */}
+        {userActionModal.isOpen && userActionModal.user && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm border border-neutral-200 p-6 text-center">
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                userActionModal.action === 'delete' ? 'bg-red-100' : userActionModal.action === 'suspend' ? 'bg-amber-100' : 'bg-emerald-100'
+              }`}>
+                {userActionModal.action === 'delete'
+                  ? <Trash2 className="w-7 h-7 text-red-500" />
+                  : userActionModal.action === 'suspend'
+                  ? <ShieldOff className="w-7 h-7 text-amber-500" />
+                  : <ShieldCheck className="w-7 h-7 text-emerald-500" />}
+              </div>
+              <h3 className="text-base font-black text-black mb-2">
+                {userActionModal.action === 'delete' ? 'Tirtirista Xaqiiji' : userActionModal.action === 'suspend' ? 'Hakinta Xaqiiji' : 'Furista Xaqiiji'}
+              </h3>
+              <p className="text-xs text-neutral-600 mb-2">
+                Shaqaalaha: <strong>{userActionModal.user.full_name}</strong><br />
+                Taleefanka: <span className="font-mono">{userActionModal.user.phone_number}</span>
+              </p>
+              <p className="text-xs text-neutral-600 mb-6">
+                Ma hubtaa inaad rabto inaad <strong>{userActionModal.action === 'delete' ? 'tirtirto' : userActionModal.action === 'suspend' ? 'hakiso' : 'furto'}</strong> xisaabtan?
+                {userActionModal.action === 'delete' && <span className="text-red-600 block mt-1 font-bold">Ficilkan looma soo celin karo.</span>}
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setUserActionModal({ isOpen: false, user: null, action: 'delete', isProcessing: false })}
+                  className="flex-1 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-black text-sm font-bold rounded-xl transition cursor-pointer"
+                >
+                  Ka noqo
+                </button>
+                <button
+                  onClick={handleUserAction}
+                  disabled={userActionModal.isProcessing}
+                  className={`flex-1 py-2.5 text-white text-sm font-black rounded-xl transition cursor-pointer disabled:opacity-60 ${
+                    userActionModal.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : userActionModal.action === 'suspend' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'
+                  }`}
+                >
+                  {userActionModal.isProcessing ? 'Socda...' : 'Haa, Xaqiiji'}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1026,6 +1180,13 @@ export default function App() {
 
         {activeTab === 'reporters' && (
           <ReporterManagement actorName={currentAdmin.full_name} canManage={hasPermission(role, 'reporters.create')} />
+        )}
+
+        {activeTab === 'marketing' && (
+          <MarketingManagement
+            canManage={hasPermission(role, 'marketing.manage') || role === 'super_admin'}
+            actorName={currentAdmin.full_name}
+          />
         )}
 
         {activeTab === 'analytics' && (

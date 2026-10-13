@@ -230,6 +230,22 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
       }
     }
 
+    if (p.account_phone && p.account_phone !== p.phone_number) {
+      const { error: accErr } = await supabase
+        .from('profiles')
+        .update({
+          status: 'active',
+          subscription_status: 'active',
+          subscription_expiry: expiry.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('phone_number', p.account_phone);
+
+      if (accErr) {
+        console.warn(`Profile-ka account-ka ${p.account_phone} lama cusboonaysiin: ${accErr.message}`);
+      }
+    }
+
     // 5. Record Audit Log
     await supabase.from('audit_logs').insert([{
       actor_name: actorName,
@@ -387,6 +403,8 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
           const prof = profilesMap.get(p.user_id) || (p.phone_number ? profilesMap.get(p.phone_number) : null);
           const effectivePhone = p.phone_number || linkedSub?.sender_phone || prof?.phone_number || '';
           const driverName = prof?.full_name || (effectivePhone ? `Darawal (${effectivePhone.slice(-6)})` : `Darawal (${(p.user_id || '').slice(0, 6)})`);
+          const accountPhone = prof?.phone_number || '';
+          const senderPhone = p.phone_number || linkedSub?.sender_phone || '';
 
           return {
             id: p.id,
@@ -398,6 +416,8 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
             payment_method: p.payment_method || linkedSub?.payment_method || 'EVC Plus',
             reference_number: p.reference_number || (linkedSub?.payment_reference) || `REF_${p.id.slice(0, 8)}`,
             phone_number: effectivePhone,
+            account_phone: accountPhone,
+            sender_phone: senderPhone,
             status: p.status || 'pending',
             rejection_reason: p.rejection_reason || linkedSub?.rejection_reason,
             created_at: p.created_at
@@ -413,7 +433,9 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
             if (!alreadyExists) {
               const prof = profilesMap.get(s.user_id);
               const phoneMatch = s.payment_reference?.match(/\d{7,12}/)?.[0] || '';
-              const phone = s.sender_phone || prof?.phone_number || phoneMatch || '';
+              const sender = s.sender_phone || phoneMatch || '';
+              const account = prof?.phone_number || '';
+              const phone = sender || account || '';
               list.push({
                 id: s.id,
                 subscription_id: s.id,
@@ -424,6 +446,8 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
                 payment_method: s.payment_method || 'EVC Plus',
                 reference_number: s.payment_reference || `PASS_${s.id.slice(0, 8)}`,
                 phone_number: phone,
+                account_phone: account,
+                sender_phone: sender,
                 status: 'pending',
                 rejection_reason: s.rejection_reason,
                 created_at: s.created_at
@@ -964,15 +988,15 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
                           <div>
                             <div className="flex items-center space-x-1.5">
                               <span className="font-mono font-black text-black text-xs sm:text-sm">
-                                {p.phone_number || 'Lama gelin'}
+                                {p.sender_phone || p.phone_number || 'Lama gelin'}
                               </span>
-                              {p.phone_number && (
+                              {(p.sender_phone || p.phone_number) && (
                                 <button
-                                  onClick={() => handleCopyPhone(p.phone_number)}
+                                  onClick={() => handleCopyPhone(p.sender_phone || p.phone_number)}
                                   className="p-1 hover:bg-neutral-100 rounded text-neutral-400 hover:text-neutral-700 transition cursor-pointer"
-                                  title="Nuuxi lambarka"
+                                  title="Nuuxi lambarka lacagta laga soo diray"
                                 >
-                                  {copiedPhone === p.phone_number ? (
+                                  {copiedPhone === (p.sender_phone || p.phone_number) ? (
                                     <Check className="w-3.5 h-3.5 text-emerald-600" />
                                   ) : (
                                     <Copy className="w-3.5 h-3.5" />
@@ -987,7 +1011,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
                                   CUSUB (10 min)
                                 </span>
                               ) : (
-                                <p className="text-[10px] text-neutral-500">Ka hubi SMS-ka EVC/ZAAD</p>
+                                <p className="text-[10px] text-emerald-700 font-semibold">💳 Lacagta ka timid</p>
                               )}
                             </div>
                           </div>
@@ -995,7 +1019,26 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
                       </td>
                       <td className="p-4">
                         <p className="font-bold text-black text-xs">{p.user_name || `Darawal ${p.user_id.slice(0, 6)}`}</p>
-                        <p className="text-[10px] font-mono text-neutral-400">ID: {p.user_id.slice(0, 8)}</p>
+                        {p.account_phone ? (
+                          <div className="flex items-center space-x-1 mt-1">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[11px] font-mono font-bold border border-blue-200">
+                              📱 Akoon: {p.account_phone}
+                            </span>
+                            <button
+                              onClick={() => handleCopyPhone(p.account_phone!)}
+                              className="p-1 hover:bg-neutral-100 rounded text-neutral-400 hover:text-neutral-700 transition cursor-pointer"
+                              title="Nuuxi lambarka akoonka"
+                            >
+                              {copiedPhone === p.account_phone ? (
+                                <Check className="w-3 h-3 text-emerald-600" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-[10px] font-mono text-neutral-400 mt-0.5">ID: {p.user_id.slice(0, 8)}</p>
+                        )}
                       </td>
                       <td className="p-4">
                         {p.reference_number?.startsWith('TG-') ? (

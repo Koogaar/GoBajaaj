@@ -74,11 +74,11 @@ fun TrafficDetailsScreen(
             Column(modifier = Modifier.padding(20.dp)) {
                 // Status Row
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    val color = when (intersection.currentStatus) {
-                        "Furan" -> TrafficOpenGreen
-                        "Dhexdhexaad" -> TrafficModerateYellow
-                        "Mashquul" -> TrafficBusyOrange
-                        "Saxmad badan" -> TrafficHeavyRed
+                    val color = when (intersection.currentStatus.trim().lowercase()) {
+                        "furan" -> TrafficOpenGreen
+                        "normal" -> TrafficModerateYellow
+                        "jaam" -> TrafficBusyOrange
+                        "xeran" -> TrafficHeavyRed
                         else -> Color.Gray
                     }
                     Surface(

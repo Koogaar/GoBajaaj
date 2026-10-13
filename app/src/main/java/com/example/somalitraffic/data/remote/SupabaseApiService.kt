@@ -346,6 +346,48 @@ interface SupabaseApiService {
         @Body updates: @JvmSuppressWildcards Map<String, Any>
     ): Response<Unit>
 
+    // --- GoBajaaj Ride Matching / Live Tracking (backend RPC) ---
+    @POST("rest/v1/rpc/match_drivers_for_ride")
+    suspend fun matchDriversForRide(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Map<String, Any>>
+
+    @POST("rest/v1/rpc/release_ride_driver")
+    suspend fun releaseRideDriver(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Map<String, Any>>
+
+    @POST("rest/v1/rpc/finish_ride_tracking")
+    suspend fun finishRideTracking(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Map<String, Any>>
+
+    @GET("rest/v1/bajaj_rides")
+    suspend fun getRidesForDriver(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("driver_id") driverId: String,
+        @Query("status") statusFilter: String,
+        @Query("order") order: String = "created_at.desc",
+        @Query("limit") limit: Int = 5,
+        @Query("select") select: String = "*"
+    ): Response<List<Map<String, Any>>>
+
+    @POST("rest/v1/driver_presence")
+    suspend fun upsertDriverPresence(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Header("Prefer") prefer: String = "resolution=merge-duplicates,return=minimal",
+        @Query("on_conflict") onConflict: String = "driver_id",
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Unit>
+
     // Lost phone / device reporting sync
     @GET("rest/v1/devices")
     suspend fun getLostDevices(

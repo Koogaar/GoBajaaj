@@ -29,6 +29,37 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     setResetSuccess(null);
 
     try {
+      // 1. Check if user is a Marketing Staff member logging into the web app (Chrome)
+      try {
+        const { data: marketerRow } = await supabase
+          .from('marketing_staff')
+          .select('*')
+          .ilike('username', cleanUsername)
+          .maybeSingle();
+
+        if (marketerRow) {
+          if (marketerRow.password_hash !== cleanPassword) {
+            setErrorMsg('Username ama Furaha sirta ah ma saxna.');
+            setIsLoading(false);
+            return;
+          }
+
+          if (marketerRow.status === 'suspended' || marketerRow.status === 'disabled') {
+            setErrorMsg('Akoonkaaga suuq-geynta waa la hakiyay. Fadlan la xiriir Maamulka GoBajaaj.');
+            setIsLoading(false);
+            return;
+          }
+
+          // Save marketer session to localStorage for web app Chrome session
+          localStorage.setItem('gobajaaj_marketing_agent', JSON.stringify(marketerRow));
+          onLoginSuccess();
+          return;
+        }
+      } catch (marketerCheckErr) {
+        // If marketing_staff table does not exist yet or fails, fallback cleanly to admin auth
+        console.warn('Marketing staff check fallback:', marketerCheckErr);
+      }
+
       // Identity Mapping: Determine target email for Supabase Auth
       let targetEmail = cleanUsername;
 

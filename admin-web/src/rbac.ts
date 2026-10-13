@@ -19,7 +19,7 @@ export const ADMIN_ROLES: Record<AdminRole, RoleInfo> = {
     badgeBg: 'bg-red-100',
     badgeText: 'text-red-800',
     permissions: [
-      'users.view', 'users.create', 'users.update', 'users.suspend',
+      'users.view', 'users.create', 'users.update', 'users.suspend', 'users.delete',
       'payments.view', 'payments.approve', 'payments.reject', 'payments.update',
       'subscriptions.view', 'subscriptions.update',
       'traffic.view', 'traffic.create', 'traffic.update', 'traffic.delete',
@@ -32,7 +32,8 @@ export const ADMIN_ROLES: Record<AdminRole, RoleInfo> = {
       'admins.view', 'admins.create', 'admins.update', 'admins.deactivate',
       'roles.view', 'roles.create', 'roles.update',
       'audit_logs.view',
-      'settings.view', 'settings.update'
+      'settings.view', 'settings.update',
+      'marketing.view', 'marketing.manage'
     ]
   },
   payment_admin: {
@@ -118,6 +119,18 @@ export const ADMIN_ROLES: Record<AdminRole, RoleInfo> = {
       'support.view', 'support.reply', 'support.update',
       'users.view',
       'notifications.view', 'notifications.create', 'notifications.send'
+    ]
+  },
+  marketer: {
+    key: 'marketer',
+    name: 'MARKETER / SUUQ-GEYN',
+    nameSomali: 'Shaqaalaha Suuq-geynta',
+    description: 'Diiwaangelinta darawallada cusub iyo la socodka dadka lagu soo daray koodhka gaarka ah.',
+    badgeBg: 'bg-teal-100',
+    badgeText: 'text-teal-800',
+    permissions: [
+      'marketing.view',
+      'users.view'
     ]
   }
 };
