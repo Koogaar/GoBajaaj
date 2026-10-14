@@ -99,7 +99,7 @@ fun DriverPassScreen(
         val sub = currentSub
         if (sub != null) {
             when (sub.status.lowercase()) {
-                "active", "completed", "approved" -> {
+                "active" -> {
                     // Only jump to APPROVED if user genuinely has a senderPhone (proof of payment) and pass is active
                     if (isPassActive && !sub.senderPhone.isNullOrBlank()) {
                         isAwaitingAdminApproval = false

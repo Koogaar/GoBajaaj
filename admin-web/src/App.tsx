@@ -175,16 +175,11 @@ export default function App() {
               created_at: profData.created_at
             });
           } else {
-            // Default Super Admin for root workspace session if no record exists
-            setCurrentAdmin({
-              id: currentSession.user.id,
-              user_id: currentSession.user.id,
-              email: currentSession.user.email || 'superadmin@somalitraffic.so',
-              full_name: currentSession.user.email?.split('@')[0] || 'Super Admin',
-              role_key: 'super_admin',
-              status: 'active',
-              created_at: new Date().toISOString()
-            });
+            // No admin_users record and no recognized admin role on the profile.
+            // Never auto-grant privileges: access is denied until a Super Admin
+            // explicitly creates an admin_users record for this account.
+            console.warn('No admin role found for this session; access denied.');
+            setCurrentAdmin(null);
           }
         }
       } else {
@@ -295,54 +290,59 @@ export default function App() {
     if (!user.id) return;
     setApprovingUserId(user.id);
     try {
-      const now = new Date();
-      let expiry = new Date(now);
-      if (now.getHours() < 5) {
-        expiry.setHours(5, 0, 0, 0);
-      } else {
-        expiry.setDate(expiry.getDate() + 1);
-        expiry.setHours(5, 0, 0, 0);
+      // A Driver Pass may only be activated against a real pending $0.25 claim.
+      let targetId: string | undefined;
+
+      const { data: pendingTx } = await supabase
+        .from('payment_transactions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      targetId = (pendingTx?.id as string | undefined) || undefined;
+
+      if (!targetId) {
+        const { data: pendingSub } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        targetId = (pendingSub?.id as string | undefined) || undefined;
       }
 
-      // 1. Update Profile
-      await supabase
-        .from('profiles')
-        .update({
-          subscription_status: 'active',
-          subscription_expiry: expiry.toISOString()
-        })
-        .eq('id', user.id);
+      if (!targetId) {
+        alert('Darawalkaani ma jiro bixin $0.25 oo sugaysa. Fadlan sug in uu lacagta soo diro ka hor ansixinta.');
+        return;
+      }
 
-      // 2. Upsert Subscription
-      await supabase.from('subscriptions').insert([{
-        user_id: user.id,
-        plan_name: 'Driver Pass (Maalinle 05:00 AM)',
-        amount: 0.25,
-        currency: 'USD',
-        status: 'active',
-        payment_method: 'EVC Plus',
-        payment_reference: `PASS_${user.phone_number?.slice(-4) || '2026'}_${Date.now() % 10000}`,
-        start_date: now.toISOString(),
-        end_date: expiry.toISOString()
-      }]);
-
-      // 3. Insert or update completed payment
-      await supabase.from('payment_transactions').insert([{
-        user_id: user.id,
-        amount: 0.25,
-        currency: 'USD',
-        payment_method: 'EVC Plus',
-        reference_number: `TX_${user.phone_number?.slice(-4) || '2026'}_${Date.now() % 10000}`,
-        phone_number: user.phone_number || '',
-        status: 'completed'
-      }]);
+      const { data, error } = await supabase.rpc('approve_driver_pass_payment', {
+        p_payment_id: targetId
+      });
+      if (error) {
+        throw new Error(error.message);
+      }
+      const res = (data || {}) as any;
+      if (res.ok !== true) {
+        const messages: Record<string, string> = {
+          forbidden: 'Ma lehid fasax aad ku ansixiso Driver Pass-ka.',
+          not_pending: 'Bixintan mar hore ayaa la maareeyay.',
+          already_processed: 'Bixintan mar hore ayaa la maareeyay.',
+          payment_not_found: 'Bixin lama helin.'
+        };
+        throw new Error(messages[res.error] || `Ansixinta way fashilantay (${res.error || 'unknown'}).`);
+      }
 
       soundAlert.playPaymentSound();
       alert(`Guul! Darawalka ${user.full_name || user.phone_number} waa la ansixiyay, adeeggiisuna hadda waa Active!`);
       await fetchUsers();
       await fetchOverviewMetrics(false);
     } catch (err: any) {
-      alert('Cilad: ' + err?.message);
+      alert('Cilad: ' + (err?.message || 'Ansixinta kuma guulaysanin.'));
     } finally {
       setApprovingUserId(null);
     }
@@ -488,8 +488,8 @@ export default function App() {
   // Dynamic Allowed Navigation Tabs based on RBAC Permissions
   const allowedTabs = [
     { id: 'overview', label: 'Tusmada Guud', icon: Shield, perm: true },
-    { id: 'ride_support', label: 'GoBajaaj & Cabashooyinka', icon: Bike, perm: hasPermission(role, 'ride.view') || hasPermission(role, 'support.view') || true },
-    { id: 'device_support', label: 'Taageerada & Taleefannada Lumay', icon: Headphones, perm: hasPermission(role, 'support.view') || hasPermission(role, 'protection.view') || true },
+    { id: 'ride_support', label: 'GoBajaaj & Cabashooyinka', icon: Bike, perm: hasPermission(role, 'ride.view') || hasPermission(role, 'support.view') },
+    { id: 'device_support', label: 'Taageerada & Taleefannada Lumay', icon: Headphones, perm: hasPermission(role, 'support.view') || hasPermission(role, 'protection.view') },
     { id: 'users', label: 'Macaamiisha', icon: Users, perm: hasPermission(role, 'users.view') },
     { id: 'payments', label: 'Lacagaha ($0.25 Pass)', icon: CreditCard, perm: hasPermission(role, 'payments.view') },
     { id: 'traffic', label: 'Saxmadda & Isgoysyada', icon: TrafficCone, perm: hasPermission(role, 'traffic.view') },

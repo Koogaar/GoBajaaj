@@ -60,8 +60,8 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         _manualSubscription
     ) { repoSub, manualSub ->
         when {
-            manualSub?.status?.lowercase() in listOf("active", "completed", "approved") -> manualSub
-            repoSub?.status?.lowercase() in listOf("active", "completed", "approved") -> repoSub
+            repository.isSubscriptionActive(manualSub) -> manualSub
+            repository.isSubscriptionActive(repoSub) -> repoSub
             manualSub != null -> manualSub
             else -> repoSub
         }
@@ -404,7 +404,7 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
             res.onSuccess { sub ->
                 if (sub != null) {
                     _manualSubscription.value = sub
-                    val isActive = sub.status.lowercase() in listOf("active", "completed", "approved")
+                    val isActive = repository.isSubscriptionActive(sub)
                     if (isActive) {
                         onFinished?.invoke(true, "Hambalyo! Adeeggaaga waa la ansixiyay (Active)!")
                     } else if (sub.status.lowercase() in listOf("rejected", "failed")) {

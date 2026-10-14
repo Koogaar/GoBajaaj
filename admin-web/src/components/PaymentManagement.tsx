@@ -69,8 +69,50 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
     setTimeout(() => setCopiedPhone(null), 2000);
   };
 
+  // Detects a missing server RPC so the legacy path is only used in that case.
+  const isMissingRpc = (error: any): boolean => {
+    if (!error) return false;
+    const code = String(error.code || '');
+    const msg = String(error.message || '').toLowerCase();
+    return (
+      code === 'PGRST202' ||
+      code === '42883' ||
+      msg.includes('could not find the function') ||
+      msg.includes('does not exist')
+    );
+  };
+
   // Reusable core approval engine with strict concurrency & error handling
   const approveTransactionCore = async (p: PaymentTransaction) => {
+    // Preferred path: secure server-side RPC. The server sets the trusted
+    // NOW() + 24h window and enforces admin permission via auth.uid().
+    if (p.id) {
+      const { data, error } = await supabase.rpc('approve_driver_pass_payment', {
+        p_payment_id: p.id
+      });
+      if (!error) {
+        const res = (data || {}) as any;
+        if (res.ok === true) {
+          return; // audit log is written inside the RPC
+        }
+        if (res.error === 'forbidden') {
+          throw new Error('Ma lehid fasax aad ku ansixiso Driver Pass-ka.');
+        }
+        if (res.error === 'not_pending') {
+          throw new Error(`Bixintan mar hore ayaa la maareeyay (Xaaladdu hadda waa: ${res.status || 'lama yaqaan'}).`);
+        }
+        if (res.error === 'already_processed') {
+          throw new Error('Bixintan mar hore ayaa la maareeyay.');
+        }
+        if (res.error !== 'payment_not_found') {
+          throw new Error(`Ansixinta way fashilantay (${res.error || 'khalad lama garanayn'}).`);
+        }
+        // payment_not_found => older RPC variant; fall through to legacy path.
+      } else if (!isMissingRpc(error)) {
+        throw new Error(`Payment-ka lama ansixin karin: ${error.message}`);
+      }
+    }
+
     const now = new Date();
     let startDate = now;
     let expiry = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -534,9 +576,33 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
         await approveTransactionCore(targetPayment);
         soundAlert.playPaymentSound();
       } else {
-        // Reject payment flow
         const trimmedReason = rejectionReason.trim() || 'Ansixinta waa la diiday';
 
+        // Preferred path: secure server-side RPC (writes the audit log itself).
+        let rejectedViaRpc = false;
+        if (paymentId) {
+          const { data, error } = await supabase.rpc('reject_driver_pass_payment', {
+            p_payment_id: paymentId,
+            p_reason: trimmedReason
+          });
+          if (!error) {
+            const res = (data || {}) as any;
+            if (res.ok === true) {
+              rejectedViaRpc = true;
+            } else if (res.error === 'forbidden') {
+              throw new Error('Ma lehid fasax aad ku diido Driver Pass-ka.');
+            } else if (res.error === 'not_pending') {
+              throw new Error(`Bixintan mar hore ayaa la maareeyay (Xaaladdu hadda waa: ${res.status || 'lama yaqaan'}).`);
+            } else if (res.error !== 'payment_not_found') {
+              throw new Error(`Diidmada way fashilantay (${res.error || 'khalad lama garanayn'}).`);
+            }
+          } else if (!isMissingRpc(error)) {
+            throw new Error(`Payment-ka lama diidi karin: ${error.message}`);
+          }
+        }
+
+        if (!rejectedViaRpc) {
+        // Legacy fallback: only used when the RPC is not installed yet.
         // 1. Verify transaction status if real payment_transaction
         if (paymentId && !paymentId.startsWith('sub-')) {
           const { data: currentTx, error: checkErr } = await supabase
@@ -633,6 +699,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
           target_id: paymentId,
           metadata: { reason: trimmedReason, user_id: userId, phone }
         }]);
+        }
       }
 
       setConfirmModal({ isOpen: false, paymentId: '', action: 'approve', amount: 0.25, phone: '', userId: '' });

@@ -31,7 +31,12 @@ data class SupabaseResendOtpRequest(
 data class SupabaseAuthRequest(
     val email: String,
     val password: String,
-    val data: Map<String, String>? = null
+    val data: Map<String, String>? = null,
+    val phone: String? = null
+)
+
+data class SupabaseRefreshRequest(
+    val refresh_token: String
 )
 
 data class SupabaseAuthResponse(
@@ -94,6 +99,12 @@ interface SupabaseApiService {
     suspend fun signIn(
         @Header("apikey") apiKey: String,
         @Body request: SupabaseAuthRequest
+    ): Response<SupabaseAuthResponse>
+
+    @POST("auth/v1/token?grant_type=refresh_token")
+    suspend fun refreshSession(
+        @Header("apikey") apiKey: String,
+        @Body request: SupabaseRefreshRequest
     ): Response<SupabaseAuthResponse>
 
     @POST("rest/v1/profiles")
@@ -347,6 +358,27 @@ interface SupabaseApiService {
     ): Response<Unit>
 
     // --- GoBajaaj Ride Matching / Live Tracking (backend RPC) ---
+    @POST("rest/v1/rpc/submit_driver_pass_payment")
+    suspend fun submitDriverPassPaymentRpc(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Map<String, Any>>
+
+    @POST("rest/v1/rpc/driver_has_active_pass")
+    suspend fun driverHasActivePassRpc(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Boolean>
+
+    @POST("rest/v1/rpc/accept_ride_as_driver")
+    suspend fun acceptRideAsDriverRpc(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Map<String, Any>>
+
     @POST("rest/v1/rpc/match_drivers_for_ride")
     suspend fun matchDriversForRide(
         @Header("apikey") apiKey: String,

@@ -60,6 +60,13 @@ class PreferencesManager(context: Context) {
         return prefs.getString(KEY_AUTH_TOKEN, null)
     }
 
+    fun saveRefreshToken(refreshToken: String?) {
+        if (refreshToken.isNullOrBlank()) return
+        prefs.edit().putString(KEY_REFRESH_TOKEN, refreshToken).apply()
+    }
+
+    fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
+
     // --- Active ride watched by the global poller (survives process death) ---
     fun setActiveRideId(rideId: String?) {
         if (rideId == null) {
@@ -96,6 +103,7 @@ class PreferencesManager(context: Context) {
             .remove(KEY_USER_PLATE)
             .remove(KEY_USER_VEHICLE)
             .remove(KEY_AUTH_TOKEN)
+            .remove(KEY_REFRESH_TOKEN)
             .apply()
         _currentUserFlow.value = null
     }
@@ -283,6 +291,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_REGISTERED_PLATES = "registered_plates"
         private const val KEY_REGISTERED_PHONES = "registered_phone_numbers"
         private const val KEY_AUTH_TOKEN = "auth_token"
+        private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_SUPABASE_URL = "supabase_url"
         private const val KEY_SUPABASE_KEY = "supabase_key"
         private const val KEY_REGISTERED_DEVICE_ID = "registered_device_id"

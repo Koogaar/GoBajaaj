@@ -6,6 +6,7 @@ import com.example.somalitraffic.data.local.AppDatabase
 import com.example.somalitraffic.data.local.PreferencesManager
 import com.example.somalitraffic.data.model.*
 import com.example.somalitraffic.data.remote.*
+import com.example.somalitraffic.domain.DriverPassRules
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -62,6 +63,108 @@ class SomaliTrafficRepository(private val context: Context) {
         }
     }
 
+    private fun phoneAuthEmail(phone: String): String {
+        return DriverPassRules.phoneAuthEmail(prefs.toE164(phone))
+    }
+
+    private fun persistAuthSession(user: UserProfile, accessToken: String?, refreshToken: String?) {
+        prefs.saveUserSession(user, accessToken)
+        prefs.saveRefreshToken(refreshToken)
+    }
+
+    private fun httpFailureMessage(code: Int, body: String?, fallback: String): String {
+        val detail = body?.take(400)?.ifBlank { null }
+        return if (detail != null) "$fallback ($code): $detail" else "$fallback ($code)"
+    }
+
+    private fun endDateEpochMs(dateStr: String?): Long? {
+        if (dateStr.isNullOrBlank()) return null
+        val formats = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        for (fmt in formats) {
+            try {
+                val df = SimpleDateFormat(fmt, Locale.US).apply {
+                    timeZone = if (fmt.endsWith("'Z'")) TimeZone.getTimeZone("UTC") else TimeZone.getTimeZone("UTC")
+                }
+                val parsed = df.parse(dateStr.trim()) ?: continue
+                return parsed.time
+            } catch (_: Exception) {
+            }
+        }
+        return null
+    }
+
+    suspend fun refreshSessionIfNeeded(): Result<Unit> = withContext(Dispatchers.IO) {
+        val refresh = prefs.getRefreshToken() ?: return@withContext Result.success(Unit)
+        if (!prefs.isSupabaseConfigured()) return@withContext Result.success(Unit)
+        try {
+            val apiKey = getSafeApiKey()
+            val service = NetworkClient.createService(prefs.getSupabaseUrl())
+            val resp = service.refreshSession(apiKey, SupabaseRefreshRequest(refresh))
+            if (resp.isSuccessful && resp.body()?.access_token != null) {
+                val body = resp.body()!!
+                prefs.saveUserSession(prefs.getCurrentUser() ?: return@withContext Result.success(Unit), body.access_token)
+                prefs.saveRefreshToken(body.refresh_token ?: refresh)
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Session-ka waa dhacay. Fadlan mar kale gal."))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    private suspend fun requireActiveDriverPass(): Result<Unit> {
+        val user = prefs.getCurrentUser() ?: return Result.failure(Exception("Fadlan gal akoonkaaga."))
+        if (user.role != UserRole.DRIVER) {
+            return Result.failure(Exception("Tallaabadan waa darawal kaliya."))
+        }
+        syncCurrentSubscription()
+        val sub = supportDao.getSubscriptionForUserSync(user.id)
+        val now = System.currentTimeMillis()
+        val endMs = endDateEpochMs(sub?.endDate)
+        if (!DriverPassRules.canPerformProtectedDriverAction(user.role.code, sub?.status, endMs, now)) {
+            return Result.failure(Exception("Driver Pass-kaagu ma shaqeynayo. Dir $0.25 oo sug ansixinta admin-ka ama cusboonaysii kaarka."))
+        }
+        return Result.success(Unit)
+    }
+
+    private fun roleFromProfile(rStr: String?): UserRole {
+        val clean = (rStr ?: "").trim().lowercase()
+        return when (clean) {
+            "reporter" -> UserRole.REPORTER
+            "driver" -> UserRole.DRIVER
+            "super_admin", "admin" -> UserRole.SUPER_ADMIN
+            "support", "support_agent" -> UserRole.SUPPORT_AGENT
+            "traffic_manager", "traffic_admin" -> UserRole.TRAFFIC_MANAGER
+            "payment_admin", "subscription_manager" -> UserRole.SUBSCRIPTION_MANAGER
+            "user_manager" -> UserRole.USER_MANAGER
+            "reporter_manager" -> UserRole.REPORTER_MANAGER
+            "passenger", "user", "macmiil" -> UserRole.PASSENGER
+            else -> UserRole.fromString(clean)
+        }
+    }
+
+    private suspend fun upsertOwnProfile(
+        service: SupabaseApiService,
+        apiKey: String,
+        authHeader: String,
+        payload: Map<String, Any>
+    ): Result<Unit> {
+        val resp = service.upsertProfile(apiKey, authHeader, "resolution=merge-duplicates,return=representation", payload)
+        if (resp.isSuccessful) return Result.success(Unit)
+        val body = resp.errorBody()?.string().orEmpty()
+        return Result.failure(Exception(httpFailureMessage(resp.code(), body, "Profile-ka lama kaydin karin")))
+    }
+
     // --- Phone Number + SMS OTP Authentication ---
     suspend fun sendPhoneOtp(
         phone: String,
@@ -77,13 +180,8 @@ class SomaliTrafficRepository(private val context: Context) {
             }
 
             if (!prefs.isSupabaseConfigured()) {
-                return@withContext Result.success(
-                    OtpSendResult(
-                        phoneE164 = e164,
-                        message = "Koodhka SMS OTP ee tijaabada: 123456",
-                        isProviderDisabled = true,
-                        testOtpCode = "123456"
-                    )
+                return@withContext Result.failure(
+                    Exception("Supabase lama habeeyin. OTP-ga dhabta ah lama diri karo.")
                 )
             }
 
@@ -120,27 +218,16 @@ class SomaliTrafficRepository(private val context: Context) {
                 }
 
                 if (errBody.contains("phone_provider_disabled") || resp.code() == 400) {
-                    // Transparently inform that Supabase Phone Provider is not enabled on project dashboard
-                    return@withContext Result.success(
-                        OtpSendResult(
-                            phoneE164 = e164,
-                            message = "⚠️ Supabase Phone Provider lama hawlgelin (Dashboard: Auth -> Providers -> Phone). Isticmaal koodhka tijaabada: 123456",
-                            isProviderDisabled = true,
-                            testOtpCode = "123456"
-                        )
+                    return@withContext Result.failure(
+                        Exception("SMS OTP lama diri karin: Supabase Phone Provider lama hawlgelin. Isticmaal password-ka, ama hawlgelinta Phone Auth ee dashboard-ka.")
                     )
                 }
 
                 return@withContext Result.failure(Exception("Dirista SMS-ka way fashilantay: $errBody"))
             } catch (e: Exception) {
                 android.util.Log.e("SomaliTrafficRepo", "sendPhoneOtp network error: ${e.message}")
-                return@withContext Result.success(
-                    OtpSendResult(
-                        phoneE164 = e164,
-                        message = "Koodhka SMS OTP (Offline/Test): 123456",
-                        isProviderDisabled = true,
-                        testOtpCode = "123456"
-                    )
+                return@withContext Result.failure(
+                    Exception("Dirista SMS-ka way fashilantay (shabakad): ${e.localizedMessage}")
                 )
             }
         } catch (e: Exception) {
@@ -160,25 +247,31 @@ class SomaliTrafficRepository(private val context: Context) {
 
             var verifiedUserId: String? = null
             var verifiedToken: String? = null
+            var verifiedRefresh: String? = null
 
-            if (prefs.isSupabaseConfigured() && cleanCode != "123456") {
-                val apiKey = getSafeApiKey()
-                val service = NetworkClient.createService(prefs.getSupabaseUrl())
-                try {
-                    val verifyReq = SupabaseVerifyOtpRequest(type = "sms", phone = e164, token = cleanCode)
-                    val resp = service.verifyPhoneOtp(apiKey, verifyReq)
-                    if (resp.isSuccessful && resp.body() != null) {
-                        verifiedUserId = resp.body()?.resolvedUserId
-                        verifiedToken = resp.body()?.access_token
-                    } else {
-                        val errStr = resp.errorBody()?.string() ?: ""
-                        if (!errStr.contains("phone_provider_disabled")) {
-                            return@withContext Result.failure(Exception("Koodhka SMS OTP waa khalad ama wuu dhacay. Fadlan hubi koodhka mar kalena isku day."))
-                        }
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("SomaliTrafficRepo", "VerifyOtp network error: ${e.message}")
+            if (cleanCode == "123456") {
+                return@withContext Result.failure(Exception("Koodhka tijaabada lama oggola. Fadlan isticmaal koodhka SMS-ka ee dhabta ah."))
+            }
+            if (!prefs.isSupabaseConfigured()) {
+                return@withContext Result.failure(Exception("Supabase lama habeeyin. OTP lama xaqiijin karo."))
+            }
+
+            val apiKey = getSafeApiKey()
+            val service = NetworkClient.createService(prefs.getSupabaseUrl())
+            try {
+                val verifyReq = SupabaseVerifyOtpRequest(type = "sms", phone = e164, token = cleanCode)
+                val resp = service.verifyPhoneOtp(apiKey, verifyReq)
+                if (!resp.isSuccessful || resp.body()?.access_token.isNullOrBlank() || resp.body()?.resolvedUserId.isNullOrBlank()) {
+                    val errStr = resp.errorBody()?.string().orEmpty()
+                    return@withContext Result.failure(
+                        Exception("Koodhka SMS OTP waa khalad ama wuu dhacay. ${errStr.take(180)}")
+                    )
                 }
+                verifiedUserId = resp.body()?.resolvedUserId
+                verifiedToken = resp.body()?.access_token
+                verifiedRefresh = resp.body()?.refresh_token
+            } catch (e: Exception) {
+                return@withContext Result.failure(Exception("Xaqiijinta OTP way fashilantay: ${e.localizedMessage}"))
             }
 
             // Profile lookup in Supabase profiles table
@@ -230,7 +323,9 @@ class SomaliTrafficRepository(private val context: Context) {
 
             val localUser = prefs.getCurrentUser()
             val resolvedRole = remoteRole ?: localUser?.role ?: UserRole.PASSENGER
-            val finalUserId = remoteUserId ?: localUser?.id ?: UUID.randomUUID().toString()
+            val finalUserId = verifiedUserId ?: return@withContext Result.failure(
+                Exception("OTP waa la xaqiijiyay laakiin user id lama helin.")
+            )
             val finalName = remoteFullName ?: localUser?.fullName ?: prefs.formatDisplayPhone(cleanPhone)
 
             val user = UserProfile(
@@ -243,7 +338,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 vehicleModel = remoteVehicle ?: localUser?.vehicleModel
             )
 
-            prefs.saveUserSession(user, verifiedToken)
+            persistAuthSession(user, verifiedToken, verifiedRefresh)
             prefs.bindUserToCurrentDevice(e164)
             logAudit("LOGIN_SMS_OTP", "user", user.id, "User logged in with SMS OTP: ${user.phoneNumber}")
 
@@ -277,28 +372,36 @@ class SomaliTrafficRepository(private val context: Context) {
 
             var verifiedUserId: String? = null
             var verifiedToken: String? = null
+            var verifiedRefresh: String? = null
 
-            if (prefs.isSupabaseConfigured() && cleanCode != "123456") {
-                val apiKey = getSafeApiKey()
-                val service = NetworkClient.createService(prefs.getSupabaseUrl())
-                try {
-                    val verifyReq = SupabaseVerifyOtpRequest(type = "sms", phone = e164, token = cleanCode)
-                    val resp = service.verifyPhoneOtp(apiKey, verifyReq)
-                    if (resp.isSuccessful && resp.body() != null) {
-                        verifiedUserId = resp.body()?.resolvedUserId
-                        verifiedToken = resp.body()?.access_token
-                    } else {
-                        val errStr = resp.errorBody()?.string() ?: ""
-                        if (!errStr.contains("phone_provider_disabled")) {
-                            return@withContext Result.failure(Exception("Koodhka SMS OTP waa khalad ama wuu dhacay. Fadlan hubi koodhka mar kalena isku day."))
-                        }
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("SomaliTrafficRepo", "VerifyOtp network error: ${e.message}")
-                }
+            if (cleanCode == "123456") {
+                return@withContext Result.failure(Exception("Koodhka tijaabada lama oggola. Fadlan isticmaal koodhka SMS-ka ee dhabta ah."))
+            }
+            if (!prefs.isSupabaseConfigured()) {
+                return@withContext Result.failure(Exception("Supabase lama habeeyin. Diiwaangelin dhab ah lama samayn karo."))
             }
 
-            val finalUserId = verifiedUserId ?: UUID.randomUUID().toString()
+            val apiKey = getSafeApiKey()
+            val otpService = NetworkClient.createService(prefs.getSupabaseUrl())
+            try {
+                val verifyReq = SupabaseVerifyOtpRequest(type = "sms", phone = e164, token = cleanCode)
+                val resp = otpService.verifyPhoneOtp(apiKey, verifyReq)
+                if (!resp.isSuccessful || resp.body()?.access_token.isNullOrBlank() || resp.body()?.resolvedUserId.isNullOrBlank()) {
+                    val errStr = resp.errorBody()?.string().orEmpty()
+                    return@withContext Result.failure(
+                        Exception("Koodhka SMS OTP waa khalad ama wuu dhacay. ${errStr.take(180)}")
+                    )
+                }
+                verifiedUserId = resp.body()?.resolvedUserId
+                verifiedToken = resp.body()?.access_token
+                verifiedRefresh = resp.body()?.refresh_token
+            } catch (e: Exception) {
+                return@withContext Result.failure(Exception("Xaqiijinta OTP way fashilantay: ${e.localizedMessage}"))
+            }
+
+            val finalUserId = verifiedUserId ?: return@withContext Result.failure(
+                Exception("OTP waa la xaqiijiyay laakiin user id lama helin.")
+            )
 
             val user = UserProfile(
                 id = finalUserId,
@@ -317,38 +420,34 @@ class SomaliTrafficRepository(private val context: Context) {
             prefs.registerPhone(e164)
             prefs.registerPhone(cleanPhone)
             prefs.bindUserToCurrentDevice(e164)
-            prefs.saveUserSession(user, verifiedToken)
+            persistAuthSession(user, verifiedToken, verifiedRefresh)
 
-            // Sync to Supabase profiles, subscriptions, payments
-            if (prefs.isSupabaseConfigured()) {
-                val apiKey = getSafeApiKey()
-                val authHeader = if (!verifiedToken.isNullOrBlank()) "Bearer $verifiedToken" else getSafeAuthHeader()
-                val service = NetworkClient.createService(prefs.getSupabaseUrl())
+            val authHeader = "Bearer $verifiedToken"
+            val service = NetworkClient.createService(prefs.getSupabaseUrl())
 
-                val profilePayload: MutableMap<String, Any> = mutableMapOf(
-                    "id" to finalUserId,
-                    "full_name" to cleanName,
-                    "phone_number" to e164,
-                    "role" to if (isDriver) "driver" else "passenger",
-                    "status" to "active"
+            val profilePayload: MutableMap<String, Any> = mutableMapOf(
+                "id" to finalUserId,
+                "full_name" to cleanName,
+                "phone_number" to e164,
+                "role" to if (isDriver) "driver" else "passenger",
+                "status" to "active"
+            )
+            if (!plateNumber.isNullOrBlank()) profilePayload["plate_number"] = plateNumber
+            if (!vehicleModel.isNullOrBlank()) profilePayload["bajaaj_model"] = vehicleModel
+            if (isDriver) {
+                profilePayload["subscription_status"] = "inactive"
+            }
+            if (!referralCode.isNullOrBlank()) {
+                profilePayload["referred_by"] = referralCode.trim().uppercase()
+            }
+
+            val profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            if (profileResult.isFailure) {
+                prefs.clearSession()
+                return@withContext Result.failure(
+                    profileResult.exceptionOrNull() ?: Exception("Profile-ka lama abuuri karin. Diiwaangelintu way fashilantay.")
                 )
-                if (!plateNumber.isNullOrBlank()) profilePayload["plate_number"] = plateNumber
-                if (!vehicleModel.isNullOrBlank()) profilePayload["bajaaj_model"] = vehicleModel
-                if (isDriver) {
-                    profilePayload["subscription_status"] = "pending"
-                }
-                if (!referralCode.isNullOrBlank()) {
-                    profilePayload["referred_by"] = referralCode.trim().uppercase()
-                }
-
-                try {
-                    var profResp = service.upsertProfile(apiKey, authHeader, "resolution=merge-duplicates,return=representation", profilePayload)
-                    if (!profResp.isSuccessful) {
-                        profResp = service.upsertProfile(apiKey, getSafeAuthHeader(), "resolution=merge-duplicates,return=representation", profilePayload)
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("SomaliTrafficRepo", "Profile upsert warning: ${e.message}")
-                }
+            }
 
                 // If driver registered with referral code, record it in audit_logs so marketing staff & admin see it
                 if (!referralCode.isNullOrBlank()) {
@@ -373,7 +472,6 @@ class SomaliTrafficRepository(private val context: Context) {
                         android.util.Log.w("SomaliTrafficRepo", "Referral audit log insert error: ${auditEx.message}")
                     }
                 }
-            }
 
             logAudit("REGISTER_SMS_OTP", "user", user.id, "New ${if (isDriver) "driver" else "passenger"} registered with SMS OTP: $cleanName")
             Result.success(user)
@@ -409,207 +507,138 @@ class SomaliTrafficRepository(private val context: Context) {
 
     // --- Authentication & Session ---
     suspend fun login(identifier: String, password: String): Result<UserProfile> = withContext(Dispatchers.IO) {
-        try {
-            val cleanIdentifier = identifier.trim()
-            if (cleanIdentifier.isEmpty() || password.isEmpty()) {
-                return@withContext Result.failure(Exception("Fadlan geli lambarka taleefanka iyo furaha sirta."))
+        val cleanIdentifier = identifier.trim()
+        val rawPass = password.trim()
+        if (cleanIdentifier.isEmpty() || rawPass.isEmpty()) {
+            return@withContext Result.failure(Exception("Fadlan geli lambarka taleefanka iyo furaha sirta."))
+        }
+        if (!prefs.isSupabaseConfigured()) {
+            return@withContext Result.failure(Exception("Supabase lama habeeyin. Galitaan dhab ah lama samayn karo."))
+        }
+        // Real Supabase password authentication. No profile-only / unauthenticated bypass.
+        authenticateWithPassword(cleanIdentifier, rawPass)
+    }
+
+    /**
+     * Genuine Supabase password sign-in using the phone-derived email identity.
+     * The resolved role/name is loaded from the caller's OWN profile (RLS-protected)
+     * after the credentials are verified by Supabase Auth.
+     */
+    private suspend fun authenticateWithPassword(
+        cleanIdentifier: String,
+        rawPass: String
+    ): Result<UserProfile> {
+        return try {
+            val e164 = prefs.toE164(cleanIdentifier)
+            val authEmail = DriverPassRules.phoneAuthEmail(e164)
+            val apiKey = getSafeApiKey()
+            val service = NetworkClient.createService(prefs.getSupabaseUrl())
+
+            val signInResp = service.signIn(
+                apiKey,
+                SupabaseAuthRequest(email = authEmail, password = rawPass)
+            )
+            if (!signInResp.isSuccessful ||
+                signInResp.body()?.access_token.isNullOrBlank() ||
+                signInResp.body()?.resolvedUserId.isNullOrBlank()
+            ) {
+                val code = signInResp.code()
+                val errStr = signInResp.errorBody()?.string().orEmpty()
+                val msg = when {
+                    code == 400 && errStr.contains("invalid", true) ->
+                        "Nambarka ama furaha sirta waa khalad."
+                    code == 400 && errStr.contains("confirm", true) ->
+                        "Akoonka lama xaqiijin. La xiriir taageerada GoBajaaj."
+                    else -> "Galitaanku wuu fashilantay ($code). ${errStr.take(140)}"
+                }
+                return Result.failure(Exception(msg))
             }
 
-            val digitsOnly = cleanIdentifier.filter { it.isDigit() }
-            val normalizedPhone = if (digitsOnly.length >= 9) digitsOnly.takeLast(9) else digitsOnly
+            val accessToken = signInResp.body()?.access_token
+            val refreshToken = signInResp.body()?.refresh_token
+            val userId = signInResp.body()!!.resolvedUserId!!
+            val authHeader = "Bearer $accessToken"
 
-            var remoteToken: String? = null
-            var remoteUserId: String? = null
-            var remoteFullName: String? = null
-            var remoteRole: UserRole? = null
-            var remotePlate: String? = null
-            var remoteVehicle: String? = null
+            var role: UserRole = UserRole.PASSENGER
+            var fullName = prefs.formatDisplayPhone(cleanIdentifier)
+            var plate: String? = null
+            var vehicle: String? = null
+            try {
+                val prof = service.getProfileById(apiKey, authHeader, "eq.$userId").body()?.firstOrNull()
+                if (prof != null) {
+                    fullName = prof["full_name"]?.toString()?.takeIf { it.isNotBlank() } ?: fullName
+                    plate = prof["plate_number"]?.toString()
+                    vehicle = prof["bajaaj_model"]?.toString()
+                    role = roleFromProfile(prof["role"]?.toString())
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("GoBajaajRepo", "Profile load warning: ${e.message}")
+            }
 
-            // 1. Check Supabase profiles table for matching user (driver, reporter, passenger, admin)
-            if (prefs.isSupabaseConfigured()) {
-                val apiKey = prefs.getSupabaseKey()
-                val service = NetworkClient.createService(prefs.getSupabaseUrl())
-
+            // Elevate to admin role only if an active admin_users record matches this uid.
+            if (role == UserRole.PASSENGER || role == UserRole.DRIVER) {
                 try {
-                    // Try exact phone lookup
-                    var profList: List<Map<String, Any>>? = null
-                    val directResp = service.getProfileByPhone(apiKey, "Bearer $apiKey", "eq.$cleanIdentifier")
-                    if (directResp.isSuccessful && !directResp.body().isNullOrEmpty()) {
-                        profList = directResp.body()
-                    } else if (normalizedPhone.isNotBlank()) {
-                        // Try flexible OR query
-                        val orQuery = "(phone_number.eq.$normalizedPhone,phone_number.eq.0$normalizedPhone,phone_number.eq.+252$normalizedPhone,phone_number.eq.252$normalizedPhone,phone_number.eq.$cleanIdentifier)"
-                        val orResp = service.getProfilesWithOr(apiKey, "Bearer $apiKey", orQuery)
-                        if (orResp.isSuccessful && !orResp.body().isNullOrEmpty()) {
-                            profList = orResp.body()
-                        }
+                    val adm = service.getAdminUsersWithOr(
+                        apiKey, authHeader, "(user_id.eq.$userId,email.eq.$authEmail)"
+                    ).body()?.firstOrNull()
+                    if (adm != null && adm["status"]?.toString()?.equals("active", true) == true) {
+                        role = roleFromProfile(adm["role_key"]?.toString())
+                        fullName = adm["full_name"]?.toString()?.takeIf { it.isNotBlank() } ?: fullName
                     }
-
-                    if (!profList.isNullOrEmpty()) {
-                        val prof = profList.first()
-                        remoteUserId = prof["id"]?.toString()
-                        remoteFullName = prof["full_name"]?.toString()
-                        remotePlate = prof["plate_number"]?.toString()
-                        remoteVehicle = prof["bajaaj_model"]?.toString()
-                        val rStr = (prof["role"]?.toString() ?: "").trim().lowercase()
-                        remoteRole = when (rStr) {
-                            "reporter" -> UserRole.REPORTER
-                            "driver" -> UserRole.DRIVER
-                            "super_admin", "admin" -> UserRole.SUPER_ADMIN
-                            "support", "support_agent" -> UserRole.SUPPORT_AGENT
-                            "traffic_manager", "traffic_admin" -> UserRole.TRAFFIC_MANAGER
-                            "payment_admin", "subscription_manager" -> UserRole.SUBSCRIPTION_MANAGER
-                            "user_manager" -> UserRole.USER_MANAGER
-                            "reporter_manager" -> UserRole.REPORTER_MANAGER
-                            "passenger", "user", "macmiil" -> UserRole.PASSENGER
-                            else -> if (rStr.contains("report")) UserRole.REPORTER else if (rStr.contains("driv")) UserRole.DRIVER else UserRole.PASSENGER
-                        }
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("GoBajaajRepo", "Profile lookup error: ${e.message}")
+                } catch (_: Exception) {
                 }
-
-                // 2. If not found in profiles, check subscriptions or payment_transactions for sender_phone linkage
-                if (remoteRole == null && normalizedPhone.isNotBlank()) {
-                    try {
-                        val subResp = service.getSubscriptionsByPhone(apiKey, "Bearer $apiKey", "eq.$cleanIdentifier")
-                        var linkedUserId: String? = null
-                        if (subResp.isSuccessful && !subResp.body().isNullOrEmpty()) {
-                            linkedUserId = subResp.body()!!.first()["user_id"]?.toString()
-                        }
-                        if (linkedUserId.isNullOrBlank()) {
-                            val txResp = service.getPaymentTransactionsByPhone(apiKey, "Bearer $apiKey", "eq.$cleanIdentifier")
-                            if (txResp.isSuccessful && !txResp.body().isNullOrEmpty()) {
-                                linkedUserId = txResp.body()!!.first()["user_id"]?.toString()
-                            }
-                        }
-
-                        if (!linkedUserId.isNullOrBlank()) {
-                            val profResp = service.getProfileById(apiKey, "Bearer $apiKey", "eq.$linkedUserId")
-                            if (profResp.isSuccessful && !profResp.body().isNullOrEmpty()) {
-                                val prof = profResp.body()!!.first()
-                                remoteUserId = prof["id"]?.toString()
-                                remoteFullName = prof["full_name"]?.toString()
-                                remotePlate = prof["plate_number"]?.toString()
-                                remoteVehicle = prof["bajaaj_model"]?.toString()
-                                remoteRole = UserRole.DRIVER
-                            }
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.w("GoBajaajRepo", "Linked sender phone lookup error: ${e.message}")
-                    }
-                }
-
-                // 3. If not found in profiles or payments, check admin_users table
-                if (remoteRole == null) {
-                    try {
-                        val adminOrQuery = "(username.ilike.$cleanIdentifier,email.ilike.$cleanIdentifier,phone.eq.$cleanIdentifier,phone.eq.$normalizedPhone)"
-                        val adminResp = service.getAdminUsersWithOr(apiKey, "Bearer $apiKey", adminOrQuery)
-                        if (adminResp.isSuccessful && !adminResp.body().isNullOrEmpty()) {
-                            val adm = adminResp.body()!!.first()
-                            remoteUserId = adm["id"]?.toString() ?: adm["user_id"]?.toString()
-                            remoteFullName = adm["full_name"]?.toString() ?: "Admin"
-                            val rKey = (adm["role_key"]?.toString() ?: "super_admin").trim().lowercase()
-                            remoteRole = when (rKey) {
-                                "super_admin" -> UserRole.SUPER_ADMIN
-                                "reporter_manager" -> UserRole.REPORTER_MANAGER
-                                "traffic_admin" -> UserRole.TRAFFIC_MANAGER
-                                "payment_admin" -> UserRole.SUBSCRIPTION_MANAGER
-                                "support_agent" -> UserRole.SUPPORT_AGENT
-                                else -> UserRole.SUPER_ADMIN
-                            }
-                        }
-                    } catch (e: Exception) {
-                        android.util.Log.w("GoBajaajRepo", "Admin lookup error: ${e.message}")
-                    }
-                }
-            }
-
-            val localUser = prefs.getCurrentUser()
-            val isLocalMatch = localUser?.phoneNumber == cleanIdentifier || (normalizedPhone.isNotBlank() && localUser?.phoneNumber?.filter { it.isDigit() }?.takeLast(9) == normalizedPhone)
-
-            val resolvedRole = remoteRole ?: (if (isLocalMatch) localUser?.role else null)
-            val resolvedUserId = remoteUserId ?: (if (isLocalMatch) localUser?.id else null)
-            val resolvedFullName = remoteFullName ?: (if (isLocalMatch) localUser?.fullName else null)
-
-            // If account was not found anywhere (remote or local):
-            if (resolvedRole == null) {
-                return@withContext Result.failure(
-                    Exception("Akoonka ($cleanIdentifier) lagama helin nidaamka. Fadlan is-diiwaangeli haddii aad tahay Macmiil/Darawal, ama hubi in Admin-ku ku abuuray haddii aad tahay Wariye.")
-                )
             }
 
             val user = UserProfile(
-                id = resolvedUserId ?: UUID.randomUUID().toString(),
-                fullName = resolvedFullName ?: cleanIdentifier,
-                phoneNumber = cleanIdentifier,
-                role = resolvedRole,
+                id = userId,
+                fullName = fullName,
+                phoneNumber = e164,
+                role = role,
                 status = "active",
-                plateNumber = remotePlate ?: (if (isLocalMatch) localUser?.plateNumber else null),
-                vehicleModel = remoteVehicle ?: (if (isLocalMatch) localUser?.vehicleModel else null)
+                plateNumber = plate,
+                vehicleModel = vehicle
             )
-
-            prefs.saveUserSession(user, remoteToken)
+            persistAuthSession(user, accessToken, refreshToken)
+            prefs.registerPhone(e164)
+            prefs.registerPhone(cleanIdentifier)
             if (prefs.getBoundDeviceForUser(cleanIdentifier) == null) {
                 prefs.bindUserToCurrentDevice(cleanIdentifier)
             }
 
-            // Sync driver subscription from Supabase if driver
-            if (user.role == UserRole.DRIVER && prefs.isSupabaseConfigured()) {
-                try {
-                    val apiKey = prefs.getSupabaseKey()
-                    val service = NetworkClient.createService(prefs.getSupabaseUrl())
-                    val subResp = service.getSubscriptionForUser(apiKey, "Bearer $apiKey", "eq.${user.id}")
-                    if (subResp.isSuccessful && !subResp.body().isNullOrEmpty()) {
-                        val subMap = subResp.body()!!.first()
-                        val sub = Subscription(
-                            id = subMap["id"]?.toString() ?: "sub-${user.id}",
-                            userId = user.id,
-                            planName = subMap["plan_name"]?.toString() ?: "Driver Pass",
-                            amount = (subMap["amount"] as? Number)?.toDouble() ?: 1.0,
-                            currency = subMap["currency"]?.toString() ?: "USD",
-                            status = subMap["status"]?.toString() ?: "pending",
-                            paymentMethod = subMap["payment_method"]?.toString() ?: "EVC Plus",
-                            senderPhone = subMap["sender_phone"]?.toString() ?: cleanIdentifier,
-                            destinationPhone = subMap["destination_phone"]?.toString() ?: "628512131",
-                            paymentReference = subMap["payment_reference"]?.toString() ?: "",
-                            startDate = subMap["start_date"]?.toString() ?: "",
-                            endDate = subMap["end_date"]?.toString() ?: "",
-                            autoRenew = false
-                        )
-                        supportDao.insertSubscription(sub)
-                    }
-                } catch (e: Exception) {
-                    // Ignore network error
-                }
+            // Refresh the local Driver Pass cache from the server. This never grants
+            // access by itself; enforcement uses server state on every protected action.
+            if (role == UserRole.DRIVER) {
+                try { syncCurrentSubscription() } catch (_: Exception) { }
             }
-            
-            // Log audit
-            logAudit("LOGIN", "user", user.id, "User logged in with role: ${user.role.code}")
 
+            logAudit("LOGIN", "user", user.id, "User logged in with role: ${user.role.code}")
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(Exception("Khalad baa dhacay: ${e.localizedMessage ?: "Lama gali karo"}"))
         }
     }
 
-    suspend fun loginWithGoogle(email: String = "user.google", displayName: String = "Macmiil GoBajaaj"): Result<UserProfile> = withContext(Dispatchers.IO) {
-        try {
-            val localUser = prefs.getCurrentUser()
-            val user = UserProfile(
-                id = localUser?.id ?: UUID.randomUUID().toString(),
-                fullName = localUser?.fullName ?: displayName,
-                phoneNumber = localUser?.phoneNumber ?: "+252610000000",
-                role = localUser?.role ?: UserRole.PASSENGER,
-                status = "active"
-            )
-            prefs.saveUserSession(user, "auth_token_${System.currentTimeMillis()}")
-            Result.success(user)
-        } catch (e: Exception) {
-            Result.failure(Exception("Login khalad baa dhacay: ${e.localizedMessage}"))
-        }
+    /**
+     * Google Sign-In is NOT configured for this project. It previously created a
+     * fake local-only session with a placeholder token; that bypass is removed.
+     */
+    suspend fun loginWithGoogle(
+        email: String = "user.google",
+        displayName: String = "Macmiil GoBajaaj"
+    ): Result<UserProfile> = withContext(Dispatchers.IO) {
+        Result.failure(
+            Exception("Google Sign-In lama hawlgelin. Fadlan isticmaal nambarka iyo furaha sirta.")
+        )
     }
 
+    /**
+     * Real registration: creates a genuine Supabase Auth identity (email derived
+     * from the phone number) with the user's password, then associates it with the
+     * `profiles` table using that identity's own JWT (so RLS auth.uid() matches).
+     *
+     * Drivers are created with subscription_status = 'inactive'. Registration NEVER
+     * creates a pending payment or grants Driver Pass access.
+     */
     suspend fun registerUser(
         fullName: String,
         phoneNumber: String,
@@ -619,15 +648,156 @@ class SomaliTrafficRepository(private val context: Context) {
         vehicleModel: String? = null,
         referralCode: String? = null
     ): Result<UserProfile> = withContext(Dispatchers.IO) {
-        verifyPhoneOtpAndRegister(
-            fullName = fullName,
-            phone = phoneNumber,
-            otpCode = "123456",
-            isDriver = isDriver,
-            plateNumber = plateNumber,
-            vehicleModel = vehicleModel,
-            referralCode = referralCode
-        )
+        try {
+            val cleanName = fullName.trim()
+            val cleanPhone = phoneNumber.trim().replace(" ", "")
+            val rawPass = password.trim()
+
+            if (cleanName.isBlank() || cleanPhone.isBlank()) {
+                return@withContext Result.failure(Exception("Fadlan buuxi dhammaan macluumaadka."))
+            }
+            if (rawPass.length < 6) {
+                return@withContext Result.failure(Exception("Furaha sirta waa inuu ugu yaraan 6 xaraf yahay."))
+            }
+            if (!prefs.isSupabaseConfigured()) {
+                return@withContext Result.failure(
+                    Exception("Supabase lama habeeyin. Diiwaangelin dhab ah lama samayn karo.")
+                )
+            }
+
+            val e164 = prefs.toE164(cleanPhone)
+            val authEmail = DriverPassRules.phoneAuthEmail(e164)
+            val apiKey = getSafeApiKey()
+            val service = NetworkClient.createService(prefs.getSupabaseUrl())
+
+            val metadata = mutableMapOf<String, String>(
+                "full_name" to cleanName,
+                "phone_number" to e164,
+                "role" to if (isDriver) "driver" else "passenger"
+            )
+
+            var accessToken: String? = null
+            var refreshToken: String? = null
+            var userId: String? = null
+
+            // 1. Create the auth identity.
+            try {
+                val signUpResp = service.signUp(
+                    apiKey,
+                    SupabaseAuthRequest(email = authEmail, password = rawPass, data = metadata)
+                )
+                if (signUpResp.isSuccessful) {
+                    accessToken = signUpResp.body()?.access_token
+                    refreshToken = signUpResp.body()?.refresh_token
+                    userId = signUpResp.body()?.resolvedUserId
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("GoBajaajRepo", "signUp warning: ${e.message}")
+            }
+
+            // 2. If no session yet (email confirmation on, or the identity already
+            //    existed), authenticate with the password to obtain a real session.
+            if (accessToken.isNullOrBlank() || userId.isNullOrBlank()) {
+                val signInResp = service.signIn(
+                    apiKey,
+                    SupabaseAuthRequest(email = authEmail, password = rawPass)
+                )
+                if (!signInResp.isSuccessful ||
+                    signInResp.body()?.access_token.isNullOrBlank() ||
+                    signInResp.body()?.resolvedUserId.isNullOrBlank()
+                ) {
+                    val errStr = signInResp.errorBody()?.string().orEmpty()
+                    return@withContext Result.failure(
+                        Exception(
+                            "Diiwaangelinta lama dhammaystirin. " +
+                                errStr.take(180).ifBlank { "Hubi Phone/Email Auth ee Supabase." }
+                        )
+                    )
+                }
+                accessToken = signInResp.body()?.access_token
+                refreshToken = signInResp.body()?.refresh_token
+                userId = signInResp.body()?.resolvedUserId
+            }
+
+            val finalUserId = userId
+                ?: return@withContext Result.failure(Exception("Auth identity lama helin."))
+            val authHeader = "Bearer $accessToken"
+
+            // 3. Associate the identity with profiles (as the signed-in user).
+            val profilePayload: MutableMap<String, Any> = mutableMapOf(
+                "id" to finalUserId,
+                "full_name" to cleanName,
+                "phone_number" to e164,
+                "role" to if (isDriver) "driver" else "passenger",
+                "status" to "active",
+                "subscription_status" to if (isDriver) "inactive" else "active"
+            )
+            if (!plateNumber.isNullOrBlank()) profilePayload["plate_number"] = plateNumber
+            if (!vehicleModel.isNullOrBlank()) profilePayload["bajaaj_model"] = vehicleModel
+            if (!referralCode.isNullOrBlank()) {
+                profilePayload["referred_by"] = referralCode.trim().uppercase()
+            }
+
+            val profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            if (profileResult.isFailure) {
+                return@withContext Result.failure(
+                    profileResult.exceptionOrNull()
+                        ?: Exception("Profile-ka lama abuuri karin. Diiwaangelintu way fashilantay.")
+                )
+            }
+
+            val user = UserProfile(
+                id = finalUserId,
+                fullName = cleanName,
+                phoneNumber = e164,
+                role = if (isDriver) UserRole.DRIVER else UserRole.PASSENGER,
+                status = "active",
+                plateNumber = plateNumber,
+                vehicleModel = vehicleModel
+            )
+
+            if (isDriver && !plateNumber.isNullOrBlank()) prefs.registerPlate(plateNumber)
+            prefs.registerPhone(e164)
+            prefs.registerPhone(cleanPhone)
+            prefs.bindUserToCurrentDevice(e164)
+            persistAuthSession(user, accessToken, refreshToken)
+
+            if (!referralCode.isNullOrBlank()) {
+                val cleanRefCode = referralCode.trim().uppercase()
+                try {
+                    service.insertAuditLog(
+                        apiKey,
+                        authHeader,
+                        mapOf(
+                            "action" to "REFERRAL_REGISTRATION",
+                            "actor_name" to cleanRefCode,
+                            "target_type" to "driver",
+                            "target_id" to finalUserId,
+                            "metadata" to mapOf(
+                                "referral_code" to cleanRefCode,
+                                "driver_id" to finalUserId,
+                                "driver_name" to cleanName,
+                                "driver_phone" to e164,
+                                "plate_number" to (plateNumber ?: ""),
+                                "role" to (if (isDriver) "driver" else "passenger")
+                            )
+                        )
+                    )
+                } catch (auditEx: Exception) {
+                    android.util.Log.w("GoBajaajRepo", "Referral audit log insert error: ${auditEx.message}")
+                }
+            }
+
+            logAudit(
+                "REGISTER_PASSWORD",
+                "user",
+                user.id,
+                "New ${if (isDriver) "driver" else "passenger"} registered: $cleanName"
+            )
+            Result.success(user)
+        } catch (e: Exception) {
+            Result.failure(Exception("Diiwaangelinta way fashilantay: ${e.localizedMessage}"))
+        }
     }
 
     fun isPlateRegistered(plate: String): Boolean = prefs.isPlateRegistered(plate)
@@ -639,41 +809,15 @@ class SomaliTrafficRepository(private val context: Context) {
     // --- Subscriptions & Driver Pass ---
     fun isPhoneRegistered(phone: String): Boolean = prefs.isPhoneRegistered(phone)
 
+    /**
+     * A Driver Pass is only "active" when the backend status is exactly "active"
+     * AND the end time is in the future. Pending/rejected/approved/completed
+     * states never grant access.
+     */
     fun isSubscriptionActive(sub: Subscription?): Boolean {
         if (sub == null) return false
-        val st = sub.status.trim().lowercase()
-        if (st != "active" && st != "approved" && st != "completed") return false
-        val endStr = sub.endDate?.trim()
-        if (endStr.isNullOrBlank()) return false
-        return try {
-            val formats = listOf(
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                "yyyy-MM-dd'T'HH:mm:ss.SSS",
-                "yyyy-MM-dd'T'HH:mm:ss",
-                "yyyy-MM-dd HH:mm:ss",
-                "yyyy-MM-dd"
-            )
-            var parsed: Date? = null
-            for (fmt in formats) {
-                try {
-                    val df = SimpleDateFormat(fmt, Locale.US).apply {
-                        timeZone = if (fmt.endsWith("'Z'")) TimeZone.getTimeZone("UTC") else TimeZone.getTimeZone("Africa/Mogadishu")
-                    }
-                    parsed = df.parse(endStr)
-                    if (parsed != null) break
-                } catch (_: Exception) {}
-            }
-            val somaliaTz = TimeZone.getTimeZone("Africa/Mogadishu")
-            val now = Calendar.getInstance(somaliaTz).time
-            if (parsed != null) {
-                parsed.after(now)
-            } else {
-                false
-            }
-        } catch (e: Exception) {
-            false
-        }
+        val endMs = endDateEpochMs(sub.endDate)
+        return DriverPassRules.isPassActive(sub.status, endMs, System.currentTimeMillis())
     }
 
     fun isDateValidInFuture(dateStr: String?): Boolean {
@@ -841,6 +985,68 @@ class SomaliTrafficRepository(private val context: Context) {
                 val apiKey = getSafeApiKey()
                 val authHeader = getSafeAuthHeader()
                 val service = NetworkClient.createService(supabaseUrl)
+
+                // 0. Preferred path: secure server-side RPC. It verifies auth.uid(),
+                //    refuses duplicates, and keeps the claim PENDING until an admin
+                //    approves it using trusted server time.
+                if (hasUserJwt()) {
+                    try {
+                        val rpcResp = service.submitDriverPassPaymentRpc(
+                            apiKey,
+                            getEffectiveAuthHeader(),
+                            mapOf(
+                                "p_sender_phone" to effectivePhone,
+                                "p_destination_phone" to destination,
+                                "p_payment_method" to paymentMethod,
+                                "p_reference" to transactionId.trim()
+                            )
+                        )
+                        if (rpcResp.isSuccessful && rpcResp.body() != null) {
+                            val body = rpcResp.body()!!
+                            val ok = (body["ok"] as? Boolean)
+                                ?: body["ok"]?.toString()?.toBooleanStrictOrNull() ?: false
+                            if (ok) {
+                                val subId = body["subscription_id"]?.toString() ?: UUID.randomUUID().toString()
+                                val pendingSub = Subscription(
+                                    id = subId,
+                                    userId = currentUser.id,
+                                    planName = "Driver Pass (24h)",
+                                    amount = 0.25,
+                                    currency = "USD",
+                                    status = "pending",
+                                    paymentMethod = paymentMethod,
+                                    senderPhone = effectivePhone,
+                                    destinationPhone = destination,
+                                    paymentReference = body["reference_number"]?.toString() ?: "",
+                                    startDate = "",
+                                    endDate = "",
+                                    autoRenew = false
+                                )
+                                supportDao.insertSubscription(pendingSub)
+                                logAudit(
+                                    "PAYMENT_SUBMITTED",
+                                    "subscription",
+                                    subId,
+                                    "Driver Pass pending admin approval"
+                                )
+                                return@withContext Result.success(pendingSub)
+                            }
+                            if (body["error"]?.toString() == "pass_still_active") {
+                                return@withContext Result.failure(
+                                    Exception("Driver Pass-kaagu weli waa shaqeynayaa. Ma aad u baahnid lacag-bixin cusub.")
+                                )
+                            }
+                        } else if (rpcResp.isSuccessful || rpcResp.code() != 404) {
+                            val body = rpcResp.errorBody()?.string().orEmpty()
+                            return@withContext Result.failure(
+                                Exception("Lacag-bixinta lama dirin (${rpcResp.code()}). ${body.take(160)}")
+                            )
+                        }
+                        // 404 => RPC not installed yet; fall through to the legacy direct write.
+                    } catch (rpcEx: Exception) {
+                        android.util.Log.w("GoBajaajRepo", "submit_driver_pass_payment RPC warning: ${rpcEx.message}")
+                    }
+                }
 
                 // 1. Resolve the authoritative profile by phone first
                 var foundRemoteId: String? = null
@@ -1148,7 +1354,7 @@ class SomaliTrafficRepository(private val context: Context) {
                         val st = latestSub["status"]?.toString()?.lowercase() ?: ""
                         val subEnd = latestSub["end_date"]?.toString()
 
-                        if (st in listOf("active", "completed", "approved")) {
+                        if (st == "active") {
                             if (!subEnd.isNullOrBlank() && isDateValidInFuture(subEnd)) {
                                 remoteStatus = "active"
                             } else {
@@ -1179,7 +1385,7 @@ class SomaliTrafficRepository(private val context: Context) {
                                 val st = latestSub["status"]?.toString()?.lowercase() ?: ""
                                 val subEnd = latestSub["end_date"]?.toString()
 
-                                if (st in listOf("active", "completed", "approved")) {
+                                if (st == "active") {
                                     if (!subEnd.isNullOrBlank() && isDateValidInFuture(subEnd)) {
                                         remoteStatus = "active"
                                         remoteSubId = latestSub["id"]?.toString() ?: remoteSubId
@@ -1215,7 +1421,11 @@ class SomaliTrafficRepository(private val context: Context) {
                             val st = latestTx["status"]?.toString()?.lowercase() ?: ""
                             val txCreatedAt = latestTx["created_at"]?.toString()
 
-                            if (st in listOf("completed", "approved", "active")) {
+                            if (st in listOf("completed", "approved")) {
+                                // Payment recorded, but the Driver Pass stays inactive until
+                                // an admin approves the subscription. Never self-activate.
+                                if (remoteStatus == null) remoteStatus = "pending"
+                            } else if (st == "active") {
                                 if (isTimestampWithin24Hours(txCreatedAt)) {
                                     remoteStatus = "active"
                                     startDate = txCreatedAt
@@ -1244,7 +1454,9 @@ class SomaliTrafficRepository(private val context: Context) {
                                 val st = latestTx["status"]?.toString()?.lowercase() ?: ""
                                 val txCreatedAt = latestTx["created_at"]?.toString()
 
-                                if (st in listOf("completed", "approved", "active")) {
+                                if (st in listOf("completed", "approved")) {
+                                    if (remoteStatus == null) remoteStatus = "pending"
+                                } else if (st == "active") {
                                     if (isTimestampWithin24Hours(txCreatedAt)) {
                                         remoteStatus = "active"
                                         startDate = txCreatedAt
@@ -1263,7 +1475,9 @@ class SomaliTrafficRepository(private val context: Context) {
                     }
                 }
 
-                // 5. Check profiles table to see if subscription_status was set to active by Admin
+                // 5. Profiles are client-writable, so they are NOT trusted to grant
+                //    an active pass. Only the admin-approved subscriptions/payment
+                //    rows above can activate the Driver Pass.
                 if (remoteStatus != "active") {
                     try {
                         val idProfResp = service.getProfileById(apiKey, authHeader, "eq.${user.id}")
@@ -1274,14 +1488,10 @@ class SomaliTrafficRepository(private val context: Context) {
                             if (!profExpiry.isNullOrBlank()) {
                                 endDate = profExpiry
                             }
-                            if (profSubStatus in listOf("active", "completed", "approved")) {
-                                if (!profExpiry.isNullOrBlank() && isDateValidInFuture(profExpiry)) {
-                                    remoteStatus = "active"
-                                } else {
-                                    remoteStatus = "expired"
-                                }
-                            } else if (profSubStatus in listOf("rejected", "failed")) {
-                                remoteStatus = "rejected"
+                            if (profSubStatus in listOf("rejected", "failed")) {
+                                if (remoteStatus == null) remoteStatus = "rejected"
+                            } else if (profSubStatus == "pending") {
+                                if (remoteStatus == null) remoteStatus = "pending"
                             }
                         }
                     } catch (e: Exception) {
@@ -1300,15 +1510,11 @@ class SomaliTrafficRepository(private val context: Context) {
                                 if (!profExpiry.isNullOrBlank()) {
                                     endDate = profExpiry
                                 }
-                                if (profSubStatus in listOf("active", "completed", "approved")) {
-                                    if (!profExpiry.isNullOrBlank() && isDateValidInFuture(profExpiry)) {
-                                        remoteStatus = "active"
-                                        break
-                                    } else {
-                                        remoteStatus = "expired"
-                                    }
-                                } else if (profSubStatus in listOf("rejected", "failed")) {
-                                    remoteStatus = "rejected"
+                                if (profSubStatus in listOf("rejected", "failed")) {
+                                    if (remoteStatus == null) remoteStatus = "rejected"
+                                    break
+                                } else if (profSubStatus == "pending") {
+                                    if (remoteStatus == null) remoteStatus = "pending"
                                     break
                                 }
                             }
@@ -2344,12 +2550,75 @@ class SomaliTrafficRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Driver accepts an assigned ride. The server RPC verifies the driver's
+     * Driver Pass (status = active, future 24h window) and only then assigns
+     * the ride, so a modified client cannot bypass the paywall.
+     */
     suspend fun acceptRideByDriver(
         rideId: String,
         agreedFare: Double? = null
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val user = prefs.getCurrentUser() ?: return@withContext Result.failure(Exception("Fadlan gal"))
+            if (user.role != UserRole.DRIVER) {
+                return@withContext Result.failure(Exception("Tallaabadan waa darawal kaliya."))
+            }
+
+            if (prefs.isSupabaseConfigured() && hasUserJwt()) {
+                try {
+                    val rpcResp = getApiService().acceptRideAsDriverRpc(
+                        apiKey = getSafeApiKey(),
+                        authHeader = getEffectiveAuthHeader(),
+                        body = buildMap {
+                            put("p_ride_id", rideId)
+                            if (agreedFare != null) put("p_agreed_fare", agreedFare)
+                        }
+                    )
+                    if (rpcResp.isSuccessful) {
+                        val body = rpcResp.body()
+                        val ok = (body?.get("ok") as? Boolean)
+                            ?: body?.get("ok")?.toString()?.toBooleanStrictOrNull() ?: true
+                        if (!ok) {
+                            val err = body?.get("error")?.toString() ?: "ride_not_acceptable"
+                            val msg = when (err) {
+                                "driver_pass_inactive", "pass_inactive", "no_active_pass" ->
+                                    "Driver Pass-kaagu ma shaqeynayo. Dir $0.25 oo sug ansixinta admin-ka."
+                                "ride_not_found" -> "Ride-ka lama helin."
+                                "ride_already_taken" -> "Ride-kan qof kale ayaa qaatay."
+                                else -> "Ride-ka lama qaadan karin ($err)."
+                            }
+                            return@withContext Result.failure(Exception(msg))
+                        }
+                        val ride = rideDao.getRideByIdDirect(rideId)
+                        if (ride != null) {
+                            rideDao.updateRide(
+                                ride.copy(
+                                    status = "accepted",
+                                    assignedDriverId = user.id,
+                                    assignedDriverName = user.fullName,
+                                    assignedDriverPhone = user.phoneNumber,
+                                    assignedDriverPlate = user.plateNumber ?: "TR-1001",
+                                    agreedFare = agreedFare ?: ride.riderOffer
+                                )
+                            )
+                        }
+                        logAudit("RIDE_ACCEPTED", "bajaj_rides", rideId, "Accepted by driver: ${user.fullName}")
+                        return@withContext Result.success(Unit)
+                    }
+                    if (rpcResp.code() != 404) {
+                        val errBody = rpcResp.errorBody()?.string().orEmpty()
+                        return@withContext Result.failure(
+                            Exception("Ride-ka lama qaadan karin (${rpcResp.code()}). ${errBody.take(160)}")
+                        )
+                    }
+                    // 404 => RPC not installed yet; fall through to the legacy direct write.
+                } catch (rpcEx: Exception) {
+                    android.util.Log.w("GoBajaajRepo", "accept_ride_as_driver RPC warning: ${rpcEx.message}")
+                }
+            }
+
+            // Legacy fallback: direct update. Server triggers still enforce the pass.
             val updates = mutableMapOf<String, Any>(
                 "status" to "accepted",
                 "driver_id" to user.id,
@@ -2362,12 +2631,18 @@ class SomaliTrafficRepository(private val context: Context) {
                 updates["offered_price"] = agreedFare
             }
             if (prefs.isSupabaseConfigured()) {
-                getApiService().updateRideStatus(
+                val resp = getApiService().updateRideStatus(
                     apiKey = getSafeApiKey(),
-                    authHeader = getSafeAuthHeader(),
+                    authHeader = getEffectiveAuthHeader(),
                     idFilter = "eq.$rideId",
                     updates = updates
                 )
+                if (!resp.isSuccessful) {
+                    val errBody = resp.errorBody()?.string().orEmpty()
+                    return@withContext Result.failure(
+                        Exception("Ride-ka lama qaadan karin (${resp.code()}). ${errBody.take(160)}")
+                    )
+                }
             }
             val existing = rideDao.getRideByIdDirect(rideId)
             if (existing != null) {
@@ -2556,12 +2831,19 @@ class SomaliTrafficRepository(private val context: Context) {
             if (lng != null) body["longitude"] = lng
             if (heading != null) body["heading"] = heading
             if (speedKmh != null) body["speed"] = speedKmh
-            getApiService().upsertDriverPresence(
+            val resp = getApiService().upsertDriverPresence(
                 apiKey = getSafeApiKey(),
                 authHeader = getEffectiveAuthHeader(),
                 body = body
             )
-            Result.success(Unit)
+            if (resp.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                val errBody = resp.errorBody()?.string().orEmpty()
+                Result.failure(
+                    Exception("Khadka darawalka lama cusboonaysiin (${resp.code()}). ${errBody.take(140)}")
+                )
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
