@@ -122,7 +122,11 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         cooldownJob?.cancel()
     }
 
-    fun sendOtpForLogin(phone: String, onSuccess: () -> Unit = {}) {
+    fun sendOtpForLogin(
+        phone: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             val res = repository.sendPhoneOtp(phone = phone, isSignUp = false)
@@ -135,12 +139,19 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
                 _uiMessage.emit(result.message)
                 onSuccess()
             }.onFailure { e ->
-                _uiMessage.emit(e.localizedMessage ?: "Dirista SMS-ka way fashilantay")
+                val errorMsg = e.localizedMessage ?: "Dirista SMS-ka way fashilantay"
+                _uiMessage.emit(errorMsg)
+                onError(errorMsg)
             }
         }
     }
 
-    fun verifyOtpAndLogin(phone: String, code: String, onSuccess: (UserProfile) -> Unit) {
+    fun verifyOtpAndLogin(
+        phone: String,
+        code: String,
+        onSuccess: (UserProfile) -> Unit,
+        onError: (String) -> Unit = {}
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             val res = repository.verifyPhoneOtpAndSignIn(phone, code)
@@ -149,7 +160,57 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
                 resetOtpState()
                 onSuccess(user)
             }.onFailure { e ->
-                _uiMessage.emit(e.localizedMessage ?: "Koodhka OTP waa khalad ama wuu dhacay")
+                val errorMsg = e.localizedMessage ?: "Koodhka OTP waa khalad ama wuu dhacay"
+                _uiMessage.emit(errorMsg)
+                onError(errorMsg)
+            }
+        }
+    }
+
+    fun verifyAccountForReset(
+        phone: String,
+        fullName: String,
+        onSuccess: (UserProfile) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val res = repository.verifyAccountForPasswordReset(phone, fullName)
+            _isLoading.value = false
+            res.onSuccess { user ->
+                onSuccess(user)
+            }.onFailure { e ->
+                val msg = e.localizedMessage ?: "Hubinta akoonka way fashilantay"
+                onError(msg)
+            }
+        }
+    }
+
+    fun resetPasswordAndLogin(
+        phone: String,
+        fullName: String,
+        newPass: String,
+        onSuccess: (UserProfile) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            val res = repository.resetPasswordByPhone(phone, fullName, newPass)
+            if (res.isFailure) {
+                _isLoading.value = false
+                val msg = res.exceptionOrNull()?.localizedMessage ?: "Beddelka furaha sirta wuu fashilantay"
+                onError(msg)
+                return@launch
+            }
+            // Auto login with new password
+            val loginRes = repository.login(phone, newPass)
+            _isLoading.value = false
+            loginRes.onSuccess { user ->
+                _uiMessage.emit("Furaha sirta si guul leh ayaa loo beddelay!")
+                onSuccess(user)
+            }.onFailure { e ->
+                // Password was successfully reset, user can log in manually
+                onError("Furaha sirta waa la beddelay! Fadlan ku gal furahaaga cusub.")
             }
         }
     }
@@ -311,6 +372,14 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
             }
         }
     }
+
+    /**
+     * Validates any persisted session at startup. Returns true only when the
+     * stored user has a real, usable Supabase token (or was refreshed). A stale
+     * or backup-restored session is cleared, so the user is treated as logged
+     * out instead of being routed into the Driver Pass screen.
+     */
+    suspend fun validateStoredSession(): Boolean = repository.validateStoredSession()
 
     fun login(identifier: String, pass: String, onSuccess: (UserProfile) -> Unit) {
         viewModelScope.launch {

@@ -1,0 +1,36 @@
+==============================================
+GOBAJAAJ - NOOCA CUSUB EE V3.6.1
+==============================================
+Nooca: Version 3.6.1 (Build 36)
+Taariikhda: 2026-10-20
+Nooca hore: 3.5.2 (Build 34) / 3.6.0 (Build 35)
+
+FAYLALKA DIYAARKA AH:
+1. GoBajaaj_v3.6.1.aab  -> Google Play Console (Internal & Closed Testing)
+2. GoBajaaj_v3.6.1.apk  -> Direct Phone Install
+3. RELEASE_NOTES_V3.6.1.txt -> Faahfaahinta
+
+==============================================
+WIXII CUSUB IYO LA XALLIYAY EE V3.6.1:
+==============================================
+
+1. GOOGLE PLAY CONSOLE VERSION CODE BUMP:
+   - Version Code: 36 (wuxuu xallinayaa khaladkii "Version code 35 has already been used")
+   - Version Name: 3.6.1
+
+2. KAADHKA DALABAADKA BAJAAJTA OO LAGA SAARAY:
+   - Kaadhkii "Bajaaj - Dalabaadka & Safarrada" gabi ahaanba waa laga saaray Home-ka.
+   - Waxaa lagu beddelay "DIGNIINAHA - Xirnaanshaha & Shilalka".
+   - Kaadhka "WADDOOYINKA - Saxmadda & Isgoysyada" wuu joogaa.
+
+3. DIIWAANGELINTA & SOO GALITAANKA (ROLES):
+   - Qeybtii doorashada Macmiilka waa laga saaray diiwaangelinta.
+   - Qof kasta oo soo gala waxaa toos loogu hagayaa Home / Driver Pass.
+
+4. FORGOT PASSWORD (FURAHA SIRTA OO DIB LOO DEJINAYO):
+   - Hab cusub oo degdeg ah oo taleefan + magac lagu xaqiijiyo.
+
+==============================================
+Build: SUCCESSFUL (0 errors)
+Signed: my-upload-key.jks
+==============================================

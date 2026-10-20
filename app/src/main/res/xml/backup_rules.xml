@@ -6,8 +6,8 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- Never restore the session/prefs across installs or devices: a stale
+         "gobajaaj_prefs" (user_id, role, auth token) is what caused the app to
+         open on the Driver Pass screen and to attempt unauthenticated inserts. -->
+    <exclude domain="sharedpref" path="gobajaaj_prefs.xml"/>
 </full-backup-content>

@@ -536,13 +536,13 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_driver_presence_guard ON public.driver_presence;
 DO $$
 BEGIN
     IF to_regclass('public.driver_presence') IS NOT NULL THEN
-        CREATE TRIGGER trg_driver_presence_guard
+        EXECUTE 'DROP TRIGGER IF EXISTS trg_driver_presence_guard ON public.driver_presence';
+        EXECUTE 'CREATE TRIGGER trg_driver_presence_guard
             BEFORE INSERT OR UPDATE ON public.driver_presence
-            FOR EACH ROW EXECUTE FUNCTION public.driver_presence_guard();
+            FOR EACH ROW EXECUTE FUNCTION public.driver_presence_guard()';
     END IF;
 END $$;
 

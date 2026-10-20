@@ -25,22 +25,36 @@ fun SplashScreen(
     val progress = remember { Animatable(0.12f) }
 
     LaunchedEffect(Unit) {
-        val syncJob = launch(Dispatchers.IO) {
-            try {
-                viewModel.syncCurrentSubscription()
-            } catch (_: Exception) {}
+        // 1) Validate the restored session FIRST. Android Auto Backup can restore
+        //    an old "gobajaaj_prefs" onto a fresh install; trusting it would send
+        //    a logged-out user straight to the Driver Pass screen. If the stored
+        //    token is not real/refreshable it is cleared here.
+        val validSession = try {
+            viewModel.validateStoredSession()
+        } catch (_: Exception) {
+            viewModel.currentUser.value != null
         }
+
+        val syncJob = if (validSession) {
+            launch(Dispatchers.IO) {
+                try {
+                    viewModel.syncCurrentSubscription()
+                } catch (_: Exception) {}
+            }
+        } else null
 
         progress.animateTo(
             targetValue = 1.0f,
             animationSpec = tween(durationMillis = 1800, easing = FastOutSlowInEasing)
         )
 
-        try {
-            withTimeoutOrNull(800) {
-                syncJob.join()
-            }
-        } catch (_: Exception) {}
+        if (syncJob != null) {
+            try {
+                withTimeoutOrNull(800) {
+                    syncJob.join()
+                }
+            } catch (_: Exception) {}
+        }
         delay(150)
 
         val currentUser = viewModel.currentUser.value
@@ -55,8 +69,8 @@ fun SplashScreen(
                         onNavigateNext("driver_pass")
                     }
                 }
-                "passenger" -> onNavigateNext("ride")
-                else -> onNavigateNext("ride")
+                "passenger" -> onNavigateNext("home")
+                else -> onNavigateNext("home")
             }
         } else {
             onNavigateNext("login")

@@ -442,91 +442,33 @@ fun HomeDashboardScreen(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
-                if (isDriver) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        // 1. Ride (Blue Card) - Dalabaadka Bajaajta
-                        ServiceQuickCard(
-                            title = "Bajaaj",
-                            somaliDesc = "Dalabaadka & Safarrada",
-                            iconDrawableRes = com.example.R.drawable.ic_bajaaj_icon,
-                            bgColor = GoBajaajBlue,
-                            onClick = { 
-                                if (isPassActive) onNavigate("ride") else onNavigate("driver_pass")
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // 1. Digniinaha (Blue Card) - Digniinaha & Xirnaanshaha
+                    ServiceQuickCard(
+                        title = "Digniinaha",
+                        somaliDesc = "Xirnaanshaha & Shilalka",
+                        icon = Icons.Default.NotificationsActive,
+                        bgColor = GoBajaajBlue,
+                        onClick = { 
+                            if (isPassActive) onNavigate("traffic_alerts") else onNavigate("driver_pass")
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
 
-                        // 2. Waddooyinka (Amber/Orange Card) - Xogta Waddooyinka
-                        ServiceQuickCard(
-                            title = "Waddooyinka",
-                            somaliDesc = "Saxmadda & Isgoysyada",
-                            icon = Icons.Default.Traffic,
-                            bgColor = GoBajaajAmber,
-                            onClick = { 
-                                if (isPassActive) onNavigate("live_traffic") else onNavigate("driver_pass")
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                } else {
-                    // For Customer / Rakaab: Ride Card (Dalbo Bajaaj Hadda)
-                    Card(
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = GoBajaajBlue),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNavigate("ride") }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(18.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_bajaaj_icon),
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Dalbo Bajaaj Hadda",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "Dooro gaadiid, qiimo gooso, si nabad ah ku gaar",
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.85f)
-                                )
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = GoBajaajYellow
-                            ) {
-                                Text(
-                                    text = "Dalbo",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = GoBajaajNavy,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
-                                )
-                            }
-                        }
-                    }
+                    // 2. Waddooyinka (Amber/Orange Card) - Xogta Waddooyinka
+                    ServiceQuickCard(
+                        title = "Waddooyinka",
+                        somaliDesc = "Saxmadda & Isgoysyada",
+                        icon = Icons.Default.Traffic,
+                        bgColor = GoBajaajAmber,
+                        onClick = { 
+                            if (isPassActive) onNavigate("live_traffic") else onNavigate("driver_pass")
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))

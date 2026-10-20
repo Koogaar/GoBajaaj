@@ -4,6 +4,7 @@ object NavRoutes {
     const val SPLASH = "splash"
     const val ONBOARDING = "onboarding"
     const val LOGIN = "login"
+    const val FORGOT_PASSWORD = "forgot_password"
     const val SIGN_UP = "sign_up" // This will be the Role Selection
     const val REGISTRATION_FORM = "registration_form/{isDriver}"
     fun registrationForm(isDriver: Boolean) = "registration_form/$isDriver"

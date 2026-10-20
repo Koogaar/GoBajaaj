@@ -204,7 +204,6 @@ fun SomaliBottomNavigation(
     val tabs = listOf(
         Triple("home",            Icons.Filled.Dashboard,      "Guudmar"),
         Triple("live_traffic",   Icons.Filled.Map,            "Khariiradda"),
-        Triple("ride",           Icons.Filled.ElectricRickshaw, if (isDriver) "Dalabaadka" else "Dalbo"),
         Triple("profile_settings", Icons.Filled.AccountCircle, "Akoonka")
     )
 

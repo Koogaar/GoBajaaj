@@ -28,7 +28,7 @@ class PreferencesManager(context: Context) {
         val id = prefs.getString(KEY_USER_ID, null) ?: return null
         val name = prefs.getString(KEY_USER_NAME, "") ?: ""
         val phone = prefs.getString(KEY_USER_PHONE, "") ?: ""
-        val roleStr = prefs.getString(KEY_USER_ROLE, UserRole.DRIVER.code)
+        val roleStr = prefs.getString(KEY_USER_ROLE, UserRole.PASSENGER.code)
         val role = UserRole.fromString(roleStr)
         val status = prefs.getString(KEY_USER_STATUS, "active") ?: "active"
         val plate = prefs.getString(KEY_USER_PLATE, null)

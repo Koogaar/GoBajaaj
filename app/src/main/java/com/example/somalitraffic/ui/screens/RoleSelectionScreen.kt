@@ -28,7 +28,7 @@ fun RoleSelectionScreen(
     onBackClick: () -> Unit,
     onRoleSelected: (Boolean) -> Unit // true for driver, false for passenger
 ) {
-    var selectedRole by remember { mutableStateOf<Boolean?>(null) }
+    var selectedRole by remember { mutableStateOf<Boolean?>(true) }
     var showErrorMessage by remember { mutableStateOf(false) }
 
     Box(
@@ -100,28 +100,14 @@ fun RoleSelectionScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Darawal Card
+                // Darawal / Isticmaale Card
                 RoleCard(
-                    title = "DARAWAL",
-                    subtitle = "Xogta Waddooyinka • Dalabaadka Rakaabka ($0.25/Maalinle)",
+                    title = "DARAWAL / ISTICMAALE",
+                    subtitle = "Xogta Saxmadda Waddooyinka Muqdisho • Isgoysyada & Khariiradda Tooska ah",
                     iconEmoji = "🚖",
-                    isSelected = selectedRole == true,
+                    isSelected = true,
                     onClick = {
                         selectedRole = true
-                        showErrorMessage = false
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Macmiil Card
-                RoleCard(
-                    title = "MACMIIL",
-                    subtitle = "Dalbo Bajaaj • Gorgortan & Safar Nabad ah",
-                    iconEmoji = "👤",
-                    isSelected = selectedRole == false,
-                    onClick = {
-                        selectedRole = false
                         showErrorMessage = false
                     }
                 )

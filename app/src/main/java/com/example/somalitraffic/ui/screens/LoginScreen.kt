@@ -30,13 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.somalitraffic.data.model.UserRole
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
-import com.example.somalitraffic.ui.components.SmsOtpSection
 import com.example.somalitraffic.ui.components.SomaliSkylineBottom
 
 @Composable
 fun LoginScreen(
     viewModel: SomaliTrafficViewModel,
     onNavigateToSignUp: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit = {},
     onLoginSuccess: (UserRole) -> Unit
 ) {
     var phoneNumber by remember { mutableStateOf("") }
@@ -44,17 +44,7 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Forgot Password dialog state
-    var showForgotPasswordDialog by remember { mutableStateOf(false) }
-    var forgotPhone by remember { mutableStateOf("") }
-    var forgotOtpCode by remember { mutableStateOf("") }
-    var forgotStep by remember { mutableStateOf(1) } // 1: enter phone, 2: enter otp
-    var forgotError by remember { mutableStateOf<String?>(null) }
-
     val isLoading by viewModel.isLoading.collectAsState()
-    val otpCooldown by viewModel.otpCooldown.collectAsState()
-    val pendingPhone by viewModel.pendingPhone.collectAsState()
-    val otpNotice by viewModel.otpNotice.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.uiMessage.collect { msg ->
@@ -237,10 +227,7 @@ fun LoginScreen(
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF2563EB),
                         modifier = Modifier.clickable {
-                            showForgotPasswordDialog = true
-                            forgotPhone = phoneNumber
-                            forgotStep = 1
-                            forgotError = null
+                            onNavigateToForgotPassword()
                         }
                     )
                 }
@@ -326,112 +313,6 @@ fun LoginScreen(
             // Bottom Skyline Vector Illustration
             SomaliSkylineBottom(
                 modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        // Forgot Password Dialog (SMS OTP Verification)
-        if (showForgotPasswordDialog) {
-            AlertDialog(
-                onDismissRequest = {
-                    showForgotPasswordDialog = false
-                    viewModel.resetOtpState()
-                },
-                title = {
-                    Text(
-                        text = "Dib u Soo Celinta Furaha Sirta",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
-                text = {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (forgotStep == 1) {
-                            Text(
-                                text = "Geli nambarkaaga taleefanka si aan kuugu soo dirno koodhka OTP.",
-                                fontSize = 13.sp,
-                                color = Color(0xFF64748B),
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-                            OutlinedTextField(
-                                value = forgotPhone,
-                                onValueChange = { forgotPhone = it; forgotError = null },
-                                placeholder = { Text("061XXXXXXX ama 61XXXXXXX", fontSize = 13.sp) },
-                                singleLine = true,
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        } else {
-                            SmsOtpSection(
-                                phoneE164 = pendingPhone.ifBlank { viewModel.repository.prefs.toE164(forgotPhone) },
-                                otpCode = forgotOtpCode,
-                                onOtpChange = { forgotOtpCode = it; forgotError = null },
-                                cooldownSeconds = otpCooldown,
-                                isLoading = isLoading,
-                                errorMessage = forgotError,
-                                noticeMessage = otpNotice,
-                                onVerifyClick = {
-                                    viewModel.verifyOtpAndLogin(forgotPhone, forgotOtpCode) { user ->
-                                        showForgotPasswordDialog = false
-                                        viewModel.resetOtpState()
-                                        onLoginSuccess(user.role)
-                                    }
-                                },
-                                onResendClick = { viewModel.resendOtp(forgotPhone) },
-                                onChangeNumberClick = { forgotStep = 1 },
-                                actionButtonText = "Xaqiiji Koodhka & Gal"
-                            )
-                        }
-
-                        if (forgotError != null && forgotStep == 1) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = forgotError!!,
-                                color = Color(0xFFDC2626),
-                                fontSize = 12.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                },
-                confirmButton = {
-                    if (forgotStep == 1) {
-                        Button(
-                            onClick = {
-                                val clean = forgotPhone.trim().replace(" ", "")
-                                if (clean.isBlank() || clean.length < 7) {
-                                    forgotError = "Fadlan geli nambar taleefan oo sax ah"
-                                    return@Button
-                                }
-                                viewModel.sendOtpForLogin(clean) {
-                                    forgotStep = 2
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
-                            shape = RoundedCornerShape(8.dp),
-                            enabled = !isLoading
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
-                            } else {
-                                Text("Dir Koodhka SMS (OTP)", color = Color.White, fontSize = 13.sp)
-                            }
-                        }
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        showForgotPasswordDialog = false
-                        viewModel.resetOtpState()
-                    }) {
-                        Text("Xir", color = Color(0xFF64748B))
-                    }
-                }
             )
         }
     }

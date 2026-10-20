@@ -5,15 +5,11 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Keep the session out of cloud backups so a reinstall starts logged out. -->
+        <exclude domain="sharedpref" path="gobajaaj_prefs.xml"/>
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <!-- Do not carry a login across devices. -->
+        <exclude domain="sharedpref" path="gobajaaj_prefs.xml"/>
     </device-transfer>
-    -->
 </data-extraction-rules>

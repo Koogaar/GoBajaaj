@@ -30,14 +30,18 @@ fun SomaliTrafficNavHost(
     // ---- 24h Driver Pass lockdown: ONLY Drivers are locked out once the free
     // 24-hour window (or their paid period) expires until a new pass is approved.
     // Passengers (macaamiisha) and Admins NEVER get locked by Driver Pass.
+    // Drivers with a PENDING subscription have already submitted payment and are
+    // waiting for admin approval — they must NOT be locked out during that wait.
     val role = currentUser?.role
     val isDriver = role == UserRole.DRIVER
     val subscriptionActive = viewModel.isSubscriptionActive(subscription)
+    val subscriptionPending = subscription?.status?.lowercase() == "pending"
     val loggedIn = currentUser != null
-    val locked = loggedIn && isDriver && !subscriptionActive
+    // Don't lock if: not a driver, not logged in, subscription is active, OR subscription is pending approval
+    val locked = loggedIn && isDriver && !subscriptionActive && !subscriptionPending
     val topRoute = navBackStackEntry?.destination?.route
     val lockExempt = topRoute == null || topRoute == NavRoutes.SPLASH || topRoute == NavRoutes.ONBOARDING ||
-        topRoute == NavRoutes.LOGIN || topRoute == NavRoutes.SIGN_UP ||
+        topRoute == NavRoutes.LOGIN || topRoute == NavRoutes.FORGOT_PASSWORD || topRoute == NavRoutes.SIGN_UP ||
         topRoute == NavRoutes.REGISTRATION_FORM || topRoute == NavRoutes.DRIVER_PASS ||
         topRoute == NavRoutes.ADMIN_DASHBOARD || topRoute == NavRoutes.REPORTER_DASHBOARD
     val showLock = locked && !lockExempt
@@ -80,6 +84,7 @@ fun SomaliTrafficNavHost(
             LoginScreen(
                 viewModel = viewModel,
                 onNavigateToSignUp = { navController.navigate(NavRoutes.SIGN_UP) },
+                onNavigateToForgotPassword = { navController.navigate(NavRoutes.FORGOT_PASSWORD) },
                 onLoginSuccess = { role ->
                     val destination = when (role) {
                         UserRole.REPORTER -> NavRoutes.REPORTER_DASHBOARD
@@ -89,9 +94,34 @@ fun SomaliTrafficNavHost(
                         UserRole.TRAFFIC_MANAGER,
                         UserRole.REPORTER_MANAGER,
                         UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
-                        UserRole.DRIVER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
-                        UserRole.PASSENGER -> NavRoutes.RIDE
-                        else -> NavRoutes.RIDE
+                        UserRole.DRIVER,
+                        UserRole.PASSENGER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                        else -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                    }
+                    navController.navigate(destination) {
+                        popUpTo(NavRoutes.LOGIN) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Screen 3a: Dedicated Forgot Password Screen
+        composable(NavRoutes.FORGOT_PASSWORD) {
+            ForgotPasswordScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onResetSuccess = { role ->
+                    val destination = when (role) {
+                        UserRole.REPORTER -> NavRoutes.REPORTER_DASHBOARD
+                        UserRole.SUPER_ADMIN,
+                        UserRole.USER_MANAGER,
+                        UserRole.SUBSCRIPTION_MANAGER,
+                        UserRole.TRAFFIC_MANAGER,
+                        UserRole.REPORTER_MANAGER,
+                        UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
+                        UserRole.DRIVER,
+                        UserRole.PASSENGER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                        else -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
                     }
                     navController.navigate(destination) {
                         popUpTo(NavRoutes.LOGIN) { inclusive = true }
@@ -122,14 +152,8 @@ fun SomaliTrafficNavHost(
                 onSignUpSuccess = {
                     val user = viewModel.currentUser.value
                     val isDriverRole = if (user != null) user.role == UserRole.DRIVER else isDriver
-                    if (isDriverRole) {
-                        navController.navigate(NavRoutes.DRIVER_PASS) {
-                            popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(NavRoutes.RIDE) {
-                            popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
-                        }
+                    navController.navigate(NavRoutes.DRIVER_PASS) {
+                        popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
                     }
                 }
             )

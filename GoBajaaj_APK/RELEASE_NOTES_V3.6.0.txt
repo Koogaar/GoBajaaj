@@ -1,0 +1,52 @@
+==============================================
+GOBAJAAJ - NOOCA CUSUB EE V3.6.0
+==============================================
+Nooca: Version 3.6.0 (Build 35)
+Taariikhda: 2026-10-20
+Nooca hore: 3.5.2 (Build 34)
+
+FAYLALKA DIYAARKA AH:
+1. GoBajaaj_v3.6.0.apk  -> Direct Phone Install
+2. RELEASE_NOTES_V3.6.0.txt -> Faahfaahinta waxyaabaha la xalliyay
+
+==============================================
+WIXII CUSUB IYO LA XALLIYAY EE V3.6.0:
+==============================================
+
+1. FORGOT PASSWORD - HAB CUSUB OO AMMAAN AH:
+   HORE:  OTP/SMS ma shaqaynin - Supabase SMS provider la'aanta.
+   HADDA: Shaashadda cusub ForgotPasswordScreen (2 tallaabadood):
+          - Tallaabo 1: Xaqiiji akoonka (phone + magac)
+          - Tallaabo 2: Geli furaha sirta cusub
+          Marka guulaystaa: auto-login toos ah.
+
+2. MACMIIL & DALABAADKA SAFARRADA KA SAARID:
+   HORE:  Kaadhka "Bajaaj - Dalabaadka & Safarrada" iyo doorashada Macmiilku wey ku jireen.
+   HADDA: - Kaadhkii dalabaadka safarrada waa laga saaray bogga hore (Home).
+          - Waxaa lagu beddelay kaadhka "DIGNIINAHA (Xirnaanshaha & Shilalka)".
+          - Diiwaangelintana wax Macmiil ah ma jiraan (kaliya Darawal/Isticmaale).
+
+3. LOGIN SCREEN - NAVIGATION HAGAAJIN:
+   HORE:  "Forgot Password" dialog yar.
+   HADDA: Shaashadda gaar ah (ForgotPasswordScreen).
+
+==============================================
+FAYLASHA LA WAXQABADSIIYAY:
+==============================================
+- app/build.gradle.kts (versionCode 34->35, versionName 3.5.2->3.6.0)
+- ForgotPasswordScreen.kt (cusub - la dib u qoray)
+- SomaliTrafficViewModel.kt (functions cusub)
+- SomaliTrafficRepository.kt (password reset logic)
+- SupabaseApiService.kt (RPC endpoint)
+- RoleSelectionScreen.kt (Macmiil ka saaran)
+- SomaliTrafficNavHost.kt (route cusub)
+
+==============================================
+SUPABASE MIGRATION MUHIIM AH:
+==============================================
+!! Fur: supabase/MIGRATION_RESET_PASSWORD_BY_PHONE.sql
+!! Ku dheji Supabase Dashboard -> SQL Editor
+
+Build: SUCCESSFUL (0 errors)
+Signed: my-upload-key.jks
+==============================================

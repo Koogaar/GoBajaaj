@@ -83,6 +83,12 @@ interface SupabaseApiService {
         @Body request: SupabaseResendOtpRequest
     ): Response<Map<String, Any>>
 
+    @POST("rest/v1/rpc/reset_user_password_by_phone")
+    suspend fun resetPasswordByPhone(
+        @Header("apikey") apiKey: String,
+        @Body request: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Map<String, Any>>
+
     @POST("auth/v1/logout")
     suspend fun logout(
         @Header("apikey") apiKey: String,

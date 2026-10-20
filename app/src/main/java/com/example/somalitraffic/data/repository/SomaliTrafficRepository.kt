@@ -122,6 +122,32 @@ class SomaliTrafficRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Ensures any restored/persisted session is a REAL Supabase session.
+     *
+     * Android Auto Backup (allowBackup=true) can restore "gobajaaj_prefs" onto a
+     * fresh install, bringing back an old user_id/role and a stale or placeholder
+     * token. Trusting that session is the root cause of (a) being routed straight
+     * to the Driver Pass screen as a "driver" and (b) RLS error 42501 on the
+     * direct subscriptions insert (no valid auth.uid()).
+     *
+     * If the stored token is a valid JWT we keep the session. Otherwise we try a
+     * refresh; if that also fails the session is cleared so the user is treated
+     * as logged out (Login screen) instead of as an authenticated driver.
+     */
+    suspend fun validateStoredSession(): Boolean = withContext(Dispatchers.IO) {
+        val user = prefs.getCurrentUser() ?: return@withContext false
+        if (hasUserJwt()) return@withContext true
+        try {
+            refreshSessionIfNeeded()
+        } catch (_: Exception) {
+        }
+        if (hasUserJwt()) return@withContext true
+        // Stale/legacy/backup-restored session without a usable token -> force login.
+        prefs.clearSession()
+        false
+    }
+
     private suspend fun requireActiveDriverPass(): Result<Unit> {
         val user = prefs.getCurrentUser() ?: return Result.failure(Exception("Fadlan gal akoonkaaga."))
         if (user.role != UserRole.DRIVER) {
@@ -219,7 +245,7 @@ class SomaliTrafficRepository(private val context: Context) {
 
                 if (errBody.contains("phone_provider_disabled") || resp.code() == 400) {
                     return@withContext Result.failure(
-                        Exception("SMS OTP lama diri karin: Supabase Phone Provider lama hawlgelin. Isticmaal password-ka, ama hawlgelinta Phone Auth ee dashboard-ka.")
+                        Exception("SMS OTP lama diri karin: Adeegga SMS Provider (Twilio/Supabase Phone) lama hawlgelin dashboard-ka. Fadlan la xiriir Maamulka GoBajaaj (061 809 2060).")
                     )
                 }
 
@@ -505,6 +531,114 @@ class SomaliTrafficRepository(private val context: Context) {
         }
     }
 
+    suspend fun verifyAccountForPasswordReset(
+        phone: String,
+        fullName: String
+    ): Result<UserProfile> = withContext(Dispatchers.IO) {
+        try {
+            val cleanPhone = phone.trim().replace(" ", "")
+            if (cleanPhone.length < 7) {
+                return@withContext Result.failure(Exception("Fadlan geli nambar taleefan oo sax ah."))
+            }
+            val e164 = prefs.toE164(cleanPhone)
+            val digitsOnly = cleanPhone.filter { it.isDigit() }
+            val normalizedPhone = if (digitsOnly.length >= 9) digitsOnly.takeLast(9) else digitsOnly
+
+            val apiKey = getSafeApiKey()
+            val service = NetworkClient.createService(prefs.getSupabaseUrl())
+
+            var profList: List<Map<String, Any>>? = null
+            val directResp = service.getProfileByPhone(apiKey, getSafeAuthHeader(), "eq.$e164")
+            if (directResp.isSuccessful && !directResp.body().isNullOrEmpty()) {
+                profList = directResp.body()
+            } else {
+                val orQuery = "(phone_number.eq.$e164,phone_number.eq.$normalizedPhone,phone_number.eq.0$normalizedPhone,phone_number.eq.+252$normalizedPhone,phone_number.eq.252$normalizedPhone,phone_number.eq.$cleanPhone)"
+                val orResp = service.getProfilesWithOr(apiKey, getSafeAuthHeader(), orQuery)
+                if (orResp.isSuccessful && !orResp.body().isNullOrEmpty()) {
+                    profList = orResp.body()
+                }
+            }
+
+            if (profList.isNullOrEmpty()) {
+                return@withContext Result.failure(Exception("Ma jiro akoon ku diiwaangashan nambarka: $cleanPhone"))
+            }
+
+            val prof = profList.first()
+            val dbName = prof["full_name"]?.toString()?.trim() ?: ""
+            val userId = prof["id"]?.toString() ?: ""
+
+            if (fullName.isNotBlank()) {
+                val inputName = fullName.trim().lowercase()
+                val savedName = dbName.lowercase()
+                val inputWords = inputName.split("\\s+".toRegex()).filter { it.length > 1 }
+                val savedWords = savedName.split("\\s+".toRegex()).filter { it.length > 1 }
+                val hasMatch = inputWords.any { word -> savedWords.any { it.contains(word) || word.contains(it) } } ||
+                        savedName.contains(inputName) || inputName.contains(savedName)
+                if (!hasMatch) {
+                    return@withContext Result.failure(
+                        Exception("Magaca aad gelisay kuma habboona xogta akoonka ($cleanPhone).")
+                    )
+                }
+            }
+
+            val role = roleFromProfile(prof["role"]?.toString())
+            val profile = UserProfile(
+                id = userId,
+                fullName = dbName,
+                phoneNumber = e164,
+                role = role,
+                status = prof["status"]?.toString() ?: "active",
+                plateNumber = prof["plate_number"]?.toString(),
+                vehicleModel = prof["bajaaj_model"]?.toString()
+            )
+            Result.success(profile)
+        } catch (e: Exception) {
+            Result.failure(Exception("Hubinta akoonka way fashilantay: ${e.localizedMessage}"))
+        }
+    }
+
+    suspend fun resetPasswordByPhone(
+        phone: String,
+        fullName: String,
+        newPass: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            if (newPass.length < 4) {
+                return@withContext Result.failure(Exception("Furaha sirta waa inuu ugu yaraan 4 xaraf yahay."))
+            }
+            val cleanPhone = phone.trim().replace(" ", "")
+            val apiKey = getSafeApiKey()
+            val service = NetworkClient.createService(prefs.getSupabaseUrl())
+
+            val rpcBody = mapOf<String, Any>(
+                "p_phone" to cleanPhone,
+                "p_full_name" to fullName.trim(),
+                "p_new_password" to newPass.trim()
+            )
+            val resp = service.resetPasswordByPhone(apiKey, rpcBody)
+            if (resp.isSuccessful) {
+                val body = resp.body()
+                val success = body?.get("success") as? Boolean ?: true
+                val msg = body?.get("message")?.toString() ?: "Furaha sirta si guul leh ayaa loo beddelay!"
+                if (success) {
+                    return@withContext Result.success(Unit)
+                } else {
+                    return@withContext Result.failure(Exception(msg))
+                }
+            }
+
+            val errStr = resp.errorBody()?.string().orEmpty()
+            if (resp.code() == 404 || errStr.contains("function", ignoreCase = true) || errStr.contains("PGRST202", ignoreCase = true)) {
+                return@withContext Result.failure(
+                    Exception("Fadlan orod Supabase Dashboard → SQL Editor oo ku dar faylka 'MIGRATION_RESET_PASSWORD_BY_PHONE.sql' ama la xiriir Taageerada GoBajaaj (061 809 2060).")
+                )
+            }
+            Result.failure(Exception("Beddelka furaha sirta wuu fashilantay: ${errStr.take(120)}"))
+        } catch (e: Exception) {
+            Result.failure(Exception("Khalad baa dhacay: ${e.localizedMessage}"))
+        }
+    }
+
     // --- Authentication & Session ---
     suspend fun login(identifier: String, password: String): Result<UserProfile> = withContext(Dispatchers.IO) {
         val cleanIdentifier = identifier.trim()
@@ -545,6 +679,10 @@ class SomaliTrafficRepository(private val context: Context) {
                 val code = signInResp.code()
                 val errStr = signInResp.errorBody()?.string().orEmpty()
                 val msg = when {
+                    errStr.contains("email_provider_disabled", true) ->
+                        "Supabase Auth: Email provider-ka waa dammaan. Fur Authentication → Providers → Email."
+                    errStr.contains("phone_provider_disabled", true) ->
+                        "Supabase Auth: Phone provider-ka waa dammaan. Fur Authentication → Providers → Phone."
                     code == 400 && errStr.contains("invalid", true) ->
                         "Nambarka ama furaha sirta waa khalad."
                     code == 400 && errStr.contains("confirm", true) ->
@@ -707,6 +845,16 @@ class SomaliTrafficRepository(private val context: Context) {
                     signInResp.body()?.resolvedUserId.isNullOrBlank()
                 ) {
                     val errStr = signInResp.errorBody()?.string().orEmpty()
+                    val providerMsg = when {
+                        errStr.contains("email_provider_disabled", true) ->
+                            "Supabase Auth: Email provider-ka waa dammaan. Fur Authentication → Providers → Email."
+                        errStr.contains("phone_provider_disabled", true) ->
+                            "Supabase Auth: Phone provider-ka waa dammaan. Fur Authentication → Providers → Phone."
+                        else -> null
+                    }
+                    if (providerMsg != null) {
+                        return@withContext Result.failure(Exception(providerMsg))
+                    }
                     return@withContext Result.failure(
                         Exception(
                             "Diiwaangelinta lama dhammaystirin. " +
@@ -981,6 +1129,20 @@ class SomaliTrafficRepository(private val context: Context) {
 
             val apiConfigured = prefs.isSupabaseConfigured()
             if (apiConfigured) {
+                // Require a REAL, usable Supabase session before touching the
+                // remote tables. A stale/backup-restored token would otherwise
+                // produce an anonymous direct insert and fail RLS (42501).
+                // Always try refreshing the session first to handle expired JWTs.
+                try {
+                    refreshSessionIfNeeded()
+                } catch (_: Exception) {
+                }
+                if (!hasUserJwt()) {
+                    return@withContext Result.failure(Exception(
+                        "Fadlan mar kale gal akoonkaaga kadib isku day lacag-bixinta (session-kii hore wuu dhacay)."
+                    ))
+                }
+
                 val supabaseUrl = prefs.getSupabaseUrl()
                 val apiKey = getSafeApiKey()
                 val authHeader = getSafeAuthHeader()
@@ -991,16 +1153,38 @@ class SomaliTrafficRepository(private val context: Context) {
                 //    approves it using trusted server time.
                 if (hasUserJwt()) {
                     try {
-                        val rpcResp = service.submitDriverPassPaymentRpc(
+                        val rpcParams = mapOf(
+                            "p_sender_phone" to effectivePhone,
+                            "p_destination_phone" to destination,
+                            "p_payment_method" to paymentMethod,
+                            "p_reference" to transactionId.trim()
+                        )
+                        var rpcResp = service.submitDriverPassPaymentRpc(
                             apiKey,
                             getEffectiveAuthHeader(),
-                            mapOf(
-                                "p_sender_phone" to effectivePhone,
-                                "p_destination_phone" to destination,
-                                "p_payment_method" to paymentMethod,
-                                "p_reference" to transactionId.trim()
-                            )
+                            rpcParams
                         )
+
+                        // If JWT expired (401), refresh token and retry once automatically
+                        if (rpcResp.code() == 401) {
+                            android.util.Log.w("GoBajaajRepo", "JWT expired on RPC call, refreshing session and retrying...")
+                            try {
+                                refreshSessionIfNeeded()
+                            } catch (_: Exception) {
+                            }
+                            if (hasUserJwt()) {
+                                rpcResp = service.submitDriverPassPaymentRpc(
+                                    apiKey,
+                                    getEffectiveAuthHeader(),
+                                    rpcParams
+                                )
+                            } else {
+                                return@withContext Result.failure(Exception(
+                                    "Session-kaagu wuu dhacay. Fadlan ka bax oo mar kale gal, kadibna isku day lacag-bixinta."
+                                ))
+                            }
+                        }
+
                         if (rpcResp.isSuccessful && rpcResp.body() != null) {
                             val body = rpcResp.body()!!
                             val ok = (body["ok"] as? Boolean)
@@ -1037,10 +1221,13 @@ class SomaliTrafficRepository(private val context: Context) {
                                 )
                             }
                         } else if (rpcResp.isSuccessful || rpcResp.code() != 404) {
-                            val body = rpcResp.errorBody()?.string().orEmpty()
-                            return@withContext Result.failure(
-                                Exception("Lacag-bixinta lama dirin (${rpcResp.code()}). ${body.take(160)}")
-                            )
+                            val errorBody = rpcResp.errorBody()?.string().orEmpty()
+                            val friendlyMsg = when (rpcResp.code()) {
+                                401 -> "Session-kaagu wuu dhacay. Fadlan ka bax oo mar kale gal, kadibna isku day lacag-bixinta."
+                                403 -> "Ogolaanshaha la diidey. Fadlan xaqiiji inaad account saxan isticmaalayso."
+                                else -> "Lacag-bixinta lama dirin (${rpcResp.code()}). ${errorBody.take(160)}"
+                            }
+                            return@withContext Result.failure(Exception(friendlyMsg))
                         }
                         // 404 => RPC not installed yet; fall through to the legacy direct write.
                     } catch (rpcEx: Exception) {
@@ -1078,7 +1265,17 @@ class SomaliTrafficRepository(private val context: Context) {
                     android.util.Log.w("GoBajaajRepo", "Profile phone lookup warning: ${e.message}")
                 }
 
-                targetUserId = foundRemoteId ?: currentUser.id
+                // RLS requires auth.uid() = user_id, so the subscription and the
+                // payment row MUST be owned by the authenticated profile id. A
+                // phone-resolved legacy profile may have a different id; using it
+                // would violate RLS (42501). Keep the authenticated id.
+                targetUserId = currentUser.id
+                if (!foundRemoteId.isNullOrBlank() && foundRemoteId != currentUser.id) {
+                    android.util.Log.w(
+                        "GoBajaajRepo",
+                        "Legacy profile id $foundRemoteId differs from auth id ${currentUser.id}; using auth id for RLS."
+                    )
+                }
 
                 // 2. Ensure driver profile exists in Supabase so foreign keys in subscriptions/payment_transactions pass
                 val driverProfilePayload = mutableMapOf<String, Any>(
