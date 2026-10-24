@@ -64,18 +64,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       let targetEmail = cleanUsername;
 
       if (!cleanUsername.includes('@')) {
-        if (cleanUsername.toLowerCase() === 'owner' || cleanUsername.toLowerCase() === 'koogaaryare' || cleanUsername.toLowerCase() === 'kuluntamedia' || cleanUsername.toLowerCase() === 'admin') {
+        const lower = cleanUsername.toLowerCase();
+        if (lower === 'koogaaryare' || lower === 'owner' || lower === 'admin') {
+          targetEmail = 'koogaaryare@gmail.com';
+        } else if (lower === 'kuluntamedia') {
           targetEmail = 'kuluntamedia@gmail.com';
         } else {
           // Look up email from admin_users table where username = cleanUsername
-          const { data: adminRow } = await supabase
+          const { data: adminRows } = await supabase
             .from('admin_users')
             .select('email, username, status')
             .ilike('username', cleanUsername)
-            .maybeSingle();
+            .limit(1);
 
-          if (adminRow && adminRow.email) {
-            targetEmail = adminRow.email;
+          if (adminRows && adminRows[0]?.email) {
+            targetEmail = adminRows[0].email;
           } else {
             // Standard mapping convention for usernames without domain
             targetEmail = `${cleanUsername.toLowerCase()}@gobajaaj.so`;
@@ -90,9 +93,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       });
 
       // Owner Account First-Time Bootstrap
-      const isOwnerAccount = targetEmail === 'kuluntamedia@gmail.com' || 
-                             targetEmail === 'koogaaryare@gmail.com' || 
+      const isOwnerAccount = targetEmail === 'koogaaryare@gmail.com' ||
+                             targetEmail === 'kuluntamedia@gmail.com' || 
                              cleanUsername.toLowerCase() === 'owner' || 
+                             cleanUsername.toLowerCase() === 'koogaaryare' || 
                              cleanUsername.toLowerCase() === 'admin';
 
       if (error && isOwnerAccount) {
@@ -127,11 +131,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
       if (data.session?.user) {
         // Verify admin_users role and status by user_id, email, or username
-        let { data: adminData } = await supabase
+        let { data: adminRows } = await supabase
           .from('admin_users')
           .select('*')
           .or(`user_id.eq.${data.session.user.id},email.eq.${targetEmail},email.eq.${data.session.user.email},username.ilike.${cleanUsername}`)
-          .maybeSingle();
+          .limit(1);
+        let adminData = adminRows?.[0] || null;
 
         // Link user_id on admin_users table if not set yet
         if (adminData && !adminData.user_id) {

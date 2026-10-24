@@ -140,12 +140,12 @@ export default function App() {
 
       if (currentSession?.user) {
         const userEmail = currentSession.user.email || '';
-        // Fetch Admin profile from admin_users or profiles
-        let { data: adminData } = await supabase
+        let { data: adminRows } = await supabase
           .from('admin_users')
           .select('*')
           .or(`user_id.eq.${currentSession.user.id},email.eq.${userEmail}`)
-          .maybeSingle();
+          .limit(1);
+        const adminData = adminRows?.[0] || null;
 
         if (adminData && !adminData.user_id) {
           await supabase
