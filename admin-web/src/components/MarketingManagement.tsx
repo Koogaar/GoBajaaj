@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Megaphone,
   UserPlus,
@@ -269,10 +269,11 @@ export const MarketingManagement: React.FC<MarketingManagementProps> = ({ canMan
         </div>
       )}
 
-      {/* SQL Notice */}
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 leading-relaxed">
-        <p className="font-bold mb-2">SQL Migration (Supabase SQL Editor):</p>
-        <pre className="text-[10px] font-mono bg-amber-100 p-3 rounded-lg overflow-x-auto whitespace-pre">{`CREATE TABLE IF NOT EXISTS marketing_staff (
+      {/* SQL Notice - only shown if table is not yet created in Supabase */}
+      {errorMsg?.includes('marketing_staff') && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 leading-relaxed">
+          <p className="font-bold mb-2">SQL Migration (Supabase SQL Editor):</p>
+          <pre className="text-[10px] font-mono bg-amber-100 p-3 rounded-lg overflow-x-auto whitespace-pre">{`CREATE TABLE IF NOT EXISTS marketing_staff (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   username TEXT UNIQUE NOT NULL,
@@ -288,7 +289,8 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT '
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS subscription_expiry TIMESTAMPTZ;
 ALTER TABLE marketing_staff ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Admin full access" ON marketing_staff FOR ALL USING (true);`}</pre>
-      </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
