@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TrafficCone, MapPin, AlertTriangle, RefreshCw, Plus, Edit, ShieldAlert, CheckCircle2, Trash2 } from 'lucide-react';
-import { Intersection, TrafficReport } from '../types';
+import { TrafficCone, MapPin, AlertTriangle, RefreshCw, Plus, Edit2, ShieldAlert, CheckCircle2, Trash2, UserCheck, Navigation } from 'lucide-react';
+import { Intersection, TrafficReport, Profile } from '../types';
 import { supabase } from '../supabase';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ActiveRides } from './ActiveRides';
@@ -44,6 +44,19 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
   // Clear all data modal
   const [clearAllModal, setClearAllModal] = useState(false);
 
+  // Edit Intersection Modal
+  const [editModal, setEditModal] = useState<{
+    isOpen: boolean;
+    intersection: Intersection | null;
+  }>({ isOpen: false, intersection: null });
+  const [editName, setEditName] = useState('');
+  const [editLatitude, setEditLatitude] = useState('');
+  const [editLongitude, setEditLongitude] = useState('');
+  const [editRadius, setEditRadius] = useState('');
+  const [editStatus, setEditStatus] = useState<IntersectionStatus>('Furan');
+  const [editReporterId, setEditReporterId] = useState('');
+  const [reporters, setReporters] = useState<Profile[]>([]);
+
   const fetchTrafficData = async () => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -71,6 +84,17 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
         console.error('Fetch traffic_reports error:', repErr.message);
       } else if (repData) {
         setTrafficReports(repData as TrafficReport[]);
+      }
+
+      // 3. Fetch reporters
+      const { data: repProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone_number, role, status')
+        .eq('role', 'reporter')
+        .eq('status', 'active')
+        .order('full_name', { ascending: true });
+      if (repProfiles) {
+        setReporters(repProfiles as Profile[]);
       }
 
     } catch (err: any) {
@@ -186,6 +210,93 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
     }
   };
 
+  const openEditModal = (int: Intersection) => {
+    setEditModal({ isOpen: true, intersection: int });
+    setEditName(int.name);
+    setEditLatitude(String(int.latitude));
+    setEditLongitude(String(int.longitude));
+    setEditRadius(String(int.allowed_radius));
+    setEditStatus(int.current_status as IntersectionStatus);
+    setEditReporterId(int.assigned_reporter_id || '');
+  };
+
+  const handleEditIntersection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canManage || !editModal.intersection) return;
+    if (!editName.trim()) {
+      alert('Fadlan geli Magaca Isgoyska.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const intId = editModal.intersection.id;
+
+      // Update intersection data
+      const { error: updateErr } = await supabase
+        .from('intersections')
+        .update({
+          name: editName.trim(),
+          latitude: parseFloat(editLatitude) || editModal.intersection.latitude,
+          longitude: parseFloat(editLongitude) || editModal.intersection.longitude,
+          allowed_radius: parseInt(editRadius) || editModal.intersection.allowed_radius,
+          current_status: editStatus,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', intId);
+
+      if (updateErr) {
+        alert('Cilad: ' + updateErr.message);
+        return;
+      }
+
+      // Handle reporter assignment change
+      const prevReporterId = editModal.intersection.assigned_reporter_id || '';
+      if (editReporterId !== prevReporterId) {
+        // Remove previous reporter from this intersection if any
+        if (prevReporterId) {
+          await supabase
+            .from('intersections')
+            .update({ assigned_reporter_id: null })
+            .eq('id', intId);
+        }
+        // Remove reporter from any other intersection they may be assigned to
+        if (editReporterId) {
+          await supabase
+            .from('intersections')
+            .update({ assigned_reporter_id: null })
+            .eq('assigned_reporter_id', editReporterId)
+            .neq('id', intId);
+          // Assign reporter to this intersection
+          await supabase
+            .from('intersections')
+            .update({ assigned_reporter_id: editReporterId, last_updated: new Date().toISOString() })
+            .eq('id', intId);
+        } else {
+          // Clear reporter assignment
+          await supabase
+            .from('intersections')
+            .update({ assigned_reporter_id: null })
+            .eq('id', intId);
+        }
+      }
+
+      await supabase.from('audit_logs').insert([{
+        actor_name: actorName,
+        action: 'INTERSECTION_EDITED',
+        target_type: 'intersection',
+        target_id: intId,
+        metadata: { name: editName, status: editStatus, reporter_id: editReporterId }
+      }]);
+
+      await fetchTrafficData();
+      setEditModal({ isOpen: false, intersection: null });
+    } catch (err: any) {
+      alert('Cilad ayaa dhacday: ' + (err.message || ''));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleClearAllIntersections = async () => {
     if (!canManage) return;
     setIsLoading(true);
@@ -294,16 +405,24 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {intersections.map((int) => (
+            {intersections.map((int) => {
+              const assignedRep = reporters.find(r => r.id === int.assigned_reporter_id);
+              return (
               <div key={int.id} className="p-4 rounded-xl border border-neutral-200 bg-neutral-50 flex flex-col justify-between space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-black text-sm">{int.name}</p>
                     <p className="text-[11px] text-neutral-500 font-mono mt-0.5">
-                      GPS: {int.latitude}, {int.longitude} ({int.allowed_radius}m radius)
+                      GPS: {int.latitude}, {int.longitude} ({int.allowed_radius}m)
                     </p>
+                    {assignedRep && (
+                      <p className="text-[11px] text-emerald-700 font-semibold mt-0.5 flex items-center gap-1">
+                        <UserCheck className="w-3 h-3" />
+                        {assignedRep.full_name}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-center space-x-2 shrink-0">
+                  <div className="flex items-center space-x-1.5 shrink-0">
                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
                       int.current_status === 'Furan' ? 'bg-emerald-100 text-emerald-800' :
                       int.current_status === 'Normal' ? 'bg-amber-100 text-amber-800' :
@@ -315,11 +434,20 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                     </span>
                     {canManage && (
                       <button
+                        onClick={() => openEditModal(int)}
+                        className="p-1.5 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                        title="Wax ka beddel isgoyskan"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {canManage && (
+                      <button
                         onClick={() => setDeleteModal({ isOpen: true, intersectionId: int.id, name: int.name })}
-                        className="p-1 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                        className="p-1.5 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
                         title="Tirtir isgoyskan"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
@@ -347,7 +475,8 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -517,6 +646,144 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                   className="px-5 py-2 bg-[#E50914] text-white text-sm font-bold rounded-xl shadow hover:bg-[#B91C1C]"
                 >
                   Kaydi Isgoyska
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Intersection Modal */}
+      {editModal.isOpen && editModal.intersection && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-neutral-200 overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
+              <div>
+                <h3 className="font-black text-lg text-black flex items-center gap-2">
+                  <Edit2 className="w-5 h-5 text-[#E50914]" />
+                  Wax Ka Beddel Isgoyska
+                </h3>
+                <p className="text-xs text-neutral-500 mt-0.5">{editModal.intersection.name}</p>
+              </div>
+              <button onClick={() => setEditModal({ isOpen: false, intersection: null })} className="text-neutral-400 hover:text-black">✕</button>
+            </div>
+
+            <form onSubmit={handleEditIntersection} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">Magaca Isgoyska</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-black">Coordinates (Latitude & Longitude)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            setEditLatitude(pos.coords.latitude.toFixed(6));
+                            setEditLongitude(pos.coords.longitude.toFixed(6));
+                          },
+                          (err) => alert('Lama heli karin GPS-ka: ' + err.message)
+                        );
+                      } else {
+                        alert('Browser-kaagu ma taageerayo GPS-ka.');
+                      }
+                    }}
+                    className="text-xs font-bold text-[#E50914] hover:underline flex items-center space-x-1"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>📍 Soo Qaad GPS-kayga Hadda</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Latitude"
+                      value={editLatitude}
+                      onChange={(e) => setEditLatitude(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-xl font-mono text-black focus:border-[#E50914] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Longitude"
+                      value={editLongitude}
+                      onChange={(e) => setEditLongitude(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-xl font-mono text-black focus:border-[#E50914] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">Radius-ka Loo Oggolyahay (Meters)</label>
+                <input
+                  type="number"
+                  value={editRadius}
+                  onChange={(e) => setEditRadius(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-neutral-300 rounded-xl font-mono text-black focus:border-[#E50914] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">Xaaladda Hadda</label>
+                <select
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as IntersectionStatus)}
+                  className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black bg-white font-bold"
+                >
+                  <option value="Furan">Furan (🟢 Saxmad la'aan)</option>
+                  <option value="Normal">Normal (🟡 Gaadiid dhexdhexaad)</option>
+                  <option value="Jaam">Jaam (🟠 Saxmad/Jam Culus)</option>
+                  <option value="Xeran">Xeran / Waddo Xiran (🔴 Waa xiranyahay)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  <span className="flex items-center gap-1"><UserCheck className="w-3.5 h-3.5 text-emerald-600" /> Wariyaha Loo Xilsaarayo (Reporter)</span>
+                </label>
+                <select
+                  value={editReporterId}
+                  onChange={(e) => setEditReporterId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black bg-white"
+                >
+                  <option value="">-- Ma laha Wariye (Tirtir xilsaarista) --</option>
+                  {reporters.map(rep => (
+                    <option key={rep.id} value={rep.id}>
+                      {rep.full_name} ({rep.phone_number})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-neutral-500 mt-1">Keliya 1 wariye isgoyskiiba. Haddaad doorato wariye cusub, isgoysyadii hore ee loogu xilsaaray ayaa si otomaatig ah uga noqon doona.</p>
+              </div>
+
+              <div className="pt-4 border-t border-neutral-200 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setEditModal({ isOpen: false, intersection: null })}
+                  className="px-4 py-2 text-sm font-bold text-neutral-600 hover:text-black"
+                >
+                  Ka noqo
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-5 py-2 bg-[#E50914] text-white text-sm font-bold rounded-xl shadow hover:bg-[#B91C1C] flex items-center gap-2"
+                >
+                  {isLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Edit2 className="w-4 h-4" />}
+                  Kaydi Isbeddelada
                 </button>
               </div>
             </form>

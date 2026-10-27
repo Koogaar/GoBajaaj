@@ -205,7 +205,7 @@ export const DriversManagement: React.FC<DriversManagementProps> = ({ canManage,
               className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow transition flex items-center space-x-1.5 cursor-pointer shrink-0"
             >
               <Zap className="w-3.5 h-3.5 fill-white" />
-              <span>Eeg Kuwa Maanta Shushubtay ($0.25)</span>
+              <span>Eeg Kuwa Ku Shubtay Maanta ($0.25)</span>
             </button>
           )}
 

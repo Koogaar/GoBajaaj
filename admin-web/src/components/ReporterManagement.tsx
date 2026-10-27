@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, UserPlus, RefreshCw, AlertCircle, MapPin, Check, ShieldAlert } from 'lucide-react';
+import { UserCheck, UserPlus, RefreshCw, AlertCircle, MapPin, Check, ShieldAlert, Eye, EyeOff, KeyRound, Copy } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
 import { Profile, Intersection } from '../types';
 import { supabase } from '../supabase';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -19,6 +20,8 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
   const [showAddModal, setShowAddModal] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [selectedIntersectionId, setSelectedIntersectionId] = useState('');
   const [customIntersectionName, setCustomIntersectionName] = useState('');
 
@@ -87,6 +90,10 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       alert('Fadlan geli Magaca Buuxa iyo Nambarka Taleefanka.');
       return;
     }
+    if (!password.trim() || password.trim().length < 6) {
+      alert('Fadlan geli Password (ugu yaraan 6 xaraf) ah.');
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -104,12 +111,39 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
         return;
       }
 
-      const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      // Create Supabase Auth account for reporter
+      // Username = phone number, Email = phone@phone.gobajaaj.so
+      const cleanPhone = phoneNumber.trim().replace(/\s+/g, '');
+      const phoneEmail = `${cleanPhone.replace(/[^0-9]/g, '')}@phone.gobajaaj.so`;
+
+      const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
+      const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+      const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: { persistSession: false }
+      });
+
+      const { data: authData, error: authErr } = await tempClient.auth.signUp({
+        email: phoneEmail,
+        password: password.trim(),
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            phone: cleanPhone,
+            role: 'reporter'
+          }
+        }
+      });
+
+      if (authErr && !authErr.message?.includes('already registered')) {
+        console.warn('Auth creation notice:', authErr.message);
+      }
+
+      const newId = authData?.user?.id || ((typeof crypto !== 'undefined' && crypto.randomUUID)
         ? crypto.randomUUID()
         : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
           const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
           return v.toString(16);
-        });
+        }));
 
       // Insert profile
       const { error: pErr } = await supabase.from('profiles').insert([{
@@ -170,8 +204,10 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       setShowAddModal(false);
       setFullName('');
       setPhoneNumber('');
+      setPassword('');
       setSelectedIntersectionId('');
       setCustomIntersectionName('');
+      alert(`✅ Wariyaha si guul leh ayaa loogu diiwaangeliyay!\n\nXogta Login-ka:\n📱 Username: ${phoneNumber.trim()}\n🔑 Password: ${password.trim()}\n\nWariyaha gacanta uga sii xogahan si uu u galo app-ka.`);
     } catch (err: any) {
       alert('Cilad ayaa dhacday marka la kaydinayay wariyaha.');
     } finally {
@@ -405,7 +441,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-black mb-1">Nambarka Taleefanka</label>
+                <label className="block text-xs font-bold text-black mb-1">Nambarka Taleefanka (= Username ee Login-ka)</label>
                 <input
                   type="text"
                   required
@@ -414,6 +450,30 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black font-mono"
                 />
+                <p className="text-[11px] text-neutral-500 mt-1">📱 Nambarkani waa username-ka ee wariyahu ku galay app-ka.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">Password ee App-ka (ugu yaraan 6 xaraf)</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    placeholder="Password cusub..."
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black font-mono pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-neutral-500 mt-1">🔑 Password-kan wariyaha ayaa isticmaali doona marka uu app-ka ku galo.</p>
               </div>
 
               <div>

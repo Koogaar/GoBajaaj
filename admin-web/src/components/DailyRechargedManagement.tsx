@@ -222,7 +222,7 @@ export const DailyRechargedManagement: React.FC<DailyRechargedManagementProps> =
             <div>
               <div className="flex items-center space-x-2">
                 <h2 className="text-xl font-black text-black">
-                  Darawallada Maanta Shushubtay ({payments.length})
+                  Darawallada Ku Shubtay Maanta ({payments.length})
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
                   {todayDateStr}

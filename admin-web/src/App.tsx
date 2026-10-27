@@ -494,7 +494,7 @@ export default function App() {
   const allowedTabs = [
     { id: 'overview', label: 'Tusmada Guud', icon: Shield, perm: true },
     { id: 'drivers', label: 'Darawallada Diiwaangashan', icon: Bike, count: registeredDriversCount, perm: hasPermission(role, 'users.view') },
-    { id: 'daily_paid', label: 'Maanta Shushubtay ($0.25)', icon: Wallet, count: overviewStats.todayApprovedCount, perm: hasPermission(role, 'payments.view') },
+    { id: 'daily_paid', label: 'Ku Shubtay Maanta ($0.25)', icon: Wallet, count: overviewStats.todayApprovedCount, perm: hasPermission(role, 'payments.view') },
     { id: 'ride_support', label: 'GoBajaaj & Cabashooyinka', icon: Bike, perm: hasPermission(role, 'ride.view') || hasPermission(role, 'support.view') },
     { id: 'device_support', label: 'Taageerada & Taleefannada Lumay', icon: Headphones, perm: hasPermission(role, 'support.view') || hasPermission(role, 'protection.view') },
     { id: 'users', label: 'Rakaabka (Macaamiisha)', icon: Users, perm: hasPermission(role, 'users.view') },
