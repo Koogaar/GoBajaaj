@@ -37,6 +37,10 @@ export interface Profile {
   phone_number: string;
   role: UserRole;
   status: 'active' | 'suspended' | 'disabled' | 'pending';
+  plate_number?: string;
+  bajaaj_model?: string;
+  subscription_status?: string;
+  subscription_expiry?: string;
   created_at: string;
 }
 

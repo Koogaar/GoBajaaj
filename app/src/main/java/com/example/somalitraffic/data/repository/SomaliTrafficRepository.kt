@@ -77,6 +77,28 @@ class SomaliTrafficRepository(private val context: Context) {
         return if (detail != null) "$fallback ($code): $detail" else "$fallback ($code)"
     }
 
+    private fun toFriendlyErrorMessage(e: Throwable, fallback: String = "Khalad baa dhacay"): String {
+        val msg = e.localizedMessage ?: e.message.orEmpty()
+        return when {
+            e is java.net.UnknownHostException ||
+            msg.contains("Unable to resolve host", ignoreCase = true) ||
+            msg.contains("No address associated with hostname", ignoreCase = true) ->
+                "Khadka internet-ka ma shaqeynayo ama waa daciif. Fadlan hubi xiriirka internet-kaaga (Wi-Fi ama Mobile Data)."
+
+            e is java.net.SocketTimeoutException || msg.contains("timeout", ignoreCase = true) ->
+                "Waqtigii xiriirku wuu dhacay. Internet-ka ayaa gaabis ah, fadlan dib u tijaabi."
+
+            e is java.net.ConnectException || msg.contains("Failed to connect", ignoreCase = true) ->
+                "Lama xiriiri karin server-ka. Fadlan hubi xiriirkaaga internet-ka."
+
+            e is javax.net.ssl.SSLException ->
+                "Xiriir ammaan ah lama samayn karin. Fadlan hubi waqtiga iyo taariikhda taleefankaaga."
+
+            msg.isNotBlank() && !msg.contains("Exception", ignoreCase = true) -> msg
+            else -> fallback
+        }
+    }
+
     private fun endDateEpochMs(dateStr: String?): Long? {
         if (dateStr.isNullOrBlank()) return null
         val formats = listOf(
@@ -257,7 +279,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Result.failure(Exception("Khalad baa dhacay: ${e.localizedMessage}"))
+            Result.failure(Exception(toFriendlyErrorMessage(e, "Dirista SMS-ka way fashilantay")))
         }
     }
 
@@ -635,7 +657,7 @@ class SomaliTrafficRepository(private val context: Context) {
             }
             Result.failure(Exception("Beddelka furaha sirta wuu fashilantay: ${errStr.take(120)}"))
         } catch (e: Exception) {
-            Result.failure(Exception("Khalad baa dhacay: ${e.localizedMessage}"))
+            Result.failure(Exception(toFriendlyErrorMessage(e, "Beddelka furaha sirta wuu fashilantay")))
         }
     }
 
@@ -752,7 +774,7 @@ class SomaliTrafficRepository(private val context: Context) {
             logAudit("LOGIN", "user", user.id, "User logged in with role: ${user.role.code}")
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(Exception("Khalad baa dhacay: ${e.localizedMessage ?: "Lama gali karo"}"))
+            Result.failure(Exception(toFriendlyErrorMessage(e, "Lama gali karo akoonka. Fadlan mar kale tijaabi.")))
         }
     }
 
@@ -2056,6 +2078,45 @@ class SomaliTrafficRepository(private val context: Context) {
             logAudit("TRAFFIC_REPORT", "intersection", intersection.id, "Status updated to $status (Distance: ${distance.toInt()}m, Status: $verificationStatus)")
 
             Result.success(report)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun registerReporterLocation(
+        lat: Double,
+        lng: Double,
+        intersectionId: String? = null
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val user = prefs.getCurrentUser() ?: return@withContext Result.failure(Exception("Fadlan gal"))
+            val nowIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date())
+            
+            if (prefs.isSupabaseConfigured()) {
+                val apiKey = prefs.getSupabaseKey()
+                val service = getApiService()
+                
+                // Update intersection GPS coordinates if assigned to this reporter
+                if (!intersectionId.isNullOrBlank() && intersectionId.contains("-") && intersectionId.length >= 32) {
+                    try {
+                        service.updateIntersectionStatus(
+                            apiKey = apiKey,
+                            authHeader = "Bearer $apiKey",
+                            idFilter = "eq.$intersectionId",
+                            updates = mapOf(
+                                "latitude" to lat,
+                                "longitude" to lng,
+                                "last_updated" to nowIso
+                            )
+                        )
+                    } catch (e: Exception) {
+                        android.util.Log.w("GoBajaajRepo", "updateIntersectionStatus warning: ${e.message}")
+                    }
+                }
+            }
+
+            logAudit("REPORTER_LOCATION_REGISTERED", "reporter", user.id, "Reporter location registered: ($lat, $lng)")
+            Result.success("Goobtaada GPS hadda waa la diiwaangeliyay")
         } catch (e: Exception) {
             Result.failure(e)
         }

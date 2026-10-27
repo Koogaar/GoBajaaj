@@ -522,6 +522,20 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    fun registerReporterLocation(
+        lat: Double,
+        lng: Double,
+        intersectionId: String? = null,
+        onComplete: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val res = repository.registerReporterLocation(lat, lng, intersectionId)
+            res.onSuccess { msg ->
+                onComplete(msg)
+            }
+        }
+    }
+
     fun registerIntersection(
         name: String,
         lat: Double,

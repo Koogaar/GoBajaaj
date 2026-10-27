@@ -43,7 +43,7 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'recent10' | 'pending' | 'completed' | 'rejected'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'recent10' | 'today' | 'pending' | 'completed' | 'rejected'>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Confirmation Modal
@@ -729,7 +729,14 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
       return timeB - timeA;
     })
     .filter((p) => {
-      if (filterStatus === 'recent10') {
+      if (filterStatus === 'today') {
+        if (!p.created_at) return false;
+        try {
+          if (new Date(p.created_at).toLocaleDateString('en-CA') !== todayDateStr) return false;
+        } catch {
+          return false;
+        }
+      } else if (filterStatus === 'recent10') {
         if (!isWithinMinutes(p.created_at, 10)) return false;
       } else if (filterStatus !== 'all' && p.status !== filterStatus) {
         return false;
@@ -944,6 +951,18 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
             }`}
           >
             Dhammaan ({payments.length})
+          </button>
+
+          <button
+            onClick={() => setFilterStatus('today')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shrink-0 ${
+              filterStatus === 'today'
+                ? 'bg-emerald-600 text-white shadow'
+                : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Maanta Shushubtay ({dailyCount})</span>
           </button>
 
           <button

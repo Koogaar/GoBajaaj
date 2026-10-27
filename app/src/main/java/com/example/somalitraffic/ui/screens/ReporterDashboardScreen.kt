@@ -67,8 +67,17 @@ fun ReporterDashboardScreen(
     var reporterLat by remember { mutableDoubleStateOf(2.0335) }
     var reporterLng by remember { mutableDoubleStateOf(45.3190) }
     var isGpsLive by remember { mutableStateOf(false) }
+    var locationRegisteredNotice by remember { mutableStateOf<String?>(null) }
 
-    // Try fetching actual device location
+    // Auto-select assigned intersection for this reporter
+    LaunchedEffect(intersections, currentUser) {
+        val assigned = intersections.find { it.assignedReporterId == currentUser?.id }
+        if (assigned != null && (selectedIntersectionId.isBlank() || selectedIntersectionId == "int-1")) {
+            selectedIntersectionId = assigned.id
+        }
+    }
+
+    // Try fetching actual device location and register it upon login
     LaunchedEffect(Unit) {
         try {
             val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
@@ -80,13 +89,39 @@ fun ReporterDashboardScreen(
                     reporterLat = bestLoc.latitude
                     reporterLng = bestLoc.longitude
                     isGpsLive = true
+                    
+                    val targetId = (intersections.find { it.id == selectedIntersectionId } 
+                        ?: intersections.find { it.assignedReporterId == currentUser?.id })?.id
+                        
+                    viewModel.registerReporterLocation(
+                        lat = bestLoc.latitude,
+                        lng = bestLoc.longitude,
+                        intersectionId = targetId
+                    ) { msg ->
+                        locationRegisteredNotice = "📍 $msg (${String.format(java.util.Locale.US, "%.4f", bestLoc.latitude)}, ${String.format(java.util.Locale.US, "%.4f", bestLoc.longitude)})"
+                    }
                 }
             }
         } catch (_: Exception) {}
     }
 
     val currentIntersection = intersections.find { it.id == selectedIntersectionId }
+        ?: intersections.find { it.assignedReporterId == currentUser?.id }
         ?: intersections.firstOrNull()
+
+    // Function to re-sync or register current location
+    fun syncCurrentLocation() {
+        val targetId = currentIntersection?.id
+        viewModel.registerReporterLocation(
+            lat = reporterLat,
+            lng = reporterLng,
+            intersectionId = targetId
+        ) { msg ->
+            locationRegisteredNotice = "📍 $msg (${String.format(java.util.Locale.US, "%.4f", reporterLat)}, ${String.format(java.util.Locale.US, "%.4f", reporterLng)})"
+            feedbackMessage = "✅ Goobtaada GPS-ka si toos ah ayaa loogu diiwaangeliyay isgoyska (${currentIntersection?.name ?: "Muqdisho"})!"
+            isWarning = false
+        }
+    }
 
     // Calculate distance between reporter GPS and intersection
     val distanceMeters = remember(reporterLat, reporterLng, currentIntersection) {
@@ -300,6 +335,32 @@ fun ReporterDashboardScreen(
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
+                    }
+                }
+
+                // Live Location Registration Details & Re-sync Button
+                HorizontalDivider(color = Color(0xFFF1F5F9))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = locationRegisteredNotice ?: "📍 GPS: %.4f, %.4f".format(java.util.Locale.US, reporterLat, reporterLng),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF1E293B),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedButton(
+                        onClick = { syncCurrentLocation() },
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE50914))
+                    ) {
+                        Text("Diiwaangeli Goobta", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

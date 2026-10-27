@@ -104,12 +104,12 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
         return;
       }
 
-      const newId = (typeof crypto !== 'undefined' && crypto.randomUUID) 
-        ? crypto.randomUUID() 
+      const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
         : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-          });
+          const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
 
       // Insert profile
       const { error: pErr } = await supabase.from('profiles').insert([{
@@ -216,7 +216,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
     setIsLoading(true);
     try {
       await supabase.from('profiles').update({ status: nextStatus }).eq('id', reporterId);
-      
+
       // If deactivating, remove intersection assignment
       if (nextStatus === 'disabled') {
         await supabase.from('intersections').update({ assigned_reporter_id: null }).eq('assigned_reporter_id', reporterId);
@@ -254,7 +254,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
         </div>
 
         <div className="flex items-center space-x-3 shrink-0">
-          <button 
+          <button
             onClick={fetchReportersAndIntersections}
             disabled={isLoading}
             className="p-2.5 border border-neutral-200 rounded-xl hover:bg-neutral-50 transition text-neutral-700 cursor-pointer"
@@ -262,9 +262,9 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-[#E50914]' : ''}`} />
           </button>
-          
+
           {canManage && (
-            <button 
+            <button
               onClick={() => setShowAddModal(true)}
               className="px-4 py-2.5 bg-[#E50914] text-white rounded-xl text-sm font-bold shadow hover:bg-[#B91C1C] transition flex items-center space-x-2 cursor-pointer"
             >
@@ -350,9 +350,8 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                         )}
                       </td>
                       <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                          rep.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${rep.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                          }`}>
                           {rep.status === 'active' ? '🟢 SHAKAL' : '🔴 LA JOOJIYAY'}
                         </span>
                       </td>
@@ -365,11 +364,10 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                               action: rep.status === 'active' ? 'deactivate' : 'activate',
                               name: rep.full_name
                             })}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition cursor-pointer ${
-                              rep.status === 'active'
+                            className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition cursor-pointer ${rep.status === 'active'
                                 ? 'border-red-200 text-red-600 hover:bg-red-50'
                                 : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
-                            }`}
+                              }`}
                           >
                             {rep.status === 'active' ? 'Deactivate' : 'Activate'}
                           </button>
