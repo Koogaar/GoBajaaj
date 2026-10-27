@@ -1,0 +1,48 @@
+==============================================
+GOBAJAAJ - NOOCA CUSUB EE V3.8.0
+==============================================
+Nooca: Version 3.8.0 (Build 38)
+Taariikhda: 2026-10-27
+Noocyadii hore: v3.6.1 (Build 36) / v3.6.2 (Build 37)
+
+FAYLALKA DIYAARKA AH EE GALKA GOBAJAAJ_APK:
+1. GoBajaaj_v3.8.0.aab       -> Google Play Console (Production, Closed/Internal Testing)
+2. GoBajaaj_v3.8.0.apk       -> Direct Phone Install (Ku shubasho toos ah ee taleefannada Android)
+3. RELEASE_NOTES_V3.8.0.txt  -> Faahfaahinta & Warbixinta Cusbooneysiinta
+
+==============================================
+WARBIXINTA HUBINTA VERSION-KA (VERSION AUDIT):
+==============================================
+1. VersionCode: 38
+   - Waxaa loo kordhiyay 38 si looga fogaado khaladka Google Play Console ee "Version code has already been used", maadaama Build 36 (v3.6.1) iyo Build 37 (v3.6.2) hore loo isticmaalay/diiwaangeliyay.
+2. VersionName: 3.8.0
+   - Nooca ugu dambeeyay ee rasmiga ah oo ay ku jiraan dhammaan wax-ka-beddelada iyo hagaajinta ugu dambeysay.
+
+==============================================
+WIXII CUSUB IYO LA XALLIYAY EE V3.8.0:
+==============================================
+
+1. DIIWAANGELINTA & ISKU-XIRKA GPS-KA EE REPORTER-KA:
+   - Diiwaangelinta tooska ah ee goobta saxda ah (GPS coordinates) marka uu Reporter-ku soo galo akoonkiisa.
+   - Isku-xir toos ah oo u dhexeeya goobta Reporter-ka iyo isgoyska loo xilsaaray (assigned intersection coordinates update).
+   - Badhan cusub "Diiwaangeli Goobta" si uu u cusbooneysiiyo goobta uu joogo waqti kasta.
+
+2. FARRIIMAHA CILADAHA EE AF-SOOMAALIGA (NETWORK & OFFLINE FRIENDLY ERRORS):
+   - Farriimo af-Soomaali ah oo aad u cad marka uu jiro cilad xagga khadka ah:
+     * "Khadka internet-ka ma shaqeynayo ama waa daciif. Fadlan hubi xiriirka internet-kaaga (Wi-Fi ama Mobile Data)."
+     * "Waqtigii xiriirku wuu dhacay. Internet-ka ayaa gaabis ah, fadlan dib u tijaabi."
+     * "Lama xiriiri karin server-ka. Fadlan hubi xiriirkaaga internet-ka."
+
+3. HAGAAJINTA SOO GALITAANKA (AUTH FIXES):
+   - Xallinta ciladdii PGRST116 (duplicate user error) iyadoo la adeegsanayo limit(1) iyo username mapping sax ah.
+
+4. XAQIIJINTA AMMAANKA & SAXIIXA:
+   - Faylalka waxaa lagu saxiixay furaha rasmiga ah: my-upload-key.jks
+   - SHA-256: 385e96e02eab03919fd3630e28df2db65a0d75670eab8cc0c149520072283cac
+   - APK Signature Scheme v2: True (Hufan oo ammaan ah)
+
+==============================================
+BUILD STATUS: SUCCESSFUL (0 errors)
+Signed: my-upload-key.jks (Release)
+==============================================
+
