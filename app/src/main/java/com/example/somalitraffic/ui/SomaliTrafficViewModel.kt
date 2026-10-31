@@ -328,16 +328,36 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         results
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // --- Saved Digital House Addresses (Guri Number MG-HODAN-125) ---
+    private val _savedAddresses = MutableStateFlow<List<SavedAddress>>(emptyList())
+    val savedAddresses: StateFlow<List<SavedAddress>> = _savedAddresses.asStateFlow()
+
+    // --- Nearby Bajaaj Radar Count (1 KM) ---
+    private val _nearbyDriversCount = MutableStateFlow(4)
+    val nearbyDriversCount: StateFlow<Int> = _nearbyDriversCount.asStateFlow()
+
+    // --- Driver Expenses & Income Ledger (Buugga Dhaqaalaha) ---
+    private val _driverExpenses = MutableStateFlow<List<DriverExpenseEntry>>(emptyList())
+    val driverExpenses: StateFlow<List<DriverExpenseEntry>> = _driverExpenses.asStateFlow()
+
     init {
-        loadSavedAddresses()
-        loadDriverExpenses()
+        try {
+            loadSavedAddresses()
+        } catch (_: Exception) {}
+        try {
+            loadDriverExpenses()
+        } catch (_: Exception) {}
         viewModelScope.launch {
-            repository.seedIntersectionsIfEmpty()
-            _isLoading.value = true
-            val result = repository.syncIntersectionsFromSupabase()
-            _isLoading.value = false
-            result.onFailure {
-                _searchError.value = "Xogta lama soo dejin karin. Hubi xiriirka internetka."
+            try {
+                repository.seedIntersectionsIfEmpty()
+                _isLoading.value = true
+                val result = repository.syncIntersectionsFromSupabase()
+                _isLoading.value = false
+                result.onFailure {
+                    _searchError.value = "Xogta lama soo dejin karin. Hubi xiriirka internetka."
+                }
+            } catch (_: Exception) {
+                _isLoading.value = false
             }
         }
     }
@@ -779,20 +799,12 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         SupabaseRealtimeClient(repository.prefs.getSupabaseUrl(), repository.prefs.getSupabaseKey())
     }
 
-    // --- Saved Digital House Addresses (Guri Number MG-HODAN-125) ---
-    private val _savedAddresses = MutableStateFlow<List<SavedAddress>>(emptyList())
-    val savedAddresses: StateFlow<List<SavedAddress>> = _savedAddresses.asStateFlow()
-
-    // --- Nearby Bajaaj Radar Count (1 KM) ---
-    private val _nearbyDriversCount = MutableStateFlow(4)
-    val nearbyDriversCount: StateFlow<Int> = _nearbyDriversCount.asStateFlow()
-
-    // --- Driver Expenses & Income Ledger (Buugga Dhaqaalaha) ---
-    private val _driverExpenses = MutableStateFlow<List<DriverExpenseEntry>>(emptyList())
-    val driverExpenses: StateFlow<List<DriverExpenseEntry>> = _driverExpenses.asStateFlow()
-
     fun loadSavedAddresses() {
-        _savedAddresses.value = repository.getSavedAddresses()
+        try {
+            _savedAddresses.value = repository.getSavedAddresses()
+        } catch (_: Exception) {
+            _savedAddresses.value = emptyList()
+        }
     }
 
     fun saveAddress(address: SavedAddress, onSuccess: () -> Unit = {}) {
@@ -818,7 +830,11 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
     }
 
     fun loadDriverExpenses() {
-        _driverExpenses.value = repository.getDriverExpenses()
+        try {
+            _driverExpenses.value = repository.getDriverExpenses()
+        } catch (_: Exception) {
+            _driverExpenses.value = emptyList()
+        }
     }
 
     fun saveDriverExpense(entry: DriverExpenseEntry, onSuccess: () -> Unit = {}) {
