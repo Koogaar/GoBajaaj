@@ -698,7 +698,11 @@ fun BajajRideScreen(
                         val pLoc = incomingRide?.pickupAddress ?: "KM4 (Muqdisho)"
                         val dLoc = incomingRide?.destinationAddress ?: "Hodan (Muqdisho)"
                         val offerVal = incomingRide?.riderOffer ?: 1.50
+                        val rName = incomingRide?.riderName ?: "Macmiil GoBajaaj"
+                        val rPhone = incomingRide?.riderPhone ?: ""
                         DriverRideRequestAlertScreen(
+                            riderName = rName,
+                            riderPhone = rPhone,
                             pickup = pLoc,
                             destination = dLoc,
                             riderOffer = "$${String.format(java.util.Locale.US, "%.2f", offerVal)}",
@@ -743,10 +747,11 @@ fun BajajRideScreen(
 
                     DriverFlowStep.ON_TRIP_NAV -> {
                         // Screen 7: Trip in Progress & Turn-by-Turn Navigation (Driver)
-                        val riderPhoneStr = incomingRide?.riderPhone ?: "+252 615 000 000"
-                        val destinationStr = incomingRide?.destinationAddress ?: "Hodan"
-                        val pickupStr = incomingRide?.pickupAddress ?: "Guriga Macmiilka"
                         val currentRide = liveRide
+                        val riderPhoneStr = incomingRide?.riderPhone ?: currentRide?.riderPhone ?: "+252 615 000 000"
+                        val riderNameStr = incomingRide?.riderName ?: currentRide?.riderName ?: "Macmiil GoBajaaj"
+                        val destinationStr = incomingRide?.destinationAddress ?: currentRide?.destinationAddress ?: "Hodan"
+                        val pickupStr = incomingRide?.pickupAddress ?: currentRide?.pickupAddress ?: "Guriga Macmiilka"
 
                         val currentDriverLat = driverGps?.latitude ?: currentRide?.driverLat ?: userLocation?.first
                         val currentDriverLng = driverGps?.longitude ?: currentRide?.driverLng ?: userLocation?.second
@@ -762,6 +767,7 @@ fun BajajRideScreen(
                         val navLng = if (currentRide?.status == "in_progress") dLng else pLng
 
                         DriverTripInProgressScreen(
+                            riderName = riderNameStr,
                             riderPhone = riderPhoneStr,
                             pickup = pickupStr,
                             destination = destinationStr,
@@ -1205,7 +1211,7 @@ private fun RiderRequestFormScreen(
                             color = GoBajaajYellow
                         ) {
                             Text(
-                                text = "Gorgortan Xor ah",
+                                text = "Gorgortan",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = GoBajaajNavy,
@@ -2465,6 +2471,8 @@ private fun DriverHomeScreen(
 
 @Composable
 private fun DriverRideRequestAlertScreen(
+    riderName: String = "Macmiil GoBajaaj",
+    riderPhone: String = "",
     pickup: String,
     destination: String,
     riderOffer: String,
@@ -2517,7 +2525,7 @@ private fun DriverRideRequestAlertScreen(
                     Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = GoBajaajAmber)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "New Ride Request",
+                        text = "Dalab Cusub oo Bajaaj ah",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         color = BrandBlack
@@ -2526,7 +2534,76 @@ private fun DriverRideRequestAlertScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Route details
+                // Passenger Details (Magaca & Taleefanka Macmiilka)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF1F5F9),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(GoBajaajBlue.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = GoBajaajBlue,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = riderName.ifBlank { "Macmiil GoBajaaj" },
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.5.sp,
+                                color = BrandBlack
+                            )
+                            if (riderPhone.isNotBlank()) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "📞 $riderPhone",
+                                    fontSize = 12.5.sp,
+                                    color = TextMutedDark,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                        if (riderPhone.isNotBlank()) {
+                            val context = LocalContext.current
+                            IconButton(
+                                onClick = {
+                                    val callIntent = Intent(Intent.ACTION_DIAL).apply {
+                                        data = Uri.parse("tel:${riderPhone.trim()}")
+                                    }
+                                    context.startActivity(callIntent)
+                                },
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(GoBajaajGreenLight)
+                            ) {
+                                Icon(
+                                    Icons.Default.Phone,
+                                    contentDescription = "Wac Macmiilka",
+                                    tint = GoBajaajGreen,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Route details (Halka uu macmiilku joogo & meesha loo socdo)
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = BrandLightGray,
@@ -2534,34 +2611,56 @@ private fun DriverRideRequestAlertScreen(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         // Pickup
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(GoBajaajGreen))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = pickup,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp,
-                                color = BrandBlack,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
+                        Row(verticalAlignment = Alignment.Top) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(GoBajaajGreen)
                             )
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(TrafficHeavyRed))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = destination,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp,
-                                color = BrandBlack,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Halka uu joogo (Pickup):",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextMutedDark
+                                )
+                                Text(
+                                    text = pickup,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    color = BrandBlack
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.Top) {
+                            Box(
+                                modifier = Modifier
+                                    .padding(top = 4.dp)
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(TrafficHeavyRed)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Halka loo socdo (Destination):",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextMutedDark
+                                )
+                                Text(
+                                    text = destination,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.5.sp,
+                                    color = BrandBlack
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = "Qiimaha rakaabka: $riderOffer",
                             fontSize = 17.sp,
@@ -2604,6 +2703,7 @@ private fun DriverRideRequestAlertScreen(
 
 @Composable
 private fun DriverTripInProgressScreen(
+    riderName: String = "Macmiil GoBajaaj",
     riderPhone: String,
     pickup: String = "KM4",
     destination: String,
@@ -2827,17 +2927,27 @@ private fun DriverTripInProgressScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Rider: $riderPhone",
+                            text = riderName.ifBlank { "Macmiil GoBajaaj" },
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = BrandBlack
                         )
                         Text(
-                            text = if (tripStatus == "GOING_TO_PICKUP") "Pickup: $pickup" else "Destination: $destination",
+                            text = "📞 $riderPhone",
                             fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
                             color = TextMutedDark
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (tripStatus == "GOING_TO_PICKUP") "📍 Ka qaad: $pickup" else "🏁 U gee: $destination",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (tripStatus == "GOING_TO_PICKUP") GoBajaajGreen else GoBajaajBlue,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 

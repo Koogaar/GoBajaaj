@@ -1,5 +1,7 @@
 package com.example.somalitraffic.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,10 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
 import com.example.somalitraffic.ui.components.SomaliBottomNavigation
 import com.example.somalitraffic.ui.components.SomaliTopBar
@@ -37,6 +41,14 @@ fun ProfileSettingsScreen(
     onLogout: () -> Unit
 ) {
     val currentUser by viewModel.currentUser.collectAsState()
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri != null) {
+            viewModel.updateUserAvatar(uri.toString())
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -61,18 +73,68 @@ fun ProfileSettingsScreen(
                 .padding(vertical = 32.dp, horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile Card (Centered)
+            // Profile Avatar (Clickable with Camera icon for both Drivers and Passengers)
             Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(BrandLightGray),
+                modifier = Modifier.size(92.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = BrandBlack, modifier = Modifier.size(48.dp))
+                Box(
+                    modifier = Modifier
+                        .size(86.dp)
+                        .clip(CircleShape)
+                        .background(BrandLightGray)
+                        .clickable { photoPickerLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!currentUser?.avatarUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = currentUser!!.avatarUrl,
+                            contentDescription = "Profile Avatar",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            tint = BrandBlack,
+                            modifier = Modifier.size(48.dp)
+                        )
+                    }
+                }
+
+                // Camera Badge Button
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .align(Alignment.BottomEnd)
+                        .clip(CircleShape)
+                        .background(BrandRedPrimary)
+                        .clickable { photoPickerLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.PhotoCamera,
+                        contentDescription = "Geli Sawir",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Taabo si aad sawir u geliso",
+                fontSize = 11.5.sp,
+                color = GoBajaajNavy,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.clickable { photoPickerLauncher.launch("image/*") }
+            )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             
             Text(
                 text = currentUser?.fullName ?: "Darawal",

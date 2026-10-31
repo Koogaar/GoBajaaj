@@ -3212,6 +3212,27 @@ class SomaliTrafficRepository(private val context: Context) {
         return r * c
     }
 
+    // --- User Profile Avatar ---
+    suspend fun updateUserAvatar(avatarUri: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            prefs.updateUserAvatar(avatarUri)
+            val user = prefs.getCurrentUser()
+            if (user != null && prefs.isSupabaseConfigured()) {
+                try {
+                    getApiService().upsertProfile(
+                        apiKey = getSafeApiKey(),
+                        authHeader = getSafeAuthHeader(),
+                        prefer = "resolution=merge-duplicates,return=representation",
+                        profile = mapOf("id" to user.id, "avatar_url" to avatarUri)
+                    )
+                } catch (_: Exception) {}
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // --- Saved Addresses (Guri Number MG-HODAN-125) ---
     fun getSavedAddresses(): List<SavedAddress> = prefs.getSavedAddresses()
 

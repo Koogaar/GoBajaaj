@@ -201,11 +201,19 @@ fun SomaliBottomNavigation(
     onNavigate: (String) -> Unit,
     isDriver: Boolean = false
 ) {
-    val tabs = listOf(
-        Triple("home",            Icons.Filled.Dashboard,      "Guudmar"),
-        Triple("live_traffic",   Icons.Filled.Map,            "Khariiradda"),
-        Triple("profile_settings", Icons.Filled.AccountCircle, "Akoonka")
-    )
+    val tabs = if (isDriver) {
+        listOf(
+            Triple("home", Icons.Filled.Dashboard, "Guudmar"),
+            Triple("live_traffic", Icons.Filled.Map, "Khariiradda"),
+            Triple("profile_settings", Icons.Filled.AccountCircle, "Akoonka")
+        )
+    } else {
+        listOf(
+            Triple("home", Icons.Filled.Dashboard, "Guudmar"),
+            Triple("ride", Icons.Filled.ElectricRickshaw, "Dalbo"),
+            Triple("profile_settings", Icons.Filled.AccountCircle, "Akoonka")
+        )
+    }
 
     Box(
         modifier = Modifier

@@ -328,6 +328,14 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         results
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    fun updateUserAvatar(uriString: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.updateUserAvatar(uriString)
+            _uiMessage.emit("Sawirka profile-ka si guul leh ayaa loo cusbooneysiiyay!")
+            onSuccess()
+        }
+    }
+
     // --- Saved Digital House Addresses (Guri Number MG-HODAN-125) ---
     private val _savedAddresses = MutableStateFlow<List<SavedAddress>>(emptyList())
     val savedAddresses: StateFlow<List<SavedAddress>> = _savedAddresses.asStateFlow()

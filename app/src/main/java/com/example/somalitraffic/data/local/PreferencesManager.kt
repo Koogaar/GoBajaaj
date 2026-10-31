@@ -37,7 +37,8 @@ class PreferencesManager(context: Context) {
         val status = prefs.getString(KEY_USER_STATUS, "active") ?: "active"
         val plate = prefs.getString(KEY_USER_PLATE, null)
         val vehicle = prefs.getString(KEY_USER_VEHICLE, null)
-        return UserProfile(id, name, phone, role, status, null, null, plate, vehicle)
+        val avatar = prefs.getString(KEY_USER_AVATAR, null)
+        return UserProfile(id, name, phone, role, status, avatar, null, plate, vehicle)
     }
 
     fun saveUserSession(user: UserProfile, token: String? = null) {
@@ -53,11 +54,22 @@ class PreferencesManager(context: Context) {
         if (user.vehicleModel != null) {
             editor.putString(KEY_USER_VEHICLE, user.vehicleModel)
         }
+        if (user.avatarUrl != null) {
+            editor.putString(KEY_USER_AVATAR, user.avatarUrl)
+        }
         editor.apply()
         if (token != null) {
             prefs.edit().putString(KEY_AUTH_TOKEN, token).apply()
         }
         _currentUserFlow.value = user
+    }
+
+    fun updateUserAvatar(avatarUri: String) {
+        prefs.edit().putString(KEY_USER_AVATAR, avatarUri).apply()
+        val current = getCurrentUser()
+        if (current != null) {
+            _currentUserFlow.value = current.copy(avatarUrl = avatarUri)
+        }
     }
 
     fun getAuthToken(): String? {
@@ -434,6 +446,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_SUB_EXPIRY_MS = "sub_expiry_ms"
         private const val KEY_SAVED_ADDRESSES = "saved_addresses_json"
         private const val KEY_DRIVER_EXPENSES = "driver_expenses_json"
+        private const val KEY_USER_AVATAR = "user_avatar_uri"
 
         // Default or user configurable Supabase endpoint
         const val DEFAULT_SUPABASE_URL = "https://lcigjbtprkloopvzpaxy.supabase.co"
