@@ -489,7 +489,12 @@ class SomaliTrafficRepository(private val context: Context) {
                 profilePayload["referred_by"] = referralCode.trim().uppercase()
             }
 
-            val profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            var profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            if (profileResult.isFailure && profileResult.exceptionOrNull()?.message?.contains("profiles_role_check", ignoreCase = true) == true) {
+                // If the remote DB check constraint doesn't have 'passenger' yet, retry with 'driver'
+                profilePayload["role"] = "driver"
+                profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            }
             if (profileResult.isFailure) {
                 prefs.clearSession()
                 return@withContext Result.failure(
@@ -908,7 +913,12 @@ class SomaliTrafficRepository(private val context: Context) {
                 profilePayload["referred_by"] = referralCode.trim().uppercase()
             }
 
-            val profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            var profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            if (profileResult.isFailure && profileResult.exceptionOrNull()?.message?.contains("profiles_role_check", ignoreCase = true) == true) {
+                // If the remote DB check constraint doesn't have 'passenger' yet, retry with 'driver'
+                profilePayload["role"] = "driver"
+                profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            }
             if (profileResult.isFailure) {
                 return@withContext Result.failure(
                     profileResult.exceptionOrNull()

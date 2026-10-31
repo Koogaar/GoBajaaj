@@ -35,6 +35,15 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
     );
 $$;
 
+-- FIX PROFILES ROLE CHECK (ALLOW PASSENGER, DRIVER, ADMINS, ETC.)
+ALTER TABLE IF EXISTS public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
+ALTER TABLE IF EXISTS public.profiles ADD CONSTRAINT profiles_role_check 
+  CHECK (role IN ('passenger', 'driver', 'reporter', 'super_admin', 'payment_admin', 'traffic_admin', 'reporter_manager', 'support_agent', 'analyst', 'admin', 'user'));
+
+ALTER TABLE IF EXISTS public.profiles DROP CONSTRAINT IF EXISTS profiles_status_check;
+ALTER TABLE IF EXISTS public.profiles ADD CONSTRAINT profiles_status_check 
+  CHECK (status IN ('active', 'suspended', 'disabled', 'pending', 'rejected'));
+
 -- ----------------------------------------------------------
 -- 1) DRIVER PRESENCE TABLE (REQUIRED FOR 1 KM RADAR & TRACKING)
 -- ----------------------------------------------------------
