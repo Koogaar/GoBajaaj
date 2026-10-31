@@ -94,9 +94,9 @@ fun SomaliTrafficNavHost(
                         UserRole.TRAFFIC_MANAGER,
                         UserRole.REPORTER_MANAGER,
                         UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
-                        UserRole.DRIVER,
-                        UserRole.PASSENGER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
-                        else -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                        UserRole.DRIVER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                        UserRole.PASSENGER -> NavRoutes.RIDE
+                        else -> NavRoutes.RIDE
                     }
                     navController.navigate(destination) {
                         popUpTo(NavRoutes.LOGIN) { inclusive = true }
@@ -119,9 +119,9 @@ fun SomaliTrafficNavHost(
                         UserRole.TRAFFIC_MANAGER,
                         UserRole.REPORTER_MANAGER,
                         UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
-                        UserRole.DRIVER,
-                        UserRole.PASSENGER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
-                        else -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                        UserRole.DRIVER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                        UserRole.PASSENGER -> NavRoutes.RIDE
+                        else -> NavRoutes.RIDE
                     }
                     navController.navigate(destination) {
                         popUpTo(NavRoutes.LOGIN) { inclusive = true }
@@ -140,7 +140,7 @@ fun SomaliTrafficNavHost(
             )
         }
 
-        // Screen 4: Sign Up (Darawal Registration Form)
+        // Screen 4: Sign Up (Registration Form)
         composable(NavRoutes.REGISTRATION_FORM) { backStackEntry ->
             val isDriverStr = backStackEntry.arguments?.getString("isDriver")
             val isDriver = isDriverStr?.toBooleanStrictOrNull() ?: true
@@ -152,8 +152,14 @@ fun SomaliTrafficNavHost(
                 onSignUpSuccess = {
                     val user = viewModel.currentUser.value
                     val isDriverRole = if (user != null) user.role == UserRole.DRIVER else isDriver
-                    navController.navigate(NavRoutes.DRIVER_PASS) {
-                        popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                    if (isDriverRole) {
+                        navController.navigate(NavRoutes.DRIVER_PASS) {
+                            popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(NavRoutes.RIDE) {
+                            popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -233,6 +239,14 @@ fun SomaliTrafficNavHost(
         // Screen 11: Traffic History
         composable(NavRoutes.TRAFFIC_HISTORY) {
             TrafficHistoryScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // Screen 11a: Driver Finances (Buugga Dhaqaalaha)
+        composable(NavRoutes.DRIVER_FINANCES) {
+            DriverFinancesScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() }
             )

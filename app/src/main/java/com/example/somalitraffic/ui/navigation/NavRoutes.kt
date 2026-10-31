@@ -20,5 +20,6 @@ object NavRoutes {
     const val PROFILE_SETTINGS = "profile_settings"
     const val REPORTER_DASHBOARD = "reporter_dashboard"
     const val ADMIN_DASHBOARD = "admin_dashboard"
+    const val DRIVER_FINANCES = "driver_finances"
     const val SUPPORT_CENTER = "support_center"
 }

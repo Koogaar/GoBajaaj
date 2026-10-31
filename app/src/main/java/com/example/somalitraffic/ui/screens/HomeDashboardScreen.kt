@@ -442,30 +442,115 @@ fun HomeDashboardScreen(
                 )
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // 1. Dalbo Bajaaj Hadda Card (For Passengers & All Users)
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = GoBajaajBlue),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigate("ride") }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(50.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_bajaaj_icon),
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Dalbo Bajaaj Hadda",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = GoBajaajYellow
+                                ) {
+                                    Text(
+                                        text = "1 KM Radar",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GoBajaajNavy,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Guri Number • Tilmaan Soomaali ah • Qiimo xor ah",
+                                fontSize = 11.5.sp,
+                                color = Color.White.copy(alpha = 0.85f)
+                            )
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = GoBajaajYellow
+                        ) {
+                            Text(
+                                text = "Dalbo",
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GoBajaajNavy,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // 1. Digniinaha (Blue Card) - Digniinaha & Xirnaanshaha
+                    if (isDriver) {
+                        // Buugga Dhaqaalaha for Drivers
+                        ServiceQuickCard(
+                            title = "Dhaqaalaha",
+                            somaliDesc = "Buugga Xisaabta",
+                            icon = Icons.Default.ReceiptLong,
+                            bgColor = Color(0xFF15803D),
+                            onClick = { onNavigate("driver_finances") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // Digniinaha
                     ServiceQuickCard(
                         title = "Digniinaha",
                         somaliDesc = "Xirnaanshaha & Shilalka",
                         icon = Icons.Default.NotificationsActive,
-                        bgColor = GoBajaajBlue,
+                        bgColor = GoBajaajNavy,
                         onClick = { 
-                            if (isPassActive) onNavigate("traffic_alerts") else onNavigate("driver_pass")
+                            if (!isDriver || isPassActive) onNavigate("traffic_alerts") else onNavigate("driver_pass")
                         },
                         modifier = Modifier.weight(1f)
                     )
 
-                    // 2. Waddooyinka (Amber/Orange Card) - Xogta Waddooyinka
+                    // Waddooyinka
                     ServiceQuickCard(
                         title = "Waddooyinka",
-                        somaliDesc = "Saxmadda & Isgoysyada",
+                        somaliDesc = "Saxmadda & Khariiradda",
                         icon = Icons.Default.Traffic,
                         bgColor = GoBajaajAmber,
                         onClick = { 
-                            if (isPassActive) onNavigate("live_traffic") else onNavigate("driver_pass")
+                            if (!isDriver || isPassActive) onNavigate("live_traffic") else onNavigate("driver_pass")
                         },
                         modifier = Modifier.weight(1f)
                     )

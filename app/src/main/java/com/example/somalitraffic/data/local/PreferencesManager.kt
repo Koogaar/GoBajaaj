@@ -3,11 +3,15 @@ package com.example.somalitraffic.data.local
 import android.content.Context
 import android.content.SharedPreferences
 import com.example.BuildConfig
+import com.example.somalitraffic.data.model.DriverExpenseEntry
+import com.example.somalitraffic.data.model.SavedAddress
 import com.example.somalitraffic.data.model.UserProfile
 import com.example.somalitraffic.data.model.UserRole
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
+import org.json.JSONObject
 
 class PreferencesManager(context: Context) {
     private val prefs: SharedPreferences =
@@ -279,6 +283,133 @@ class PreferencesManager(context: Context) {
     fun bindUserToCurrentDevice(identifier: String) {}
     fun getBoundDeviceForUser(identifier: String): Any? = null
 
+    // --- Saved Digital House Addresses (Guri Number MG-HODAN-125) ---
+    fun getSavedAddresses(): List<SavedAddress> {
+        val jsonStr = prefs.getString(KEY_SAVED_ADDRESSES, null) ?: return emptyList()
+        val list = mutableListOf<SavedAddress>()
+        try {
+            val arr = JSONArray(jsonStr)
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                list.add(
+                    SavedAddress(
+                        id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                        digitalCode = obj.optString("digitalCode", "MG-HODAN-101"),
+                        label = obj.optString("label", "Gurigeyga"),
+                        district = obj.optString("district", "Hodan"),
+                        somaliDirections = obj.optString("somaliDirections", ""),
+                        latitude = obj.optDouble("latitude", 2.0371),
+                        longitude = obj.optDouble("longitude", 45.3283),
+                        createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                    )
+                )
+            }
+        } catch (_: Exception) {}
+        return list
+    }
+
+    fun saveAddress(address: SavedAddress) {
+        val current = getSavedAddresses().toMutableList()
+        current.removeAll { it.id == address.id || it.digitalCode.equals(address.digitalCode, ignoreCase = true) }
+        current.add(0, address)
+        val arr = JSONArray()
+        for (item in current) {
+            val obj = JSONObject().apply {
+                put("id", item.id)
+                put("digitalCode", item.digitalCode)
+                put("label", item.label)
+                put("district", item.district)
+                put("somaliDirections", item.somaliDirections)
+                put("latitude", item.latitude)
+                put("longitude", item.longitude)
+                put("createdAt", item.createdAt)
+            }
+            arr.put(obj)
+        }
+        prefs.edit().putString(KEY_SAVED_ADDRESSES, arr.toString()).apply()
+    }
+
+    fun deleteAddress(id: String) {
+        val current = getSavedAddresses().filterNot { it.id == id }
+        val arr = JSONArray()
+        for (item in current) {
+            val obj = JSONObject().apply {
+                put("id", item.id)
+                put("digitalCode", item.digitalCode)
+                put("label", item.label)
+                put("district", item.district)
+                put("somaliDirections", item.somaliDirections)
+                put("latitude", item.latitude)
+                put("longitude", item.longitude)
+                put("createdAt", item.createdAt)
+            }
+            arr.put(obj)
+        }
+        prefs.edit().putString(KEY_SAVED_ADDRESSES, arr.toString()).apply()
+    }
+
+    // --- Driver Expenses & Income Ledger (Buugga Dhaqaalaha) ---
+    fun getDriverExpenses(): List<DriverExpenseEntry> {
+        val jsonStr = prefs.getString(KEY_DRIVER_EXPENSES, null) ?: return emptyList()
+        val list = mutableListOf<DriverExpenseEntry>()
+        try {
+            val arr = JSONArray(jsonStr)
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                list.add(
+                    DriverExpenseEntry(
+                        id = obj.optString("id", java.util.UUID.randomUUID().toString()),
+                        type = obj.optString("type", "expense"),
+                        category = obj.optString("category", "shidaal"),
+                        amount = obj.optDouble("amount", 0.0),
+                        notes = obj.optString("notes", ""),
+                        date = obj.optString("date", ""),
+                        timestampMs = obj.optLong("timestampMs", System.currentTimeMillis())
+                    )
+                )
+            }
+        } catch (_: Exception) {}
+        return list.sortedByDescending { it.timestampMs }
+    }
+
+    fun saveDriverExpense(entry: DriverExpenseEntry) {
+        val current = getDriverExpenses().toMutableList()
+        current.removeAll { it.id == entry.id }
+        current.add(0, entry)
+        val arr = JSONArray()
+        for (item in current) {
+            val obj = JSONObject().apply {
+                put("id", item.id)
+                put("type", item.type)
+                put("category", item.category)
+                put("amount", item.amount)
+                put("notes", item.notes)
+                put("date", item.date)
+                put("timestampMs", item.timestampMs)
+            }
+            arr.put(obj)
+        }
+        prefs.edit().putString(KEY_DRIVER_EXPENSES, arr.toString()).apply()
+    }
+
+    fun deleteDriverExpense(id: String) {
+        val current = getDriverExpenses().filterNot { it.id == id }
+        val arr = JSONArray()
+        for (item in current) {
+            val obj = JSONObject().apply {
+                put("id", item.id)
+                put("type", item.type)
+                put("category", item.category)
+                put("amount", item.amount)
+                put("notes", item.notes)
+                put("date", item.date)
+                put("timestampMs", item.timestampMs)
+            }
+            arr.put(obj)
+        }
+        prefs.edit().putString(KEY_DRIVER_EXPENSES, arr.toString()).apply()
+    }
+
     companion object {
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
         private const val KEY_USER_ID = "user_id"
@@ -301,6 +432,8 @@ class PreferencesManager(context: Context) {
         private const val KEY_ACTIVE_RIDE_ID = "active_ride_id"
         private const val KEY_RIDE_WATCH_STATUS = "ride_watch_status"
         private const val KEY_SUB_EXPIRY_MS = "sub_expiry_ms"
+        private const val KEY_SAVED_ADDRESSES = "saved_addresses_json"
+        private const val KEY_DRIVER_EXPENSES = "driver_expenses_json"
 
         // Default or user configurable Supabase endpoint
         const val DEFAULT_SUPABASE_URL = "https://lcigjbtprkloopvzpaxy.supabase.co"

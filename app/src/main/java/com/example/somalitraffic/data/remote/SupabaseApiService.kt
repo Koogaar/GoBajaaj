@@ -426,6 +426,28 @@ interface SupabaseApiService {
         @Body body: @JvmSuppressWildcards Map<String, Any>
     ): Response<Unit>
 
+    @GET("rest/v1/driver_presence")
+    suspend fun getOnlineDriverPresence(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("is_online") isOnline: String = "eq.true",
+        @Query("select") select: String = "driver_id,latitude,longitude,updated_at"
+    ): Response<List<Map<String, Any>>>
+
+    @POST("rest/v1/saved_addresses")
+    suspend fun insertSavedAddress(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Unit>
+
+    @POST("rest/v1/driver_expenses")
+    suspend fun insertDriverExpense(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Body body: @JvmSuppressWildcards Map<String, Any>
+    ): Response<Unit>
+
     // Lost phone / device reporting sync
     @GET("rest/v1/devices")
     suspend fun getLostDevices(

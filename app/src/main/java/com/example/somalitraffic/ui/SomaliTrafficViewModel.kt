@@ -329,6 +329,8 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        loadSavedAddresses()
+        loadDriverExpenses()
         viewModelScope.launch {
             repository.seedIntersectionsIfEmpty()
             _isLoading.value = true
@@ -777,6 +779,63 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         SupabaseRealtimeClient(repository.prefs.getSupabaseUrl(), repository.prefs.getSupabaseKey())
     }
 
+    // --- Saved Digital House Addresses (Guri Number MG-HODAN-125) ---
+    private val _savedAddresses = MutableStateFlow<List<SavedAddress>>(emptyList())
+    val savedAddresses: StateFlow<List<SavedAddress>> = _savedAddresses.asStateFlow()
+
+    // --- Nearby Bajaaj Radar Count (1 KM) ---
+    private val _nearbyDriversCount = MutableStateFlow(4)
+    val nearbyDriversCount: StateFlow<Int> = _nearbyDriversCount.asStateFlow()
+
+    // --- Driver Expenses & Income Ledger (Buugga Dhaqaalaha) ---
+    private val _driverExpenses = MutableStateFlow<List<DriverExpenseEntry>>(emptyList())
+    val driverExpenses: StateFlow<List<DriverExpenseEntry>> = _driverExpenses.asStateFlow()
+
+    fun loadSavedAddresses() {
+        _savedAddresses.value = repository.getSavedAddresses()
+    }
+
+    fun saveAddress(address: SavedAddress, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.saveAddress(address)
+            loadSavedAddresses()
+            onSuccess()
+        }
+    }
+
+    fun deleteAddress(id: String) {
+        viewModelScope.launch {
+            repository.deleteAddress(id)
+            loadSavedAddresses()
+        }
+    }
+
+    fun fetchNearbyDriversCount(lat: Double, lng: Double) {
+        viewModelScope.launch {
+            val count = repository.getNearbyDriversCount(lat, lng, 1000.0)
+            _nearbyDriversCount.value = count
+        }
+    }
+
+    fun loadDriverExpenses() {
+        _driverExpenses.value = repository.getDriverExpenses()
+    }
+
+    fun saveDriverExpense(entry: DriverExpenseEntry, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.saveDriverExpense(entry)
+            loadDriverExpenses()
+            onSuccess()
+        }
+    }
+
+    fun deleteDriverExpense(id: String) {
+        viewModelScope.launch {
+            repository.deleteDriverExpense(id)
+            loadDriverExpenses()
+        }
+    }
+
     private fun distanceMeters(aLat: Double?, aLng: Double?, bLat: Double?, bLng: Double?): Double? {
         if (aLat == null || aLng == null || bLat == null || bLng == null) return null
         return OsmRoutingService.haversineMeters(aLat, aLng, bLat, bLng)
@@ -1135,6 +1194,17 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
             val res = repository.completeRide(rideId)
             _isLoading.value = false
             res.onSuccess {
+                val fare = _liveRide.value?.agreedFare ?: _liveRide.value?.riderOffer ?: 1.50
+                val pickupStr = _liveRide.value?.pickupAddress?.take(25) ?: "Mogadishu"
+                saveDriverExpense(
+                    DriverExpenseEntry(
+                        type = "income",
+                        category = "safar_gobajaaj",
+                        amount = fare,
+                        notes = "Safar GoBajaaj ($pickupStr)",
+                        date = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                    )
+                )
                 if (trackingRideId == rideId) stopDriverRideTracking()
                 if (_liveRide.value?.id == rideId) stopObservingRide()
                 _uiMessage.emit("Safarkii wuu dhammaaday! Lacagta toos uga qaado rakaabka.")

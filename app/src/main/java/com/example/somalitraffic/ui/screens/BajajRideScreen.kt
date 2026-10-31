@@ -40,9 +40,11 @@ import androidx.compose.ui.unit.sp
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.horizontalScroll
 import com.example.somalitraffic.data.model.Intersection
 import com.example.somalitraffic.data.model.RideEntity
 import com.example.somalitraffic.data.model.RouteInfo
+import com.example.somalitraffic.data.model.SavedAddress
 import com.example.somalitraffic.data.model.VehicleType
 import com.example.somalitraffic.data.remote.OsmRoutingService
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
@@ -94,6 +96,8 @@ fun BajajRideScreen(
     val routeInfo by viewModel.routeInfo.collectAsState()
     val driverGps by viewModel.driverGps.collectAsState()
     val rideConnected by viewModel.rideConnected.collectAsState()
+    val savedAddresses by viewModel.savedAddresses.collectAsState()
+    val nearbyDriversCount by viewModel.nearbyDriversCount.collectAsState()
 
     // Mode Toggle: Rider vs Driver
     var isDriverMode by remember {
@@ -106,6 +110,8 @@ fun BajajRideScreen(
     var riderStep by remember { mutableStateOf(RiderFlowStep.REQUEST_FORM) }
     var pickupLocation by remember { mutableStateOf("") }
     var destinationLocation by remember { mutableStateOf("") }
+    var somaliLandmarkNote by remember { mutableStateOf("") }
+    var showAddressDialog by remember { mutableStateOf(false) }
     var selectedVehicle by remember { mutableStateOf(VehicleType.BAJAAJ) }
     var riderOfferText by remember { mutableStateOf("1.50") }
 
@@ -128,6 +134,11 @@ fun BajajRideScreen(
     // Rider high-accuracy GPS coordinates & loading state
     var riderPickupGps by remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var isFetchingRiderLocation by remember { mutableStateOf(false) }
+
+    LaunchedEffect(riderPickupGps, userLocation) {
+        val coords = riderPickupGps ?: userLocation ?: (2.0371 to 45.3283)
+        viewModel.fetchNearbyDriversCount(coords.first, coords.second)
+    }
 
     // ✅ GPS PERMISSION LAUNCHER: Auto-requests permission and fetches GPS after granted
     val gpsPermissionLauncher = rememberLauncherForActivityResult(
@@ -425,6 +436,8 @@ fun BajajRideScreen(
                             onPickupChange = { pickupLocation = it },
                             destination = destinationLocation,
                             onDestinationChange = { destinationLocation = it },
+                            somaliNote = somaliLandmarkNote,
+                            onSomaliNoteChange = { somaliLandmarkNote = it },
                             selectedVehicle = selectedVehicle,
                             onVehicleSelect = { vehicle ->
                                 selectedVehicle = vehicle
@@ -436,6 +449,14 @@ fun BajajRideScreen(
                             },
                             offer = riderOfferText,
                             onOfferChange = { riderOfferText = it },
+                            nearbyDriversCount = nearbyDriversCount,
+                            savedAddresses = savedAddresses,
+                            onSelectSavedAddress = { addr ->
+                                pickupLocation = addr.fullFormattedAddress
+                                riderPickupGps = addr.latitude to addr.longitude
+                                Toast.makeText(context, "🏠 Guri Number: ${addr.digitalCode} waa la doortay!", Toast.LENGTH_SHORT).show()
+                            },
+                            onOpenAddressDialog = { showAddressDialog = true },
                             isFetchingGps = isFetchingRiderLocation,
                             pickupCoordinates = riderPickupGps ?: userLocation,
                             onFetchGps = {
@@ -444,7 +465,7 @@ fun BajajRideScreen(
                                     context = context,
                                     onSuccess = { coords ->
                                         riderPickupGps = coords
-                                        pickupLocation = "Goobtayda Hadda (GPS)"
+                                        if (pickupLocation.isBlank()) pickupLocation = "Goobtayda Hadda (GPS)"
                                         isFetchingRiderLocation = false
                                         Toast.makeText(context, "📍 Goobtaada GPS-ka si sax ah ayaa loo helay!", Toast.LENGTH_SHORT).show()
                                     },
@@ -468,11 +489,17 @@ fun BajajRideScreen(
                                     val destCoords = resolveIntersectionCoords(destinationLocation.trim(), intersections)
                                         ?: (2.0425 to 45.3411)
 
+                                    val finalPickup = if (somaliLandmarkNote.isNotBlank() && !pickupLocation.contains(somaliLandmarkNote)) {
+                                        "$pickupLocation • $somaliLandmarkNote"
+                                    } else {
+                                        pickupLocation
+                                    }
+
                                     isDriverArrivedState = false
                                     arrivalSoundPlayedForRideId = null
                                     selectedBidDriver = null
                                     viewModel.createRideRequest(
-                                        pickup = pickupLocation.trim(),
+                                        pickup = finalPickup.trim(),
                                         destination = destinationLocation.trim(),
                                         vehicleType = selectedVehicle.name,
                                         offeredPrice = riderOfferText.toDoubleOrNull() ?: 1.50,
@@ -815,6 +842,21 @@ fun BajajRideScreen(
                 }
             }
         }
+
+        if (showAddressDialog) {
+            CreateAddressDialog(
+                currentLocation = riderPickupGps ?: userLocation,
+                onDismiss = { showAddressDialog = false },
+                onSave = { newAddress ->
+                    viewModel.saveAddress(newAddress) {
+                        pickupLocation = newAddress.fullFormattedAddress
+                        riderPickupGps = newAddress.latitude to newAddress.longitude
+                        showAddressDialog = false
+                        Toast.makeText(context, "🏠 Guri Number ${newAddress.digitalCode} waa la kaydiyay!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -828,10 +870,16 @@ private fun RiderRequestFormScreen(
     onPickupChange: (String) -> Unit,
     destination: String,
     onDestinationChange: (String) -> Unit,
+    somaliNote: String = "",
+    onSomaliNoteChange: (String) -> Unit = {},
     selectedVehicle: VehicleType,
     onVehicleSelect: (VehicleType) -> Unit,
     offer: String,
     onOfferChange: (String) -> Unit,
+    nearbyDriversCount: Int = 4,
+    savedAddresses: List<SavedAddress> = emptyList(),
+    onSelectSavedAddress: (SavedAddress) -> Unit = {},
+    onOpenAddressDialog: () -> Unit = {},
     isFetchingGps: Boolean = false,
     pickupCoordinates: Pair<Double, Double>? = null,
     onFetchGps: () -> Unit = {},
@@ -1009,6 +1057,126 @@ private fun RiderRequestFormScreen(
                             )
                         )
                     }
+                    // Somali Landmark Note (optional directions)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        "Tilmaanta Goobta (Somali Directions) — Ikhtiyaari",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = GoBajaajNavy
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = somaliNote,
+                        onValueChange = onSomaliNoteChange,
+                        placeholder = {
+                            Text(
+                                "Tusaale: Taleex, Masaajidka horteeda, albaabka huruudi ah...",
+                                fontSize = 11.sp
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 2,
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.EditNote,
+                                contentDescription = null,
+                                tint = GoBajaajBlue,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
+                }
+            }
+
+            // ── Nearby Drivers 1 KM Radar Banner ──
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0xFFEFF6FF),
+                border = BorderStroke(1.dp, GoBajaajBlue.copy(alpha = 0.3f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.NearMe,
+                        contentDescription = null,
+                        tint = GoBajaajBlue,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Bajaajyada 1 KM Kugu Dhow",
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold, color = GoBajaajNavy
+                        )
+                        Text(
+                            "Si toos ah loo ogaan doonaa",
+                            fontSize = 10.sp, color = Color(0xFF64748B)
+                        )
+                    }
+                    Surface(shape = RoundedCornerShape(8.dp), color = GoBajaajBlue) {
+                        Text(
+                            "$nearbyDriversCount Bajaaj",
+                            fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+            }
+
+            // ── Saved Addresses (Cinwaannadayda) ──
+            if (savedAddresses.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Cinwaannadayda",
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold, color = GoBajaajNavy
+                        )
+                        TextButton(onClick = onOpenAddressDialog) {
+                            Text("+ Cusub", fontSize = 11.sp)
+                        }
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        savedAddresses.forEach { addr ->
+                            Surface(
+                                onClick = { onSelectSavedAddress(addr) },
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFEFF6FF),
+                                border = BorderStroke(1.dp, GoBajaajBlue.copy(alpha = 0.4f))
+                            ) {
+                                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                                    Text(
+                                        addr.label,
+                                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = GoBajaajNavy
+                                    )
+                                    Text(
+                                        addr.digitalCode,
+                                        fontSize = 10.sp, color = GoBajaajBlue, fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                OutlinedButton(
+                    onClick = onOpenAddressDialog,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("+ Keydi Cinwaankaaga (Guri Number)", fontSize = 13.sp)
                 }
             }
 
@@ -2818,6 +2986,162 @@ private fun openGoogleMapsNavigation(
             }
         }
     }
+}
+
+// =========================================================================
+// CREATE ADDRESS DIALOG — GoBajaaj Digital House Number
+// =========================================================================
+
+@Composable
+private fun CreateAddressDialog(
+    currentLocation: Pair<Double, Double>?,
+    onDismiss: () -> Unit,
+    onSave: (SavedAddress) -> Unit
+) {
+    val districts = listOf(
+        "Hodan", "Wadajir", "Hawlwadaag", "Bondhere", "Karaan",
+        "Daynile", "Dharkenley", "Heliwa", "Shangani", "Hamarweyne",
+        "Yaaqshid", "Shibis", "Warta Nabadda", "Cabdulcaziz"
+    )
+    var label by remember { mutableStateOf("Gurigeyga") }
+    var district by remember { mutableStateOf("Hodan") }
+    var somaliDir by remember { mutableStateOf("") }
+    val codeNum = remember { (System.currentTimeMillis() % 900 + 100).toInt() }
+    val digitalCode = "MG-${district.uppercase().take(6).filter { it.isLetterOrDigit() }}-$codeNum"
+    val lat = currentLocation?.first ?: 2.0371
+    val lng = currentLocation?.second ?: 45.3283
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "🏠 Keydi Cinwaankaaga Cusub",
+                fontWeight = FontWeight.Bold,
+                color = GoBajaajNavy
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // Digital Code Display
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFF0FDF4),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(10.dp)) {
+                        Text("Koodhkaaga Guri Number:", fontSize = 11.sp, color = Color(0xFF15803D))
+                        Text(
+                            digitalCode,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF15803D)
+                        )
+                    }
+                }
+
+                // Label Chips
+                Text("Nooca Goobta:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF475569))
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf("Gurigeyga" to "🏠", "Shaqada" to "🏢", "Baqaalka" to "🛒", "Kale" to "📍").forEach { (lbl, emoji) ->
+                        Surface(
+                            onClick = { label = lbl },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (label == lbl) GoBajaajBlue else Color(0xFFF1F5F9)
+                        ) {
+                            Text(
+                                "$emoji $lbl",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (label == lbl) Color.White else GoBajaajNavy,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                            )
+                        }
+                    }
+                }
+
+                // District Chips
+                Text("Degmada:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF475569))
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    districts.forEach { d ->
+                        Surface(
+                            onClick = { district = d },
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (district == d) GoBajaajAmber else Color(0xFFF1F5F9)
+                        ) {
+                            Text(
+                                d,
+                                fontSize = 11.sp,
+                                color = if (district == d) GoBajaajNavy else Color(0xFF475569),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Somali Directions
+                Text(
+                    "Tilmaanta Soomaalida:",
+                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF475569)
+                )
+                OutlinedTextField(
+                    value = somaliDir,
+                    onValueChange = { somaliDir = it },
+                    placeholder = {
+                        Text(
+                            "Tusaale: Masaajidka horteeda, albaabka casaanka ah...",
+                            fontSize = 11.sp
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+
+                // GPS Status
+                if (currentLocation != null) {
+                    Text(
+                        "📍 GPS: ${String.format(java.util.Locale.US, "%.5f, %.5f", lat, lng)}",
+                        fontSize = 10.sp,
+                        color = Color(0xFF15803D)
+                    )
+                } else {
+                    Text(
+                        "⚠️ GPS ma jirto. Dalbo GPS-ka marka hore",
+                        fontSize = 10.sp,
+                        color = Color(0xFFDC2626)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(
+                        SavedAddress(
+                            digitalCode = digitalCode,
+                            label = label,
+                            district = district,
+                            somaliDirections = somaliDir.trim(),
+                            latitude = lat,
+                            longitude = lng
+                        )
+                    )
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = GoBajaajBlue),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("Keydi", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Ka Noqo") }
+        }
+    )
 }
 
 private fun openExternalNavigation(

@@ -1,0 +1,52 @@
+==============================================
+GOBAJAAJ - NOOCA CUSUB EE V3.9.0
+==============================================
+Nooca: Version 3.9.0 (Build 39)
+Taariikhda: 2026-10-31
+Noocii hore: v3.8.0 (Build 38)
+
+FAYLALKA DIYAARKA AH EE GALKA GOBAJAAJ_APK:
+1. GoBajaaj_v3.9.0.aab       -> Google Play Console (Production Release Bundle)
+2. GoBajaaj_v3.9.0.apk       -> Direct Phone Install (Ku shubasho toos ah ee taleefannada Android)
+3. RELEASE_NOTES_V3.9.0.txt  -> Faahfaahinta & Warbixinta Cusbooneysiinta
+
+==============================================
+WIXII CUSUB IYO WAXQABADKA V3.9.0:
+==============================================
+
+1. NIDAAMKA GURI NUMBER-KA DHIGITAL-KA AH (DIGITAL HOUSE NUMBER):
+   - Macmiilka/Rakaabku wuxuu si fudud u samaysan karaa cinwaan gaar ah (tusaale: MG-HODAN-125).
+   - Cinwaanka waxaa ku jira Degmada, nooca goobta (Gurigeyga, Shaqada, Baqaalka, Kale), iyo GPS-ka saxda ah.
+   - Macmiilku wuxuu si degdeg ah hal taabasho ugu dooran karaa cinwaannadiisa kaydsan.
+
+2. TILMAANTA SOOMAALIDA (SOMALI DIRECTIONS & LANDMARKS):
+   - Qeyb gaar ah oo loogu talagalay tilmaanta caadiga ah ee Soomaalida (tusaale: "Taleex, Masaajidka horteeda, albaabka casaanka ah").
+   - Tilmaantani waxay toos ugu tagtaa darawalka iyadoo la socota GPS-ka goobta.
+
+3. RADAR-KA 1 KM EE BAJAAJYADA KU DHOW (1 KM NEARBY DRIVERS RADAR):
+   - Macmiilka waxaa loo muujinayaa tirada bajaajyada bannaan (free/online) ee 1 km u jira goobtiisa.
+   - Waxay macmiilka siinaysaa kalsooni buuxda in bajaaj dhow laga heli karo ka hor inta uusan dalban.
+
+4. BUUGGA DHAQAAHAHA & KHARASHAADKA DARAWALKA (DRIVER FINANCIAL LEDGER):
+   - Darawalku wuxuu si buuxda ula socon karaa dakhligiisa iyo kharashaadkiisa (Maalinle, Isbuucle, Bile, Sanadle).
+   - Qeybaha kharashka: Shidaal, Dayactir, Canshuur/Baas, Cunto, iyo Kuwo kale.
+   - Safar kasta oo GoBajaaj ah oo darawalku dhameeyo waxaa si toos ah loogu qoraa buugga xisaabta dakhli ahaan.
+
+5. ISKU-XIRKA TOOSKA AH EE GOOGLE MAPS-KA TALEEFANKA (ONE-TAP GOOGLE MAPS NAVIGATION):
+   - Darawalku markuu aqbalo safarka, wuxuu hal taabasho ku furi karaa app-ka Google Maps-ka taleefankiisa si uu toos ugu tago goobta rakaabka ama meesha loo socdo.
+
+6. SOO CELINTA DOORKA RAKAABKA (PASSENGER ROLE RESTORATION):
+   - Doorka Macmiilka/Rakaabka dib ayaa loo soo celiyay si ay dadweynuhu si toos ah ugu dalban karaan bajaajta iyaga oo aan u baahnayn Driver Pass.
+
+==============================================
+SQL MIGRATION:
+==============================================
+Faylka `supabase/MIGRATION_PASSENGER_AND_EXPENSES.sql` waxaa ku jira dhammaan jadwallada cusub ee Supabase:
+- `saved_addresses` (Guri Number & Cinwaanno)
+- `driver_expenses` (Dhaqaalaha & Kharashaadka)
+- `get_nearby_drivers_count()` (RPC Function-ka xisaabiya bajaajyada 1 KM u jira)
+
+==============================================
+BUILD STATUS: SUCCESSFUL (0 errors)
+Signed: my-upload-key.jks (Release)
+==============================================

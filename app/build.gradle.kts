@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.gobajaaj.app"
     minSdk = 24
     targetSdk = 36
-    versionCode = 38
-    versionName = "3.8.0"
+    versionCode = 39
+    versionName = "3.9.0"
 
     val supabaseUrl = System.getenv("SUPABASE_URL") ?: "https://lcigjbtprkloopvzpaxy.supabase.co"
     val supabaseKey = System.getenv("SUPABASE_ANON_KEY") ?: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjaWdqYnRwcmtsb29wdnpwYXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTA5MDUsImV4cCI6MjEwNDg2NjkwNX0.5cx8A-3Hhh4Z5AuYDt0-AWdMYmAe_x3gz6DVqWY8IuM"
