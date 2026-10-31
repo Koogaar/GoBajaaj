@@ -332,27 +332,28 @@ fun SignUpScreen(
                     singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 5. Koodhka Suuq-geynta / Referral Code (Ikhtiyaari)
-                OutlinedTextField(
-                    value = referralCode,
-                    onValueChange = { referralCode = it.uppercase() },
-                    placeholder = { Text("Koodhka Suuq-geynta (Tusaale: MKT-01) - Ikhtiyaari", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
-                    leadingIcon = { 
-                        Text(
-                            text = "🎁", 
-                            fontSize = 16.sp,
-                            modifier = Modifier.padding(start = 12.dp, end = 4.dp)
-                        ) 
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("input_signup_referral_code"),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = fieldColors,
-                    singleLine = true
-                )
+                // 5. Koodhka Suuq-geynta / Referral Code (Keliya Darawalka si loogu tiriyo shaqaalaha suuq-geynta)
+                if (isDriverMode) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = referralCode,
+                        onValueChange = { referralCode = it.uppercase() },
+                        placeholder = { Text("Koodhka Suuq-geynta (Tusaale: MKT-01) - Ikhtiyaari", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                        leadingIcon = { 
+                            Text(
+                                text = "🎁", 
+                                fontSize = 16.sp,
+                                modifier = Modifier.padding(start = 12.dp, end = 4.dp)
+                            ) 
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("input_signup_referral_code"),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                        singleLine = true
+                    )
+                }
 
                 if (errorMessage != null) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -391,7 +392,7 @@ fun SignUpScreen(
                             pass = password,
                             isDriver = isDriverMode,
                             vehicleModel = vehicleType,
-                            referralCode = referralCode.trim().ifBlank { null }
+                            referralCode = if (isDriverMode) referralCode.trim().ifBlank { null } else null
                         ) { user ->
                             onSignUpSuccess()
                         }
