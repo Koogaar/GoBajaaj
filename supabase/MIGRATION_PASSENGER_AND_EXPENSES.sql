@@ -1,16 +1,70 @@
 -- ==========================================================
 -- GoBajaaj: PASSENGER DIGITAL ADDRESS & DRIVER EXPENSES MIGRATION
--- Adds:
--- 1) saved_addresses: Guri Number Digital ah (e.g. MG-HODAN-125),
---    Tilmaanta Soomaalida, iyo GPS Coordinates.
--- 2) driver_expenses: Dakhliga & Kharashaadka Darawalka (Maalinle,
---    Isbuucle, Bille, Sanadle).
--- 3) get_nearby_drivers_count: Tirada bajaajyada diyaar ah ee 1 KM u jira.
--- 4) RLS updates si rakaabku u arkaan bajaajyada online-ka ah.
+-- Fully self-contained & safe to re-run (idempotent).
 -- ==========================================================
 
 -- ----------------------------------------------------------
--- 1) SAVED ADDRESSES (GURI NUMBER DIGITAL AH)
+-- 0) PREREQUISITES & HELPER FUNCTIONS
+-- ----------------------------------------------------------
+
+-- Helper: Haversine distance in meters (pure SQL, no extensions required)
+CREATE OR REPLACE FUNCTION public.haversine_m(
+    lat1 DOUBLE PRECISION, lon1 DOUBLE PRECISION,
+    lat2 DOUBLE PRECISION, lon2 DOUBLE PRECISION
+) RETURNS DOUBLE PRECISION
+LANGUAGE sql IMMUTABLE AS $$
+    SELECT 6371000.0 * 2 * asin(sqrt(
+        least(1.0,
+          pow(sin(radians(lat2 - lat1) / 2), 2) +
+          cos(radians(lat1)) * cos(radians(lat2)) *
+          pow(sin(radians(lon2 - lon1) / 2), 2)
+        )
+    ));
+$$;
+
+-- Helper: Check if current user is admin
+CREATE OR REPLACE FUNCTION public.is_admin_user()
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.profiles p
+        WHERE p.id = auth.uid()
+          AND p.role IN ('super_admin','payment_admin','traffic_admin',
+                         'reporter_manager','support_agent','analyst',
+                         'user_manager','subscription_manager')
+    );
+$$;
+
+-- ----------------------------------------------------------
+-- 1) DRIVER PRESENCE TABLE (REQUIRED FOR 1 KM RADAR & TRACKING)
+-- ----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.driver_presence (
+    driver_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+    is_online BOOLEAN NOT NULL DEFAULT false,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    heading DOUBLE PRECISION,
+    speed DOUBLE PRECISION,
+    accuracy DOUBLE PRECISION,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.driver_presence ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Drivers manage own presence" ON public.driver_presence;
+CREATE POLICY "Drivers manage own presence" ON public.driver_presence
+    FOR ALL USING (auth.uid() = driver_id) WITH CHECK (auth.uid() = driver_id);
+
+DROP POLICY IF EXISTS "Admins read presence" ON public.driver_presence;
+CREATE POLICY "Admins read presence" ON public.driver_presence
+    FOR SELECT USING (public.is_admin_user());
+
+DROP POLICY IF EXISTS "Anyone see online driver presence" ON public.driver_presence;
+CREATE POLICY "Anyone see online driver presence" ON public.driver_presence
+    FOR SELECT USING (is_online = true);
+
+-- ----------------------------------------------------------
+-- 2) SAVED ADDRESSES (GURI NUMBER DIGITAL AH)
 -- ----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.saved_addresses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -39,7 +93,7 @@ CREATE POLICY "Anyone read by digital code" ON public.saved_addresses
     FOR SELECT USING (true);
 
 -- ----------------------------------------------------------
--- 2) DRIVER EXPENSES & INCOME (BUUGGA DHAQAALAHA)
+-- 3) DRIVER EXPENSES & INCOME (BUUGGA DHAQAALAHA)
 -- ----------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.driver_expenses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -65,7 +119,7 @@ CREATE POLICY "Admins read all expenses" ON public.driver_expenses
     FOR SELECT USING (public.is_admin_user());
 
 -- ----------------------------------------------------------
--- 3) GET NEARBY ONLINE DRIVERS COUNT (1 KM RADAR)
+-- 4) GET NEARBY ONLINE DRIVERS COUNT (1 KM RADAR)
 -- ----------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.get_nearby_drivers_count(
     user_lat DOUBLE PRECISION,
@@ -83,18 +137,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
       AND dp.longitude IS NOT NULL
       AND p.role = 'driver'
       AND p.status = 'active'
-      AND public.haversine_m(user_lat, user_lng, dp.latitude, dp.longitude) <= radius_m
-      AND NOT EXISTS (
-          SELECT 1 FROM public.bajaj_rides r
-          WHERE r.driver_id = dp.driver_id
-            AND r.status IN ('searching','assigned','accepted','arrived','in_progress')
-      );
+      AND public.haversine_m(user_lat, user_lng, dp.latitude, dp.longitude) <= radius_m;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_nearby_drivers_count(DOUBLE PRECISION, DOUBLE PRECISION, INTEGER) TO authenticated, anon;
-
--- Also allow passengers to view active driver presence positions
-DROP POLICY IF EXISTS "Anyone see online driver presence" ON public.driver_presence;
-CREATE POLICY "Anyone see online driver presence" ON public.driver_presence
-    FOR SELECT USING (is_online = true);
-
