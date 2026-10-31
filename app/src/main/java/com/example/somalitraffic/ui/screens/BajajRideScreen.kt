@@ -3109,15 +3109,25 @@ private fun CreateAddressDialog(
     onSave: (SavedAddress) -> Unit
 ) {
     val districts = listOf(
-        "Hodan", "Wadajir", "Hawlwadaag", "Bondhere", "Karaan",
-        "Daynile", "Dharkenley", "Heliwa", "Shangani", "Hamarweyne",
-        "Yaaqshid", "Shibis", "Warta Nabadda", "Cabdulcaziz"
+        "Hodan", "Hawlwadaag", "Waberi", "Wadajir", "Dharkenley",
+        "Dayniile", "Kaxda", "Yaaqshiid", "Kaaraan", "Heliwaa",
+        "Boondheere", "Shibis", "Cabdicasis", "Warta Nabadda",
+        "Shangaani", "Xamar Weyne", "Xamar Jajab", "Garasbaaley",
+        "Ceelasha Biyaha", "Tareedisho", "Gubadleey", "Jazeera", "Daarusalaam"
     )
+
     var label by remember { mutableStateOf("Gurigeyga") }
     var district by remember { mutableStateOf("Hodan") }
     var somaliDir by remember { mutableStateOf("") }
-    val codeNum = remember { (System.currentTimeMillis() % 900 + 100).toInt() }
-    val digitalCode = "MG-${district.uppercase().take(6).filter { it.isLetterOrDigit() }}-$codeNum"
+    var randomSuffix by remember { mutableStateOf((100..999).random()) }
+
+    // Automatic Guri Number generation based on selected or typed district
+    val cleanDistrict = district.trim().uppercase()
+        .filter { it.isLetterOrDigit() }
+        .take(8)
+        .ifBlank { "MOG" }
+    val digitalCode = "MG-$cleanDistrict-$randomSuffix"
+
     val lat = currentLocation?.first ?: 2.0371
     val lng = currentLocation?.second ?: 45.3283
 
@@ -3125,31 +3135,83 @@ private fun CreateAddressDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "🏠 Keydi Cinwaankaaga Cusub",
+                "🏠 Keydi Guri Number & Cinwaan",
                 fontWeight = FontWeight.Bold,
+                fontSize = 17.sp,
                 color = GoBajaajNavy
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                // Digital Code Display
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Digital Code Display (Automatic Generated Guri Number)
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = Color(0xFFF0FDF4),
+                    border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(10.dp)) {
-                        Text("Koodhkaaga Guri Number:", fontSize = 11.sp, color = Color(0xFF15803D))
-                        Text(
-                            digitalCode,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF15803D)
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "Koodhka Guri Number-ka:",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF15803D)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = Color(0xFF15803D).copy(alpha = 0.12f)
+                                ) {
+                                    Text(
+                                        "Automatic",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF15803D),
+                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = digitalCode,
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF15803D)
+                            )
+                        }
+
+                        // Regenerate suffix button
+                        IconButton(
+                            onClick = { randomSuffix = (100..999).random() },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFDCFCE7))
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Beddel Number-ka",
+                                tint = Color(0xFF15803D),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
 
-                // Label Chips
+                // Label Chips (Nooca Goobta)
                 Text("Nooca Goobta:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF475569))
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
@@ -3163,68 +3225,123 @@ private fun CreateAddressDialog(
                         ) {
                             Text(
                                 "$emoji $lbl",
-                                fontSize = 11.sp,
+                                fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (label == lbl) Color.White else GoBajaajNavy,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             )
                         }
                     }
                 }
 
-                // District Chips
-                Text("Degmada:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF475569))
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    districts.forEach { d ->
-                        Surface(
-                            onClick = { district = d },
-                            shape = RoundedCornerShape(8.dp),
-                            color = if (district == d) GoBajaajAmber else Color(0xFFF1F5F9)
-                        ) {
-                            Text(
-                                d,
-                                fontSize = 11.sp,
-                                color = if (district == d) GoBajaajNavy else Color(0xFF475569),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
+                // District Section: User can TYPE their district OR CLICK from the list
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        "Degmadaada (Qor ama hoos ka dooro):",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF475569)
+                    )
+                    OutlinedTextField(
+                        value = district,
+                        onValueChange = { 
+                            district = it 
+                        },
+                        placeholder = { Text("Qor degmadaada (Tusaale: Hodan, Waberi, Kaxda...)", fontSize = 12.sp) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text("Degmooyinka Muqdisho & Nawaaxigeeda:", fontSize = 11.sp, color = Color(0xFF64748B))
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        districts.forEach { d ->
+                            val isSelected = district.equals(d, ignoreCase = true)
+                            Surface(
+                                onClick = { 
+                                    district = d 
+                                    randomSuffix = (100..999).random()
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isSelected) GoBajaajAmber else Color(0xFFF1F5F9),
+                                border = if (isSelected) BorderStroke(1.dp, GoBajaajYellow) else null
+                            ) {
+                                Text(
+                                    d,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) GoBajaajNavy else Color(0xFF475569),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                )
+                            }
                         }
                     }
                 }
 
                 // Somali Directions
-                Text(
-                    "Tilmaanta Soomaalida:",
-                    fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF475569)
-                )
-                OutlinedTextField(
-                    value = somaliDir,
-                    onValueChange = { somaliDir = it },
-                    placeholder = {
-                        Text(
-                            "Tusaale: Masaajidka horteeda, albaabka casaanka ah...",
-                            fontSize = 11.sp
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    maxLines = 3
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        "Tilmaanta Soomaalida (Landmark):",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF475569)
+                    )
+                    OutlinedTextField(
+                        value = somaliDir,
+                        onValueChange = { somaliDir = it },
+                        placeholder = {
+                            Text(
+                                "Tusaale: Masaajidka horteeda, albaabka casaanka ah, ka soo horjeedka baqaalka...",
+                                fontSize = 11.5.sp
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        maxLines = 3
+                    )
+                }
 
                 // GPS Status
                 if (currentLocation != null) {
-                    Text(
-                        "📍 GPS: ${String.format(java.util.Locale.US, "%.5f, %.5f", lat, lng)}",
-                        fontSize = 10.sp,
-                        color = Color(0xFF15803D)
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFF0FDF4),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "📍 GPS Sax ah: ${String.format(java.util.Locale.US, "%.5f, %.5f", lat, lng)}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF15803D)
+                            )
+                        }
+                    }
                 } else {
-                    Text(
-                        "⚠️ GPS ma jirto. Dalbo GPS-ka marka hore",
-                        fontSize = 10.sp,
-                        color = Color(0xFFDC2626)
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFFFEF2F2),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "⚠️ GPS Lama Helin. Fadlan shid GPS-ka taleefanka si goobtaadu u noqoto mid sax ah.",
+                                fontSize = 10.5.sp,
+                                color = Color(0xFFDC2626)
+                            )
+                        }
+                    }
                 }
             }
         },
@@ -3235,7 +3352,7 @@ private fun CreateAddressDialog(
                         SavedAddress(
                             digitalCode = digitalCode,
                             label = label,
-                            district = district,
+                            district = district.trim().ifBlank { "Hodan" },
                             somaliDirections = somaliDir.trim(),
                             latitude = lat,
                             longitude = lng
@@ -3245,7 +3362,7 @@ private fun CreateAddressDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = GoBajaajBlue),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Keydi", fontWeight = FontWeight.Bold)
+                Text("Keydi Guri Number-ka", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
