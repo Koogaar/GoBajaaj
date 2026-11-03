@@ -158,7 +158,13 @@ fun DriverPassScreen(
         topBar = {
             SomaliTopBar(
                 title = "Adeegga Maalinlaha ah ($0.25)",
-                onBackClick = onBackClick
+                onBackClick = {
+                    when (currentStep) {
+                        PaymentStep.INPUT_DETAILS -> currentStep = PaymentStep.INSTRUCTIONS
+                        PaymentStep.INSTRUCTIONS -> currentStep = PaymentStep.SELECT_METHOD
+                        else -> onBackClick?.invoke()
+                    }
+                }
             )
         },
         containerColor = BrandWhite
@@ -472,8 +478,8 @@ fun DriverPassScreen(
                                     destinationPhone = selectedMethod.accountNo,
                                     paymentMethod = selectedMethod.name,
                                     onSuccess = {
-                                        isAwaitingAdminApproval = true
-                                        currentStep = PaymentStep.PENDING_STATUS
+                                        isAwaitingAdminApproval = false
+                                        currentStep = PaymentStep.APPROVED_STATUS
                                     },
                                     onError = { message ->
                                         errorMessage = message

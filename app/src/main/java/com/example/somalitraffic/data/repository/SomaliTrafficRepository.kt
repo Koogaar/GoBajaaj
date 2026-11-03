@@ -863,10 +863,19 @@ class SomaliTrafficRepository(private val context: Context) {
             // 2. If no session yet (email confirmation on, or the identity already
             //    existed), authenticate with the password to obtain a real session.
             if (accessToken.isNullOrBlank() || userId.isNullOrBlank()) {
-                val signInResp = service.signIn(
-                    apiKey,
-                    SupabaseAuthRequest(email = authEmail, password = rawPass)
-                )
+                val signInResp = try {
+                    service.signIn(
+                        apiKey,
+                        SupabaseAuthRequest(email = authEmail, password = rawPass)
+                    )
+                } catch (netEx: Exception) {
+                    val friendly = when {
+                        netEx is java.net.UnknownHostException || netEx.message?.contains("Unable to resolve host", ignoreCase = true) == true ->
+                            "Khadka internet-ka ma shaqeynayo ama ma jiro. Fadlan hubi internet-kaaga (Data/Wi-Fi) ka dibna dib isku day."
+                        else -> netEx.localizedMessage ?: "Cilad internet ayaa dhacday."
+                    }
+                    return@withContext Result.failure(Exception("Diiwaangelinta way fashilantay: $friendly"))
+                }
                 if (!signInResp.isSuccessful ||
                     signInResp.body()?.access_token.isNullOrBlank() ||
                     signInResp.body()?.resolvedUserId.isNullOrBlank()
@@ -976,7 +985,16 @@ class SomaliTrafficRepository(private val context: Context) {
             )
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(Exception("Diiwaangelinta way fashilantay: ${e.localizedMessage}"))
+            val friendly = when {
+                e is java.net.UnknownHostException || e.message?.contains("Unable to resolve host", ignoreCase = true) == true ->
+                    "Khadka internet-ka ma shaqeynayo ama ma jiro. Fadlan hubi xiriirka internet-kaaga (Data/Wi-Fi) ka dibna dib isku day."
+                e is java.net.SocketTimeoutException || e.message?.contains("timeout", ignoreCase = true) == true ->
+                    "Waqtigii xiriirka server-ka ayaa dhammaaday. Fadlan dib isku day."
+                e is java.net.ConnectException || e.message?.contains("Failed to connect", ignoreCase = true) == true ->
+                    "Lama xiriiri karin server-ka GoBajaaj. Fadlan hubi internet-kaaga."
+                else -> e.localizedMessage ?: "Cilad aan la garaneyn ayaa dhacday."
+            }
+            Result.failure(Exception("Diiwaangelinta way fashilantay: $friendly"))
         }
     }
 
@@ -1223,34 +1241,54 @@ class SomaliTrafficRepository(private val context: Context) {
                                 ?: body["ok"]?.toString()?.toBooleanStrictOrNull() ?: false
                             if (ok) {
                                 val subId = body["subscription_id"]?.toString() ?: UUID.randomUUID().toString()
-                                val pendingSub = Subscription(
+                                val approvedSub = Subscription(
                                     id = subId,
                                     userId = currentUser.id,
                                     planName = "Driver Pass (24h)",
                                     amount = 0.25,
                                     currency = "USD",
-                                    status = "pending",
+                                    status = "active",
                                     paymentMethod = paymentMethod,
                                     senderPhone = effectivePhone,
                                     destinationPhone = destination,
                                     paymentReference = body["reference_number"]?.toString() ?: "",
-                                    startDate = "",
-                                    endDate = "",
+                                    startDate = startDate,
+                                    endDate = endDate,
                                     autoRenew = false
                                 )
-                                supportDao.insertSubscription(pendingSub)
+                                supportDao.insertSubscription(approvedSub)
+                                prefs.saveUserSession(currentUser.copy(status = "active"), prefs.getAuthToken())
+                                try {
+                                    service.updateSubscription(apiKey, getEffectiveAuthHeader(), "eq.$subId", mapOf("status" to "active", "start_date" to startDate, "end_date" to endDate))
+                                    service.upsertProfile(apiKey, getEffectiveAuthHeader(), "resolution=merge-duplicates,return=representation", mapOf("id" to currentUser.id, "subscription_status" to "active"))
+                                } catch (_: Exception) {}
                                 logAudit(
                                     "PAYMENT_SUBMITTED",
                                     "subscription",
                                     subId,
-                                    "Driver Pass pending admin approval"
+                                    "Driver Pass activated automatically for 24h"
                                 )
-                                return@withContext Result.success(pendingSub)
+                                return@withContext Result.success(approvedSub)
                             }
                             if (body["error"]?.toString() == "pass_still_active") {
-                                return@withContext Result.failure(
-                                    Exception("Driver Pass-kaagu weli waa shaqeynayaa. Ma aad u baahnid lacag-bixin cusub.")
+                                val activeSub = Subscription(
+                                    id = UUID.randomUUID().toString(),
+                                    userId = currentUser.id,
+                                    planName = "Driver Pass (24h)",
+                                    amount = 0.25,
+                                    currency = "USD",
+                                    status = "active",
+                                    paymentMethod = paymentMethod,
+                                    senderPhone = effectivePhone,
+                                    destinationPhone = destination,
+                                    paymentReference = "ACTIVE-PASS",
+                                    startDate = startDate,
+                                    endDate = endDate,
+                                    autoRenew = false
                                 )
+                                supportDao.insertSubscription(activeSub)
+                                prefs.saveUserSession(currentUser.copy(status = "active"), prefs.getAuthToken())
+                                return@withContext Result.success(activeSub)
                             }
                         } else if (rpcResp.isSuccessful || rpcResp.code() != 404) {
                             val errorBody = rpcResp.errorBody()?.string().orEmpty()
@@ -1424,10 +1462,10 @@ class SomaliTrafficRepository(private val context: Context) {
                             val subscription = Subscription(
                                 id = subscriptionId!!,
                                 userId = targetUserId,
-                                planName = "Driver Pass (Maalinle 05:00 AM)",
+                                planName = "Driver Pass (24h)",
                                 amount = 0.25,
                                 currency = "USD",
-                                status = "pending",
+                                status = "active",
                                 paymentMethod = paymentMethod,
                                 senderPhone = existingSender.ifBlank { effectivePhone },
                                 destinationPhone = destination,
@@ -1437,6 +1475,7 @@ class SomaliTrafficRepository(private val context: Context) {
                                 autoRenew = false
                             )
                             supportDao.insertSubscription(subscription)
+                            prefs.saveUserSession(currentUser.copy(status = "active"), prefs.getAuthToken())
                             return@withContext Result.success(subscription)
                         }
                     }
@@ -1484,10 +1523,10 @@ class SomaliTrafficRepository(private val context: Context) {
             val subscription = Subscription(
                 id = subscriptionId!!,
                 userId = targetUserId,
-                planName = "Driver Pass (Maalinle 05:00 AM)",
+                planName = "Driver Pass (24h)",
                 amount = 0.25,
                 currency = "USD",
-                status = "pending",
+                status = "active",
                 paymentMethod = paymentMethod,
                 senderPhone = effectivePhone,
                 destinationPhone = destination,
@@ -1498,11 +1537,12 @@ class SomaliTrafficRepository(private val context: Context) {
             )
 
             supportDao.insertSubscription(subscription)
+            prefs.saveUserSession(currentUser.copy(status = "active"), prefs.getAuthToken())
             logAudit(
                 "PAYMENT_SUBMITTED",
                 "subscription",
                 subscription.id,
-                "Driver Pass payment submitted from $effectivePhone. Status: PENDING Admin Approval"
+                "Driver Pass payment approved automatically for 24h"
             )
 
             Result.success(subscription)

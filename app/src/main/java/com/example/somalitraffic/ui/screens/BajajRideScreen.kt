@@ -103,6 +103,11 @@ fun BajajRideScreen(
     var isDriverMode by remember {
         mutableStateOf(currentUser?.role == com.example.somalitraffic.data.model.UserRole.DRIVER)
     }
+    LaunchedEffect(currentUser?.role) {
+        if (currentUser?.role != null) {
+            isDriverMode = (currentUser?.role == com.example.somalitraffic.data.model.UserRole.DRIVER)
+        }
+    }
 
     // ----------------------------------------------------
     // RIDER STATE (Screens 4, 5, 6, 7 from Blueprint)

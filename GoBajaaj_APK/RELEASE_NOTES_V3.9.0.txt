@@ -2,7 +2,7 @@
 GOBAJAAJ - NOOCA CUSUB EE V3.9.0
 ==============================================
 Nooca: Version 3.9.0 (Build 39)
-Taariikhda: 2026-10-31
+Taariikhda: 2026-11-03
 Noocii hore: v3.8.0 (Build 38)
 
 FAYLALKA DIYAARKA AH EE GALKA GOBAJAAJ_APK:
@@ -50,6 +50,35 @@ WIXII CUSUB IYO WAXQABADKA V3.9.0:
    - Is-diiwaangelinta rakaabka waxaa laga reebay Koodhka Suuq-geynta (Marketing Code), kaasoo u gaar ah diiwaangelinta darawallada.
 
 ==============================================
-BUILD STATUS: SUCCESSFUL (0 errors)
+CUSBOONEYSIINTA V3.9.0 (BUILD 39) - Nov 3, 2026:
 ==============================================
 
+10. DRIVER PASS AUTO-APPROVE (LACAG-BIXINTA AUTOMATIC):
+    - Marka darawalku lacag-bixinta xaqiijiyo, Driver Pass-ku si TOOS AH ayuu u active noqdaa 24 saac.
+    - Looma baahna sugitaan admin uu aqbalo - shaqadu waa laga bilaabaa markiiba.
+
+11. HAGAASINTA BACK BUTTON EE DRIVER PASS:
+    - Badhanka "Dib u noqo" (←) ee shaashadda Driver Pass hadda si fiican ayuu u shaqeynayaa.
+    - Darawalku si fudud ayuu ugu noqon karaa bogga hore iyada oo aanay kusoo labaabanin wax cilad ah.
+
+12. FARRIINTA INTERNET-KA (NETWORK ERROR - SOMALI):
+    - Marka internet-ku shaqeyn waayo oo la isku diiwaangelinayo, fariin Soomaali ah ayaa soo baxaysa:
+      "Khadka internet-ka ma shaqeynayo ama ma jiro. Fadlan hubi internet-kaaga (Data/Wi-Fi) ka dibna dib isku day."
+    - Qoraalka teknikaalka (Java exception) hadda kama muuqdo user-ka.
+
+13. KOODHKA SUUQ-GEYNTA OO YAREEYAY (COMPACT REFERRAL BOX):
+    - Sanduuqa "Koodhka Suuq-geynta" ee diiwaangelinta waxaa loo yareeyay mid kooban oo yar (height: 52dp).
+    - Qoraalka placeholder: "Koodhka Suuq-geynta (Ikhtiyaari)".
+
+14. PHONE PLACEHOLDER SIMPLIFIED:
+    - Tusaalaha numberka taleefanka waxaa loo yareeyay hal nooc: "61XXXXXXX"
+    - Tii hore "061XXXXXXX ama 61XXXXXXX" waxaa laga saaray dhamaan bogagga (Login, SignUp, Forgot Password).
+
+15. DASHBOARD-KA DARAWALKA (DRIVER HOME - RIDE RECEIVING):
+    - Darawalku hadda wuxuu arkaa "U Diyaargarow Dalabaadka" (🟢 Online / Diyaar, 📍 GPS Toos ah, 🛺 Aqbal Dalab).
+    - Macmiilku wuxuu arkaa "Dalbo Bajaaj Hadda" (🏠 Guri Number, 📍 Tilmaan Toos ah, 🤝 Gorgortan).
+    - Labaduba kaarka gaar ayay leeyihiin oo isku qasan maayaan.
+
+==============================================
+BUILD STATUS: SUCCESSFUL (0 errors)
+==============================================

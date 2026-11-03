@@ -146,7 +146,7 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it; errorMessage = null },
-                    placeholder = { Text("061XXXXXXX ama 61XXXXXXX", fontSize = 14.sp, color = Color(0xFF94A3B8)) },
+                    placeholder = { Text("61XXXXXXX", fontSize = 14.sp, color = Color(0xFF94A3B8)) },
                     leadingIcon = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,

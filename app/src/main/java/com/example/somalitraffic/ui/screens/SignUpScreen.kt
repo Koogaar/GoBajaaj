@@ -250,7 +250,7 @@ fun SignUpScreen(
                 OutlinedTextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it; errorMessage = null },
-                    placeholder = { Text("061XXXXXXX ama 61XXXXXXX", fontSize = 14.sp, color = Color(0xFF94A3B8)) },
+                    placeholder = { Text("61XXXXXXX", fontSize = 14.sp, color = Color(0xFF94A3B8)) },
                     leadingIcon = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -332,24 +332,25 @@ fun SignUpScreen(
                     singleLine = true
                 )
 
-                // 5. Koodhka Suuq-geynta / Referral Code (Keliya Darawalka si loogu tiriyo shaqaalaha suuq-geynta)
+                // 5. Koodhka Suuq-geynta / Referral Code (Keliya Darawalka - Naqshad yar oo fit ah)
                 if (isDriverMode) {
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     OutlinedTextField(
                         value = referralCode,
                         onValueChange = { referralCode = it.uppercase() },
-                        placeholder = { Text("Koodhka Suuq-geynta (Tusaale: MKT-01) - Ikhtiyaari", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                        placeholder = { Text("Koodhka Suuq-geynta (Ikhtiyaari)", fontSize = 12.5.sp, color = Color(0xFF94A3B8)) },
                         leadingIcon = { 
                             Text(
                                 text = "🎁", 
-                                fontSize = 16.sp,
+                                fontSize = 14.sp,
                                 modifier = Modifier.padding(start = 12.dp, end = 4.dp)
                             ) 
                         },
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(52.dp)
                             .testTag("input_signup_referral_code"),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = fieldColors,
                         singleLine = true
                     )

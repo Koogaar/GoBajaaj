@@ -175,8 +175,10 @@ fun SomaliTrafficNavHost(
                     }
                 },
                 onBackClick = {
-                    if (viewModel.isSubscriptionActive()) {
-                        navController.popBackStack()
+                    if (!navController.popBackStack()) {
+                        navController.navigate(NavRoutes.HOME) {
+                            popUpTo(NavRoutes.DRIVER_PASS) { inclusive = true }
+                        }
                     }
                 }
             )
