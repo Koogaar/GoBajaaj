@@ -1,0 +1,37 @@
+=============================================================================
+GoBajaaj Somali Traffic App - Nooca v3.9.1 (VersionCode 40)
+Taariikhda: 03 November 2026
+=============================================================================
+
+WAXA CUSUB OO LAGU DIB-U-HABEEYAY NOOCA v3.9.1:
+
+1. XALLINTA KAMA DAMBEYSTA AH EE KHALADAADKA INTERNET-KA (Network Friendly Errors):
+   - Qaladkii hore ee 'Unable to resolve host lcigjbtprkloopvzpaxy.supabase.co'
+     gabi ahaanba waa la qabtay oo la xalliyay.
+   - Hadda haddii internet-ku dansan yahay, daciifo, ama go'o, app-ku wuxuu si
+     cad ugu sheegayaa isticmaalaha af-Soomaali nadiif ah oo xushmad leh:
+     "Khadka internet-ka ma shaqeynayo ama ma jiro. Fadlan hubi xiriirka internet-kaaga (Data/Wi-Fi) ka dibna dib isku day."
+   - Marnaba mar dambe masoo bixi doono magac server ama fariin farsamo.
+
+2. DRIVER PASS 24-SAAC OO ANSIXIN TOOS AH LEH (Admin Approval Workflow):
+   - Darawalka marka uu $0.25 bixiyo (EVC Plus, Jeeb, Sahal), dalabkiisu wuxuu
+     galayaa 'Pending (Sugaya Ansixinta)'.
+   - Adminka Web Adminka ayaa riixaya badhanka 'Ansixi (Approve)', isla markaasna
+     app-ka darwalka ayaa furmaya.
+   - Waqtigu waa 24 saac oo buuxda.
+   - Macaamiisha/Rakaabka waa 100% bilaash (Free).
+
+3. FARIIMAHA IYO DALABYADA CUSUB EE SOO DHACO (Background Ride Alerts):
+   - Darawalka marka uu shaashaddiisu dansan tahay ama uu app kale ku jiro,
+     app-ku wuxuu soo tuurayaa Heads-up Notification, codka geeska (Horn Beep),
+     iyo gariir sare si uusan u seegin dalabyada macaamiisha.
+
+4. WEB ADMIN FARIIN COD AH (Voice Alert):
+   - Web Adminka marka uu darawal lacag soo diro, wuxuu cod ahaan ugu dhawaaqayaa:
+     "Fariin cusub: Darawal ayaa soo dirsaday lacagta Driver Pass $0.25. Fadlan xaqiiji!"
+
+=============================================================================
+Faylasha La Dhisay:
+- GoBajaaj_APK/GoBajaaj_v3.9.1.apk (Direct install)
+- GoBajaaj_APK/GoBajaaj_v3.9.1.aab (Google Play Store Bundle)
+=============================================================================

@@ -44,6 +44,47 @@ ALTER TABLE IF EXISTS public.profiles DROP CONSTRAINT IF EXISTS profiles_status_
 ALTER TABLE IF EXISTS public.profiles ADD CONSTRAINT profiles_status_check 
   CHECK (status IN ('active', 'suspended', 'disabled', 'pending', 'rejected'));
 
+-- FIX SUBSCRIPTIONS & PAYMENT TRANSACTIONS STATUS CHECKS
+ALTER TABLE IF EXISTS public.subscriptions DROP CONSTRAINT IF EXISTS subscriptions_status_check;
+ALTER TABLE IF EXISTS public.subscriptions ADD CONSTRAINT subscriptions_status_check 
+  CHECK (status IN ('active', 'expired', 'cancelled', 'pending', 'failed', 'rejected', 'completed', 'approved'));
+
+ALTER TABLE IF EXISTS public.payment_transactions DROP CONSTRAINT IF EXISTS payment_transactions_status_check;
+ALTER TABLE IF EXISTS public.payment_transactions ADD CONSTRAINT payment_transactions_status_check 
+  CHECK (status IN ('completed', 'pending', 'failed', 'rejected', 'approved'));
+
+-- RLS POLICIES FOR PROFILES, SUBSCRIPTIONS & PAYMENTS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payment_transactions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read profiles" ON public.profiles;
+CREATE POLICY "Public read profiles" ON public.profiles FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users insert own profile" ON public.profiles;
+CREATE POLICY "Users insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id OR auth.role() = 'anon' OR auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Users and admins update profile" ON public.profiles;
+CREATE POLICY "Users and admins update profile" ON public.profiles FOR UPDATE USING (auth.uid() = id OR auth.role() = 'authenticated' OR auth.role() = 'anon');
+
+DROP POLICY IF EXISTS "Public read subscriptions" ON public.subscriptions;
+CREATE POLICY "Public read subscriptions" ON public.subscriptions FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Drivers insert subscriptions" ON public.subscriptions;
+CREATE POLICY "Drivers insert subscriptions" ON public.subscriptions FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.role() = 'anon' OR auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Admins update subscriptions" ON public.subscriptions;
+CREATE POLICY "Admins update subscriptions" ON public.subscriptions FOR UPDATE USING (auth.uid() = user_id OR auth.role() = 'authenticated' OR auth.role() = 'anon');
+
+DROP POLICY IF EXISTS "Public read payment_transactions" ON public.payment_transactions;
+CREATE POLICY "Public read payment_transactions" ON public.payment_transactions FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Drivers insert payment_transactions" ON public.payment_transactions;
+CREATE POLICY "Drivers insert payment_transactions" ON public.payment_transactions FOR INSERT WITH CHECK (auth.uid() = user_id OR auth.role() = 'anon' OR auth.role() = 'authenticated');
+
+DROP POLICY IF EXISTS "Admins update payment_transactions" ON public.payment_transactions;
+CREATE POLICY "Admins update payment_transactions" ON public.payment_transactions FOR UPDATE USING (auth.uid() = user_id OR auth.role() = 'authenticated' OR auth.role() = 'anon');
+
 -- ----------------------------------------------------------
 -- 1) DRIVER PRESENCE TABLE (REQUIRED FOR 1 KM RADAR & TRACKING)
 -- ----------------------------------------------------------
