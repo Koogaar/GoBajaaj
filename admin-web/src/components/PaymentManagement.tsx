@@ -530,13 +530,14 @@ export const PaymentManagement: React.FC<PaymentManagementProps> = ({ actorName,
       .channel('realtime_payments')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_transactions' }, (payload: any) => {
         if (payload?.eventType === 'INSERT') {
-          soundAlert.playPaymentSound();
+          const amt = payload.new?.amount || '0.25';
+          soundAlert.playPaymentVoiceAlert(`Lacag cusub: Darawal ayaa soo dirsaday ${amt} dollar. Fadlan xaqiiji!`);
         }
         fetchPaymentsAndSubscriptions(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, (payload: any) => {
         if (payload?.eventType === 'INSERT') {
-          soundAlert.playPaymentSound();
+          soundAlert.playPaymentVoiceAlert('Driver Pass cusub ayaa la soo dirsaday. Fadlan xaqiiji!');
         }
         fetchPaymentsAndSubscriptions(true);
       })

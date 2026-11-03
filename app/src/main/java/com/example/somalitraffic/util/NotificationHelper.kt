@@ -85,6 +85,7 @@ object NotificationHelper {
         offer: String
     ) {
         createChannels(context)
+        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val pi = buildMainActivityIntent(context, requestCode = 10)
         val n = NotificationCompat.Builder(context, CHANNEL_RIDES)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
@@ -99,7 +100,11 @@ object NotificationHelper {
                         "💵 Qiimaha: $offer"
                     )
             )
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setSound(soundUri)
+            .setVibrate(longArrayOf(0, 400, 200, 400, 200, 400))
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setContentIntent(pi)
             .build()
@@ -189,6 +194,7 @@ object NotificationHelper {
             context, rideId.hashCode() + 2, declineIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
         val n = NotificationCompat.Builder(context, CHANNEL_RIDES)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("📯 Dalab Cusub Bajaaj!")
@@ -202,7 +208,11 @@ object NotificationHelper {
                             "💵 Qiimaha: $offer"
                     )
             )
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_CALL)
+            .setSound(soundUri)
+            .setVibrate(longArrayOf(0, 400, 200, 400, 200, 400))
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setAutoCancel(true)
             .setContentIntent(buildMainActivityIntent(context, requestCode = 13))
             .addAction(0, "✅ Aqbal", acceptPi)

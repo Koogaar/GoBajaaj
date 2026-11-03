@@ -78,23 +78,40 @@ class SomaliTrafficRepository(private val context: Context) {
     }
 
     private fun toFriendlyErrorMessage(e: Throwable, fallback: String = "Khalad baa dhacay"): String {
-        val msg = e.localizedMessage ?: e.message.orEmpty()
+        val fullMsg = buildString {
+            append(e.localizedMessage ?: e.message.orEmpty())
+            var curr = e.cause
+            while (curr != null) {
+                append(" ")
+                append(curr.localizedMessage ?: curr.message.orEmpty())
+                curr = curr.cause
+            }
+        }.lowercase()
+
         return when {
             e is java.net.UnknownHostException ||
-            msg.contains("Unable to resolve host", ignoreCase = true) ||
-            msg.contains("No address associated with hostname", ignoreCase = true) ->
-                "Khadka internet-ka ma shaqeynayo ama waa daciif. Fadlan hubi xiriirka internet-kaaga (Wi-Fi ama Mobile Data)."
+            fullMsg.contains("unable to resolve host") ||
+            fullMsg.contains("no address associated with hostname") ||
+            fullMsg.contains("network is unreachable") ||
+            fullMsg.contains("failed to connect to") ||
+            fullMsg.contains("connection refused") ||
+            fullMsg.contains("econnrefused") ||
+            fullMsg.contains("ehostunreach") ->
+                "Khadka internet-ka ma shaqeynayo ama ma jiro. Fadlan hubi xiriirka internet-kaaga (Data/Wi-Fi) ka dibna dib isku day."
 
-            e is java.net.SocketTimeoutException || msg.contains("timeout", ignoreCase = true) ->
+            e is java.net.SocketTimeoutException || fullMsg.contains("timeout") ->
                 "Waqtigii xiriirku wuu dhacay. Internet-ka ayaa gaabis ah, fadlan dib u tijaabi."
 
-            e is java.net.ConnectException || msg.contains("Failed to connect", ignoreCase = true) ->
-                "Lama xiriiri karin server-ka. Fadlan hubi xiriirkaaga internet-ka."
+            e is java.net.ConnectException ->
+                "Lama xiriiri karin server-ka GoBajaaj. Fadlan hubi xiriirkaaga internet-ka."
 
-            e is javax.net.ssl.SSLException ->
+            e is javax.net.ssl.SSLException || fullMsg.contains("ssl") || fullMsg.contains("cert") ->
                 "Xiriir ammaan ah lama samayn karin. Fadlan hubi waqtiga iyo taariikhda taleefankaaga."
 
-            msg.isNotBlank() && !msg.contains("Exception", ignoreCase = true) -> msg
+            fullMsg.contains("supabase.co") || fullMsg.contains("http") || fullMsg.contains("exception") ->
+                "Cilad xiriir internet ayaa dhacday. Fadlan dib u tijaabi."
+
+            e.localizedMessage?.isNotBlank() == true -> e.localizedMessage!!
             else -> fallback
         }
     }
@@ -858,6 +875,10 @@ class SomaliTrafficRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 android.util.Log.w("GoBajaajRepo", "signUp warning: ${e.message}")
+                val full = (e.message.orEmpty() + " " + e.cause?.message.orEmpty()).lowercase()
+                if (e is java.net.UnknownHostException || full.contains("unable to resolve host") || full.contains("no address associated") || full.contains("failed to connect")) {
+                    return@withContext Result.failure(Exception("Diiwaangelinta way fashilantay: ${toFriendlyErrorMessage(e)}"))
+                }
             }
 
             // 2. If no session yet (email confirmation on, or the identity already
@@ -869,11 +890,7 @@ class SomaliTrafficRepository(private val context: Context) {
                         SupabaseAuthRequest(email = authEmail, password = rawPass)
                     )
                 } catch (netEx: Exception) {
-                    val friendly = when {
-                        netEx is java.net.UnknownHostException || netEx.message?.contains("Unable to resolve host", ignoreCase = true) == true ->
-                            "Khadka internet-ka ma shaqeynayo ama ma jiro. Fadlan hubi internet-kaaga (Data/Wi-Fi) ka dibna dib isku day."
-                        else -> netEx.localizedMessage ?: "Cilad internet ayaa dhacday."
-                    }
+                    val friendly = toFriendlyErrorMessage(netEx, "Cilad internet ayaa dhacday.")
                     return@withContext Result.failure(Exception("Diiwaangelinta way fashilantay: $friendly"))
                 }
                 if (!signInResp.isSuccessful ||
@@ -985,15 +1002,7 @@ class SomaliTrafficRepository(private val context: Context) {
             )
             Result.success(user)
         } catch (e: Exception) {
-            val friendly = when {
-                e is java.net.UnknownHostException || e.message?.contains("Unable to resolve host", ignoreCase = true) == true ->
-                    "Khadka internet-ka ma shaqeynayo ama ma jiro. Fadlan hubi xiriirka internet-kaaga (Data/Wi-Fi) ka dibna dib isku day."
-                e is java.net.SocketTimeoutException || e.message?.contains("timeout", ignoreCase = true) == true ->
-                    "Waqtigii xiriirka server-ka ayaa dhammaaday. Fadlan dib isku day."
-                e is java.net.ConnectException || e.message?.contains("Failed to connect", ignoreCase = true) == true ->
-                    "Lama xiriiri karin server-ka GoBajaaj. Fadlan hubi internet-kaaga."
-                else -> e.localizedMessage ?: "Cilad aan la garaneyn ayaa dhacday."
-            }
+            val friendly = toFriendlyErrorMessage(e, "Cilad farsamo ayaa dhacday. Fadlan dib u tijaabi.")
             Result.failure(Exception("Diiwaangelinta way fashilantay: $friendly"))
         }
     }

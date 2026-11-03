@@ -461,14 +461,16 @@ export default function App() {
         fetchOverviewMetrics(false);
       }, 10000);
 
-      // Global Realtime listener for incoming payments to play Cash Chime
+      // Global Realtime listener for incoming payments to play Cash Chime & Voice Alert
       const paymentChannel = supabase
         .channel('global_payment_alerts')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_transactions' }, (payload: any) => {
           if (payload?.eventType === 'INSERT') {
-            soundAlert.playPaymentSound();
             const phone = payload.new?.phone_number || '';
             const amt = payload.new?.amount || '0.25';
+            soundAlert.playPaymentVoiceAlert(
+              `Fariin cusub: Darawal ayaa soo dirsaday lacagta Driver Pass ${amt} dollar. Fadlan xaqiiji!`
+            );
             setPaymentToast({
               show: true,
               text: `🔔 LACAG CUSUB: $${amt} ayaa hadda soo dhacday! ${phone ? `(${phone})` : ''}`,
@@ -479,7 +481,9 @@ export default function App() {
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, (payload: any) => {
           if (payload?.eventType === 'INSERT') {
-            soundAlert.playPaymentSound();
+            soundAlert.playPaymentVoiceAlert(
+              'Fariin cusub: Driver Pass cusub ayaa la soo dirsaday eber dhibic labaatan iyo shan dollar. Fadlan xaqiiji!'
+            );
             setPaymentToast({
               show: true,
               text: '🔔 LACAG CUSUB: Driver Pass cusub ayaa la soo diray ($0.25)!',

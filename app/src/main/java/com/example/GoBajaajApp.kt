@@ -70,15 +70,22 @@ class GoBajaajApp : Application() {
         }
     }
 
-    // --- 2) Auto-assigned rides waiting for the driver (every 4s) ---
+    // --- 2) New rides (Pending & Assigned) for active drivers even when outside the app (every 3s) ---
     private fun pollDriverAssignedRides() = appScope.launch {
         while (isActive) {
-            delay(4_000)
+            delay(3_000)
             try {
                 val user = repository.prefs.getCurrentUser() ?: continue
                 if (user.role != UserRole.DRIVER) continue
-                val rides = repository.fetchRidesForDriver("in.(assigned)").getOrDefault(emptyList())
-                rides.forEach { ride ->
+
+                // Check active subscription - driver only gets notified if pass is active
+                val subRes = repository.syncCurrentSubscription()
+                val isSubActive = repository.isSubscriptionActive(subRes.getOrNull())
+                if (!isSubActive) continue
+
+                // A) Auto-assigned rides specifically for this driver
+                val assignedRides = repository.fetchRidesForDriver("in.(assigned)").getOrDefault(emptyList())
+                assignedRides.forEach { ride ->
                     if (notifiedAssigned.add(ride.id)) {
                         NotificationHelper.showAssignedRideNotification(
                             context = this@GoBajaajApp,
@@ -87,6 +94,21 @@ class GoBajaajApp : Application() {
                             destination = ride.destinationAddress,
                             offer = "$${ride.riderOffer}"
                         )
+                        com.example.somalitraffic.util.ArrivalSoundManager.playSingleHornBeep(this@GoBajaajApp)
+                    }
+                }
+
+                // B) Open pool pending rides from passengers
+                val pendingRides = repository.fetchPendingRideEntities().getOrDefault(emptyList())
+                pendingRides.forEach { ride ->
+                    if (notifiedAssigned.add(ride.id)) {
+                        NotificationHelper.showNewRideRequestNotification(
+                            context = this@GoBajaajApp,
+                            pickup = ride.pickupAddress,
+                            destination = ride.destinationAddress,
+                            offer = "$${ride.riderOffer}"
+                        )
+                        com.example.somalitraffic.util.ArrivalSoundManager.playSingleHornBeep(this@GoBajaajApp)
                     }
                 }
             } catch (_: Exception) {

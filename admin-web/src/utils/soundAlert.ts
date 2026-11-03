@@ -124,13 +124,40 @@ class SoundAlertManager {
     }
   }
 
+  // Browser Speech Synthesis (Fariin Cod ah oo toos ah)
+  public speakVoice(text: string) {
+    if (!this.isSoundEnabled) return;
+    try {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.05;
+        utterance.volume = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (e) {
+      console.warn('Voice speak error:', e);
+    }
+  }
+
+  // Combined Chime + Somali Voice Speech Alert when driver submits money ($0.25)
+  public playPaymentVoiceAlert(detailText?: string) {
+    this.playPaymentSound();
+    const spoken = detailText || "Lacag cusub ayaa soo dhacday! Darawal ayaa soo dirsaday Driver Pass. Fadlan xaqiiji.";
+    setTimeout(() => {
+      this.speakVoice(spoken);
+    }, 450);
+  }
+
   // Play test sound and return result
   public testSound(): boolean {
     const ctx = this.getAudioContext();
     if (ctx && ctx.state === 'suspended') {
       ctx.resume();
     }
-    return this.playPaymentSound();
+    this.playPaymentVoiceAlert("Tijaabada codka: GoBajaaj Admin alert waa diyaar.");
+    return true;
   }
 }
 
