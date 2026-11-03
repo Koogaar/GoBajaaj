@@ -121,6 +121,75 @@ export default function App() {
     isProcessing: boolean;
   }>({ isOpen: false, user: null, action: 'delete', isProcessing: false });
 
+  // Demo Data Cleanup State
+  const [isDemoCleanupOpen, setIsDemoCleanupOpen] = useState(false);
+  const [isDemoCleanupProcessing, setIsDemoCleanupProcessing] = useState(false);
+  const [demoCleanupResult, setDemoCleanupResult] = useState<string | null>(null);
+
+  const handleDeleteDemoData = async () => {
+    setIsDemoCleanupProcessing(true);
+    setDemoCleanupResult(null);
+    try {
+      // 1. Get all profiles to count before deletion
+      const { data: allProfiles } = await supabase.from('profiles').select('id, role, full_name');
+      const driverIds = (allProfiles || []).filter(p => p.role === 'driver').map(p => p.id);
+      const passengerIds = (allProfiles || []).filter(p => p.role === 'passenger').map(p => p.id);
+      const allIds = [...driverIds, ...passengerIds];
+
+      if (allIds.length === 0) {
+        setDemoCleanupResult('⚠️ Ma jiraan darawallo ama rakaab la tirtiri karo.');
+        setIsDemoCleanupProcessing(false);
+        return;
+      }
+
+      let deletedCount = 0;
+
+      // 2. Delete related data first (subscriptions, payment_transactions, bajaj_rides, driver_presence, audit_logs)
+      if (allIds.length > 0) {
+        await supabase.from('subscriptions').delete().in('user_id', allIds).catch(() => {});
+        await supabase.from('payment_transactions').delete().in('user_id', allIds).catch(() => {});
+        await supabase.from('bajaj_rides').delete().in('passenger_id', passengerIds).catch(() => {});
+        await supabase.from('bajaj_rides').delete().in('driver_id', driverIds).catch(() => {});
+        await supabase.from('driver_presence').delete().in('driver_id', driverIds).catch(() => {});
+      }
+
+      // 3. Delete all driver profiles
+      if (driverIds.length > 0) {
+        const { error: dErr } = await supabase.from('profiles').delete().in('id', driverIds);
+        if (!dErr) deletedCount += driverIds.length;
+      }
+
+      // 4. Delete all passenger profiles
+      if (passengerIds.length > 0) {
+        const { error: pErr } = await supabase.from('profiles').delete().in('id', passengerIds);
+        if (!pErr) deletedCount += passengerIds.length;
+      }
+
+      // 5. Log the cleanup action
+      await supabase.from('audit_logs').insert([{
+        actor_name: currentAdmin?.full_name || 'Admin',
+        action: 'DELETE_ALL_DEMO_DATA',
+        target_type: 'profiles',
+        target_id: 'bulk',
+        metadata: { 
+          drivers_deleted: driverIds.length, 
+          passengers_deleted: passengerIds.length,
+          total: deletedCount
+        }
+      }]).catch(() => {});
+
+      setDemoCleanupResult(`✅ Guul! ${deletedCount} akoon ayaa la tirtiray (${driverIds.length} darawal + ${passengerIds.length} rakaab). Dhammaan xogta demo-da waa la nadiifiyay.`);
+
+      // Refresh user lists
+      await fetchUsers();
+      await fetchOverviewMetrics(true);
+    } catch (err: any) {
+      setDemoCleanupResult('❌ Cilad: ' + (err?.message || 'Tirtirista kuma guulaysanin.'));
+    } finally {
+      setIsDemoCleanupProcessing(false);
+    }
+  };
+
   // Sound Notification State
   const [isSoundOn, setIsSoundOn] = useState(soundAlert.isEnabled());
   const [paymentToast, setPaymentToast] = useState<{ show: boolean; text: string; time: string } | null>(null);
@@ -921,6 +990,80 @@ export default function App() {
 
         {activeTab === 'users' && (
           <div className="space-y-6">
+            {/* Demo Data Cleanup Section */}
+            {hasPermission(role, 'users.delete') && (
+              <div className="bg-red-50 p-4 sm:p-5 rounded-2xl border-2 border-dashed border-red-300 shadow-sm">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                      <Trash2 className="w-5 h-5 text-red-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-red-800">🧹 Tirtir Demo Data (Tijaabada)</h3>
+                      <p className="text-xs text-red-600 mt-0.5">
+                        Ku tirtir dhammaan darawallada & rakaabka tijaabada ah database-ka — hal gujis!
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsDemoCleanupOpen(true)}
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-black shadow-lg transition flex items-center justify-center space-x-2 cursor-pointer shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Tirtir Demo Data</span>
+                  </button>
+                </div>
+                {demoCleanupResult && (
+                  <div className={`mt-3 p-3 rounded-xl text-xs font-bold ${demoCleanupResult.startsWith('✅') ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : demoCleanupResult.startsWith('⚠️') ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-red-100 text-red-800 border border-red-300'}`}>
+                    {demoCleanupResult}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Demo Cleanup Confirmation Modal */}
+            {isDemoCleanupOpen && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md border border-red-200 p-6 text-center">
+                  <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                    <AlertTriangle className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-lg font-black text-black mb-2">⚠️ Tirtirista Demo Data Xaqiiji</h3>
+                  <div className="bg-red-50 rounded-xl p-4 mb-4 text-left">
+                    <p className="text-xs font-bold text-red-800 mb-2">Waxaa la tirtiri doonaa:</p>
+                    <ul className="text-xs text-red-700 space-y-1">
+                      <li>🚗 Dhammaan <strong>darawallada</strong> diiwaangashan ({usersList.filter(u => u.role === 'driver').length} qof)</li>
+                      <li>👤 Dhammaan <strong>rakaabka/macaamiisha</strong> ({usersList.filter(u => u.role === 'passenger').length} qof)</li>
+                      <li>💳 Dhammaan lacag-bixinnadooda & Driver Pass-yada</li>
+                      <li>🛺 Dhammaan safaradooda (rides)</li>
+                    </ul>
+                  </div>
+                  <p className="text-xs text-red-600 font-bold mb-5">
+                    ⛔ Ficilkan looma soo celin karo! Kaliya u isticmaal marka demo/tijaabo la dhameeyay.
+                  </p>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => { setIsDemoCleanupOpen(false); setDemoCleanupResult(null); }}
+                      className="flex-1 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-black text-sm font-bold rounded-xl transition cursor-pointer"
+                    >
+                      Ka noqo
+                    </button>
+                    <button
+                      onClick={() => { setIsDemoCleanupOpen(false); handleDeleteDemoData(); }}
+                      disabled={isDemoCleanupProcessing}
+                      className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-black rounded-xl transition cursor-pointer disabled:opacity-60 flex items-center justify-center space-x-2"
+                    >
+                      {isDemoCleanupProcessing ? (
+                        <><RefreshCw className="w-4 h-4 animate-spin" /><span>Tirtirayaa...</span></>
+                      ) : (
+                        <><Trash2 className="w-4 h-4" /><span>Haa, Tirtir Dhammaan!</span></>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-black">Macaamiisha & Darawallada ({usersList.length})</h2>
