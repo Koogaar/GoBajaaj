@@ -1241,13 +1241,13 @@ class SomaliTrafficRepository(private val context: Context) {
                                 ?: body["ok"]?.toString()?.toBooleanStrictOrNull() ?: false
                             if (ok) {
                                 val subId = body["subscription_id"]?.toString() ?: UUID.randomUUID().toString()
-                                val approvedSub = Subscription(
+                                val pendingSub = Subscription(
                                     id = subId,
                                     userId = currentUser.id,
                                     planName = "Driver Pass (24h)",
                                     amount = 0.25,
                                     currency = "USD",
-                                    status = "active",
+                                    status = "pending",
                                     paymentMethod = paymentMethod,
                                     senderPhone = effectivePhone,
                                     destinationPhone = destination,
@@ -1256,19 +1256,14 @@ class SomaliTrafficRepository(private val context: Context) {
                                     endDate = endDate,
                                     autoRenew = false
                                 )
-                                supportDao.insertSubscription(approvedSub)
-                                prefs.saveUserSession(currentUser.copy(status = "active"), prefs.getAuthToken())
-                                try {
-                                    service.updateSubscription(apiKey, getEffectiveAuthHeader(), "eq.$subId", mapOf("status" to "active", "start_date" to startDate, "end_date" to endDate))
-                                    service.upsertProfile(apiKey, getEffectiveAuthHeader(), "resolution=merge-duplicates,return=representation", mapOf("id" to currentUser.id, "subscription_status" to "active"))
-                                } catch (_: Exception) {}
+                                supportDao.insertSubscription(pendingSub)
                                 logAudit(
                                     "PAYMENT_SUBMITTED",
                                     "subscription",
                                     subId,
-                                    "Driver Pass activated automatically for 24h"
+                                    "Driver Pass payment ($0.25) submitted and awaiting admin approval"
                                 )
-                                return@withContext Result.success(approvedSub)
+                                return@withContext Result.success(pendingSub)
                             }
                             if (body["error"]?.toString() == "pass_still_active") {
                                 val activeSub = Subscription(
@@ -1465,7 +1460,7 @@ class SomaliTrafficRepository(private val context: Context) {
                                 planName = "Driver Pass (24h)",
                                 amount = 0.25,
                                 currency = "USD",
-                                status = "active",
+                                status = "pending",
                                 paymentMethod = paymentMethod,
                                 senderPhone = existingSender.ifBlank { effectivePhone },
                                 destinationPhone = destination,
@@ -1475,7 +1470,6 @@ class SomaliTrafficRepository(private val context: Context) {
                                 autoRenew = false
                             )
                             supportDao.insertSubscription(subscription)
-                            prefs.saveUserSession(currentUser.copy(status = "active"), prefs.getAuthToken())
                             return@withContext Result.success(subscription)
                         }
                     }
@@ -1526,7 +1520,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 planName = "Driver Pass (24h)",
                 amount = 0.25,
                 currency = "USD",
-                status = "active",
+                status = "pending",
                 paymentMethod = paymentMethod,
                 senderPhone = effectivePhone,
                 destinationPhone = destination,

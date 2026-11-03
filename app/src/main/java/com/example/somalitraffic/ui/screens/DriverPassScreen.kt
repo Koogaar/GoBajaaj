@@ -478,8 +478,8 @@ fun DriverPassScreen(
                                     destinationPhone = selectedMethod.accountNo,
                                     paymentMethod = selectedMethod.name,
                                     onSuccess = {
-                                        isAwaitingAdminApproval = false
-                                        currentStep = PaymentStep.APPROVED_STATUS
+                                        isAwaitingAdminApproval = true
+                                        currentStep = PaymentStep.PENDING_STATUS
                                     },
                                     onError = { message ->
                                         errorMessage = message
