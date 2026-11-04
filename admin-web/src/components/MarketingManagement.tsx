@@ -164,12 +164,14 @@ export const MarketingManagement: React.FC<MarketingManagementProps> = ({ canMan
 
       if (error) throw error;
 
-      await supabase.from('audit_logs').insert([{
-        actor_name: actorName,
-        action: 'CREATE_MARKETER',
-        target_type: 'marketing_staff',
-        metadata: { username: username.trim(), code: code.trim().toUpperCase(), full_name: fullName.trim() }
-      }]).catch(() => {});
+      try {
+        await supabase.from('audit_logs').insert([{
+          actor_name: actorName,
+          action: 'CREATE_MARKETER',
+          target_type: 'marketing_staff',
+          metadata: { username: username.trim(), code: code.trim().toUpperCase(), full_name: fullName.trim() }
+        }]);
+      } catch (_) {}
 
       setSuccessMsg(`Guul! Shaqaalaha "${fullName.trim()}" waa la abuuray!\nUsername: @${username.trim()}\nPassword: ${password}\nCode: ${code.trim().toUpperCase()}`);
       setFullName('');

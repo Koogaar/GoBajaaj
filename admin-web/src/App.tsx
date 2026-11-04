@@ -146,11 +146,11 @@ export default function App() {
 
       // 2. Delete related data first (subscriptions, payment_transactions, bajaj_rides, driver_presence, audit_logs)
       if (allIds.length > 0) {
-        await supabase.from('subscriptions').delete().in('user_id', allIds).catch(() => {});
-        await supabase.from('payment_transactions').delete().in('user_id', allIds).catch(() => {});
-        await supabase.from('bajaj_rides').delete().in('passenger_id', passengerIds).catch(() => {});
-        await supabase.from('bajaj_rides').delete().in('driver_id', driverIds).catch(() => {});
-        await supabase.from('driver_presence').delete().in('driver_id', driverIds).catch(() => {});
+        try { await supabase.from('subscriptions').delete().in('user_id', allIds); } catch {}
+        try { await supabase.from('payment_transactions').delete().in('user_id', allIds); } catch {}
+        try { await supabase.from('bajaj_rides').delete().in('passenger_id', passengerIds); } catch {}
+        try { await supabase.from('bajaj_rides').delete().in('driver_id', driverIds); } catch {}
+        try { await supabase.from('driver_presence').delete().in('driver_id', driverIds); } catch {}
       }
 
       // 3. Delete all driver profiles
@@ -166,17 +166,19 @@ export default function App() {
       }
 
       // 5. Log the cleanup action
-      await supabase.from('audit_logs').insert([{
-        actor_name: currentAdmin?.full_name || 'Admin',
-        action: 'DELETE_ALL_DEMO_DATA',
-        target_type: 'profiles',
-        target_id: 'bulk',
-        metadata: { 
-          drivers_deleted: driverIds.length, 
-          passengers_deleted: passengerIds.length,
-          total: deletedCount
-        }
-      }]).catch(() => {});
+      try {
+        await supabase.from('audit_logs').insert([{
+          actor_name: currentAdmin?.full_name || 'Admin',
+          action: 'DELETE_ALL_DEMO_DATA',
+          target_type: 'profiles',
+          target_id: 'bulk',
+          metadata: { 
+            drivers_deleted: driverIds.length, 
+            passengers_deleted: passengerIds.length,
+            total: deletedCount
+          }
+        }]);
+      } catch {}
 
       setDemoCleanupResult(`✅ Guul! ${deletedCount} akoon ayaa la tirtiray (${driverIds.length} darawal + ${passengerIds.length} rakaab). Dhammaan xogta demo-da waa la nadiifiyay.`);
 
@@ -427,23 +429,27 @@ export default function App() {
     try {
       if (action === 'delete') {
         await supabase.from('profiles').delete().eq('id', user.id);
-        await supabase.from('audit_logs').insert([{
-          actor_name: currentAdmin?.full_name || 'Admin',
-          action: 'DELETE_USER',
-          target_type: 'profile',
-          target_id: user.id,
-          metadata: { name: user.full_name, phone: user.phone_number }
-        }]).catch(() => {});
+        try {
+          await supabase.from('audit_logs').insert([{
+            actor_name: currentAdmin?.full_name || 'Admin',
+            action: 'DELETE_USER',
+            target_type: 'profile',
+            target_id: user.id,
+            metadata: { name: user.full_name, phone: user.phone_number }
+          }]);
+        } catch {}
       } else {
         const newStatus = action === 'suspend' ? 'suspended' : 'active';
         await supabase.from('profiles').update({ status: newStatus }).eq('id', user.id);
-        await supabase.from('audit_logs').insert([{
-          actor_name: currentAdmin?.full_name || 'Admin',
-          action: action === 'suspend' ? 'SUSPEND_USER' : 'ACTIVATE_USER',
-          target_type: 'profile',
-          target_id: user.id,
-          metadata: { name: user.full_name, phone: user.phone_number, new_status: newStatus }
-        }]).catch(() => {});
+        try {
+          await supabase.from('audit_logs').insert([{
+            actor_name: currentAdmin?.full_name || 'Admin',
+            action: action === 'suspend' ? 'SUSPEND_USER' : 'ACTIVATE_USER',
+            target_type: 'profile',
+            target_id: user.id,
+            metadata: { name: user.full_name, phone: user.phone_number, new_status: newStatus }
+          }]);
+        } catch {}
       }
       setUserActionModal({ isOpen: false, user: null, action: 'delete', isProcessing: false });
       await fetchUsers();
