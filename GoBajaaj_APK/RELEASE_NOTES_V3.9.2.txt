@@ -1,0 +1,27 @@
+=============================================================================
+GoBajaaj Somali Traffic App - Nooca v3.9.2 (VersionCode 41)
+Taariikhda: 05 November 2026
+=============================================================================
+
+WAXA CUSUB OO LAGU XALLIYAY NOOCA v3.9.2:
+
+1. XALLINTA XAALADDA ISGOYSYADA EE WARIYEYAASHA (Reporter Traffic 1-Tap Status Fix):
+   - Ciladdii ahayd in marka wariyuhu taleefanka ka taabto xaaladda wadada (Furan, Normal, Jaam, Xiran)
+     aysan waxba isbeddelin gabi ahaanba waa la xalliyay.
+   - Hadda wariyuhu wuxuu si toos ah u arkayaa isgoyska loo xilsaaray (KM4, Bakaaro, Towfiiq, iwm).
+   - Kaarka Sare (Live Status Card) wuxuu muujinayaa xaaladda dhabta ah ee hadda (🟢 FURAN, 🟡 NORMAL, 🔴 JAAM, ⛔ XIRAN).
+   - Badhannada taabashada (1-Tap Buttons) waxay leeyihiin calaamadda '✓ SHAQEYNAYA' iyo xuduud culus oo cad si loo ogaado xaaladda firfircoon.
+   - 10-kii ilbiriqsiba mar ayuu app-ku xogta la cusboonaysiinayaa Supabase Server-ka.
+
+2. ISKU-XIRKA WARIYAHA IYO ISGOYSKIISA (Reporter Intersection Binding):
+   - Isgoyskii hore u dhici jiray ee ahaa in wariyaha loo xilsaaray KM4 uu wax ka beddelo Sanca ama Towfiiq waa la saxay.
+   - Xogta `assigned_reporter_id` hadda si toos ah ayaa looga soo dejiyaa Supabase waxaana lagu kaydiyaa Room DB.
+
+3. WEB ADMIN & SUPABASE REPORTERS FIX:
+   - Diiwaangelinta wariyaha cusub xitaa haddii email/phone hore loogu isticmaalay auth.users waa la xalliyay iyadoo la adeegsanayo RPC `create_or_get_reporter_id`.
+   - Tirtirista (Delete) wariyeyaasha waxay u dhacaysaa si nadiif ah oo degdeg ah.
+
+=============================================================================
+Faylka Cusub ee La Dhisay:
+- GoBajaaj_APK/GoBajaaj_v3.9.2.apk (Toos ugu shub taleefannada wariyeyaasha iyo darawallada)
+=============================================================================
