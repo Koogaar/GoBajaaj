@@ -195,22 +195,33 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       let resolvedUserId = authData?.user?.id;
 
       if (!resolvedUserId) {
-        // If already registered in auth or signup didn't return user id:
-        // Set their password directly via RPC
-        await supabase.rpc('reset_user_password_by_phone', {
-          p_phone: cleanUsername,
-          p_full_name: fullName.trim(),
-          p_new_password: password.trim()
+        // signUp returned {user: null} - email already registered in auth.users (Supabase security)
+        // Use SECURITY DEFINER RPC to find the existing auth.users.id and update password
+        const { data: rpcId, error: rpcErr } = await supabase.rpc('create_or_get_reporter_id', {
+          p_username: cleanUsername,
+          p_new_password: password.trim(),
+          p_full_name: fullName.trim()
         });
 
-        const { data: existingProfData } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('phone_number', cleanUsername)
-          .maybeSingle();
+        if (!rpcErr && rpcId) {
+          resolvedUserId = rpcId as string;
+        } else {
+          // Fallback: try reset_user_password_by_phone then look up profile
+          await supabase.rpc('reset_user_password_by_phone', {
+            p_phone: cleanUsername,
+            p_full_name: fullName.trim(),
+            p_new_password: password.trim()
+          });
 
-        if (existingProfData?.id) {
-          resolvedUserId = existingProfData.id;
+          const { data: existingProfData } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('phone_number', cleanUsername)
+            .maybeSingle();
+
+          if (existingProfData?.id) {
+            resolvedUserId = existingProfData.id;
+          }
         }
       }
 
@@ -356,17 +367,19 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
         auth: { persistSession: false }
       });
-      await tempClient.auth.signUp({
-        email: authEmail,
-        password: resetModal.newPassword.trim(),
-        options: {
-          data: {
-            full_name: rep.full_name,
-            phone: cleanUsername,
-            role: 'reporter'
+      try {
+        await tempClient.auth.signUp({
+          email: authEmail,
+          password: resetModal.newPassword.trim(),
+          options: {
+            data: {
+              full_name: rep.full_name,
+              phone: cleanUsername,
+              role: 'reporter'
+            }
           }
-        }
-      }).catch(() => { });
+        });
+      } catch (_) { }
 
       try {
         await supabase.from('audit_logs').insert([{
@@ -439,32 +452,37 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
     setIsLoading(true);
     try {
       if (action === 'delete') {
-        // 1. Remove intersection assignment
-        await supabase
-          .from('intersections')
-          .update({ assigned_reporter_id: null })
-          .eq('assigned_reporter_id', reporterId);
+        // 1. Remove intersection assignment first
+        try {
+          await supabase
+            .from('intersections')
+            .update({ assigned_reporter_id: null })
+            .eq('assigned_reporter_id', reporterId);
+        } catch (_) {}
 
-        // 2. Call delete RPC if present
-        await supabase.rpc('delete_reporter_by_id', { p_reporter_id: reporterId });
+        // 2. Rename phone_number to prevent unique constraint on re-add, demote to passenger
+        try {
+          await supabase
+            .from('profiles')
+            .update({
+              role: 'passenger',
+              status: 'disabled',
+              phone_number: `deleted_${Date.now()}_${reporterId.slice(0, 8)}`
+            })
+            .eq('id', reporterId);
+        } catch (_) {}
 
-        // 3. Demote role to passenger and disable so they disappear from reporters immediately
-        await supabase
-          .from('profiles')
-          .update({
-            role: 'passenger',
-            status: 'disabled',
-            phone_number: `deleted_${Date.now()}_${reporterId.slice(0, 8)}`
-          })
-          .eq('id', reporterId);
-
-        // 4. Also attempt direct delete from profiles
-        await supabase
+        // 3. Delete profile row entirely
+        const { error: delErr } = await supabase
           .from('profiles')
           .delete()
           .eq('id', reporterId);
 
-        // 5. Write audit log
+        if (delErr) {
+          console.error('Delete profile error:', delErr.message);
+        }
+
+        // 4. Write audit log
         try {
           await supabase.from('audit_logs').insert([{
             actor_name: actorName,
