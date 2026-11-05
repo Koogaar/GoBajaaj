@@ -157,10 +157,22 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
 
       // Create Supabase Auth account for reporter
       // If email: use the email directly!
-      // If phone: use phone@phone.gobajaaj.so
-      const authEmail = isEmail
-        ? cleanUsername.toLowerCase()
-        : `${cleanUsername.replace(/[^0-9]/g, '')}@phone.gobajaaj.so`;
+      // If phone: normalize to E.164-based phone email:
+      let authEmail = '';
+      if (isEmail) {
+        authEmail = cleanUsername.toLowerCase();
+      } else {
+        const cleanDigits = cleanUsername.replace(/[^0-9]/g, '');
+        let normPhone = cleanDigits;
+        if (cleanDigits.startsWith('252') && cleanDigits.length >= 10) {
+          normPhone = cleanDigits;
+        } else if (cleanDigits.startsWith('0')) {
+          normPhone = '252' + cleanDigits.slice(1);
+        } else {
+          normPhone = '252' + cleanDigits;
+        }
+        authEmail = `${normPhone}@phone.gobajaaj.so`;
+      }
 
       const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
       const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
@@ -180,25 +192,43 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
         }
       });
 
-      if (authErr && !authErr.message?.includes('already registered')) {
-        console.warn('Auth creation notice:', authErr.message);
+      let resolvedUserId = authData?.user?.id;
+
+      if (!resolvedUserId) {
+        // If already registered in auth or signup didn't return user id:
+        // Set their password directly via RPC
+        await supabase.rpc('reset_user_password_by_phone', {
+          p_phone: cleanUsername,
+          p_full_name: fullName.trim(),
+          p_new_password: password.trim()
+        });
+
+        const { data: existingProfData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('phone_number', cleanUsername)
+          .maybeSingle();
+
+        if (existingProfData?.id) {
+          resolvedUserId = existingProfData.id;
+        }
       }
 
-      const newId = authData?.user?.id || ((typeof crypto !== 'undefined' && crypto.randomUUID)
+      const newId = resolvedUserId || ((typeof crypto !== 'undefined' && crypto.randomUUID)
         ? crypto.randomUUID()
         : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
           const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
           return v.toString(16);
         }));
 
-      // Insert profile with clean username in phone_number field
-      const { error: pErr } = await supabase.from('profiles').insert([{
+      // Upsert profile with clean username in phone_number field
+      const { error: pErr } = await supabase.from('profiles').upsert([{
         id: newId,
         full_name: fullName.trim(),
         phone_number: cleanUsername,
         role: 'reporter',
         status: 'active'
-      }]);
+      }], { onConflict: 'id' });
 
       if (pErr) {
         console.error('Error inserting reporter profile:', pErr.message);
@@ -289,18 +319,38 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       const rep = resetModal.reporter;
       const cleanUsername = (rep.phone_number || '').trim();
       const isEmail = cleanUsername.includes('@');
-      const authEmail = isEmail
-        ? cleanUsername.toLowerCase()
-        : `${cleanUsername.replace(/[^0-9]/g, '')}@phone.gobajaaj.so`;
+
+      let authEmail = '';
+      if (isEmail) {
+        authEmail = cleanUsername.toLowerCase();
+      } else {
+        const cleanDigits = cleanUsername.replace(/[^0-9]/g, '');
+        let normPhone = cleanDigits;
+        if (cleanDigits.startsWith('252') && cleanDigits.length >= 10) {
+          normPhone = cleanDigits;
+        } else if (cleanDigits.startsWith('0')) {
+          normPhone = '252' + cleanDigits.slice(1);
+        } else {
+          normPhone = '252' + cleanDigits;
+        }
+        authEmail = `${normPhone}@phone.gobajaaj.so`;
+      }
 
       // 1. Call reset_user_password_by_phone RPC
       const { data: rpcRes, error: rpcErr } = await supabase.rpc('reset_user_password_by_phone', {
         p_phone: cleanUsername,
-        p_full_name: '',
+        p_full_name: rep.full_name || '',
         p_new_password: resetModal.newPassword.trim()
       });
 
-      // 2. Also attempt direct signUp update via tempClient as fallback
+      if (rpcErr || (rpcRes && rpcRes.success === false)) {
+        const errMsg = rpcErr?.message || rpcRes?.message || 'Furaha sirta ah lama beddeli karin.';
+        alert('Cilad: ' + errMsg);
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Also ensure auth profile or user is created if not yet
       const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
       const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
       const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
@@ -552,7 +602,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                                 setResetModal({
                                   isOpen: true,
                                   reporter: rep,
-                                  newPassword: generateSecurePassword()
+                                  newPassword: ''
                                 });
                               }}
                               className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition cursor-pointer flex items-center space-x-1"
@@ -785,9 +835,15 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                     {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-[11px] text-neutral-500 mt-1">
-                  🔑 Waxaad gacanta ku qori kartaa furaha sirta ah ama riix badhanka "Dhali Password".
-                </p>
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 mt-2">
+                  <p className="font-bold flex items-center gap-1">
+                    <span>🔒</span>
+                    <span>Xogta Amniga:</span>
+                  </p>
+                  <p className="mt-0.5 text-blue-800">
+                    Furaha hore ee wariyaha waa xafidan yahay (encrypted). Halkan ku qor furaha <strong>CUSUB</strong> ee aad rabto inaad u dejiso (tusaale: 112233) ama riix badhanka "🎲 Dhali Password".
+                  </p>
+                </div>
               </div>
 
               <div className="pt-4 border-t border-neutral-200 flex justify-end space-x-3">
