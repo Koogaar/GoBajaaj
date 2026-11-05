@@ -543,6 +543,9 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
             _isLoading.value = false
             res.onSuccess {
                 _uiMessage.emit("Warbixinta saxmadda si guul leh ayaa loo gudbiyay!")
+                try {
+                    repository.syncIntersectionsFromSupabase()
+                } catch (_: Exception) {}
                 onSuccess()
             }.onFailure { e ->
                 val err = e.localizedMessage ?: "Warbixinta lama gudbin karin"

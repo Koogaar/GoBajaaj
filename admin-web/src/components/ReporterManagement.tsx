@@ -458,7 +458,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
             .from('intersections')
             .update({ assigned_reporter_id: null })
             .eq('assigned_reporter_id', reporterId);
-        } catch (_) {}
+        } catch (_) { }
 
         // 2. Rename phone_number to prevent unique constraint on re-add, demote to passenger
         try {
@@ -470,7 +470,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
               phone_number: `deleted_${Date.now()}_${reporterId.slice(0, 8)}`
             })
             .eq('id', reporterId);
-        } catch (_) {}
+        } catch (_) { }
 
         // 3. Delete profile row entirely
         const { error: delErr } = await supabase

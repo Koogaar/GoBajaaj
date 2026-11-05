@@ -35,9 +35,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.somalitraffic.data.model.Intersection
+import com.example.somalitraffic.data.model.TrafficStatus
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
 import com.example.somalitraffic.ui.components.SomaliTopBar
 import com.example.ui.theme.*
+import kotlinx.coroutines.delay
 import kotlin.math.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,11 +71,30 @@ fun ReporterDashboardScreen(
     var isGpsLive by remember { mutableStateOf(false) }
     var locationRegisteredNotice by remember { mutableStateOf<String?>(null) }
 
+    // 1. Initial Load & Periodic 10-second sync with Supabase
+    LaunchedEffect(Unit) {
+        viewModel.refreshTrafficData()
+        while (true) {
+            delay(10000)
+            viewModel.refreshTrafficData()
+        }
+    }
+
     // Auto-select assigned intersection for this reporter
     LaunchedEffect(intersections, currentUser) {
         val assigned = intersections.find { it.assignedReporterId == currentUser?.id }
         if (assigned != null && (selectedIntersectionId.isBlank() || selectedIntersectionId == "int-1")) {
             selectedIntersectionId = assigned.id
+        } else if (selectedIntersectionId.isBlank() && intersections.isNotEmpty()) {
+            selectedIntersectionId = intersections.first().id
+        }
+    }
+
+    // Auto-dismiss feedback message after 4 seconds
+    LaunchedEffect(feedbackMessage) {
+        if (feedbackMessage != null && !isWarning) {
+            delay(4000)
+            feedbackMessage = null
         }
     }
 
@@ -109,6 +130,10 @@ fun ReporterDashboardScreen(
         ?: intersections.find { it.assignedReporterId == currentUser?.id }
         ?: intersections.firstOrNull()
 
+    val currentStatusEnum = remember(currentIntersection?.currentStatus) {
+        TrafficStatus.fromString(currentIntersection?.currentStatus)
+    }
+
     // Function to re-sync or register current location
     fun syncCurrentLocation() {
         val targetId = currentIntersection?.id
@@ -135,7 +160,13 @@ fun ReporterDashboardScreen(
     val isWithinRange = distanceMeters <= (currentIntersection?.allowedRadius ?: 500) * 1.5
 
     fun submitQuickReport(status: String, cause: String? = null) {
-        val targetIntId = currentIntersection?.id ?: "int-1"
+        val targetIntId = currentIntersection?.id 
+            ?: intersections.firstOrNull()?.id 
+            ?: "int-1"
+
+        feedbackMessage = "Gudbinaya xaaladda $status..."
+        isWarning = false
+
         viewModel.submitTrafficReport(
             intersectionId = targetIntId,
             status = status,
@@ -149,7 +180,7 @@ fun ReporterDashboardScreen(
                 isWarning = true
             }
         ) {
-            feedbackMessage = "✅ Xaaladda ($status) si toos ah ayaa loogu gudbiyay darawallada iyo nidaamka!"
+            feedbackMessage = "✅ Xaaladda (${currentIntersection?.name ?: "Isgoyska"}) waxaa loo beddelay: $status!"
             isWarning = false
             showCloseRoadDialog = false
             customCauseText = ""
@@ -365,70 +396,78 @@ fun ReporterDashboardScreen(
                 }
             }
 
-            // ONE-TAP QUICK REPORTING SECTION (Taabasho Kaliya)
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+            // LIVE ROAD STATUS CARD
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = when (currentStatusEnum) {
+                        TrafficStatus.FURAN -> Color(0xFFDCFCE7)
+                        TrafficStatus.NORMAL -> Color(0xFFFEF3C7)
+                        TrafficStatus.JAAM -> Color(0xFFFEE2E2)
+                        TrafficStatus.XERAN -> Color(0xFFFEE2E2)
+                    }
+                ),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(
+                    2.dp,
+                    when (currentStatusEnum) {
+                        TrafficStatus.FURAN -> Color(0xFF16A34A)
+                        TrafficStatus.NORMAL -> Color(0xFFD97706)
+                        TrafficStatus.JAAM -> Color(0xFFE50914)
+                        TrafficStatus.XERAN -> Color(0xFF991B1B)
+                    }
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Xaaladda Hadda ee Wadada:",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF475569)
+                            )
+                            Text(
+                                text = currentIntersection?.name ?: "Dooro Isgoys",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0F172A)
+                            )
+                        }
+                        Surface(
+                            color = when (currentStatusEnum) {
+                                TrafficStatus.FURAN -> Color(0xFF16A34A)
+                                TrafficStatus.NORMAL -> Color(0xFFD97706)
+                                TrafficStatus.JAAM -> Color(0xFFE50914)
+                                TrafficStatus.XERAN -> Color(0xFF991B1B)
+                            },
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Text(
+                                text = when (currentStatusEnum) {
+                                    TrafficStatus.FURAN -> "🟢 FURAN"
+                                    TrafficStatus.NORMAL -> "🟡 NORMAL"
+                                    TrafficStatus.JAAM -> "🔴 JAAM"
+                                    TrafficStatus.XERAN -> "⛔ XIRAN"
+                                },
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Taabo Xaaladda Hadda (1-Tap Status)",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
-                    )
-                    Text(
-                        text = "Toos u gudbi",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFE50914)
+                        text = "Cusboonaysiintii ugu dambaysay: ${currentIntersection?.lastUpdated ?: "Hadda"}",
+                        fontSize = 11.sp,
+                        color = Color(0xFF64748B)
                     )
                 }
-
-                // 1. BUTTON: CAADI / FURAN (Green - 1 Tap)
-                OneTapStatusButton(
-                    title = "FURAN (Clear)",
-                    description = "Gaadiidku si habsami leh ayuu u socdaa, saxmad ma jirto",
-                    icon = Icons.Default.CheckCircle,
-                    backgroundColor = Color(0xFF16A34A),
-                    textColor = Color.White,
-                    onClick = { submitQuickReport("Furan") },
-                    isLoading = isLoading
-                )
-
-                // 2. BUTTON: NORMAL (Yellow/Amber - 1 Tap)
-                OneTapStatusButton(
-                    title = "NORMAL (Moderate)",
-                    description = "Gaadiidku waa badan yahay balse wuu socdaa",
-                    icon = Icons.Default.DirectionsCar,
-                    backgroundColor = Color(0xFFD97706),
-                    textColor = Color.White,
-                    onClick = { submitQuickReport("Normal") },
-                    isLoading = isLoading
-                )
-
-                // 3. BUTTON: JAAM (Red - 1 Tap)
-                OneTapStatusButton(
-                    title = "JAAM / SAXMAD (Heavy)",
-                    description = "Isgoysku waa saxmad daran yahay oo gaadiidku waa xanniban yahay",
-                    icon = Icons.Default.Traffic,
-                    backgroundColor = Color(0xFFE50914),
-                    textColor = Color.White,
-                    onClick = { submitQuickReport("Jaam") },
-                    isLoading = isLoading
-                )
-
-                // 4. BUTTON: XERAN / WADDADA XIRAN (Dark/Black - Opens Cause Sheet)
-                OneTapStatusButton(
-                    title = "XERAN / WADDADA XIRAN (Closed Road)",
-                    description = "Waddadu waa xiran tahay (Dhismo, Shil, Ciidan, iwm)",
-                    icon = Icons.Default.Block,
-                    backgroundColor = Color(0xFF1E293B),
-                    textColor = Color.White,
-                    onClick = { showCloseRoadDialog = true },
-                    isLoading = isLoading
-                )
             }
 
             // Feedback Alert Banner
@@ -466,6 +505,76 @@ fun ReporterDashboardScreen(
                         }
                     }
                 }
+            }
+
+            // ONE-TAP QUICK REPORTING SECTION (Taabasho Kaliya)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Taabo Xaaladda Hadda (1-Tap Status)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Text(
+                        text = "Toos u gudbi",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFE50914)
+                    )
+                }
+
+                // 1. BUTTON: CAADI / FURAN (Green - 1 Tap)
+                OneTapStatusButton(
+                    title = "FURAN (Clear)",
+                    description = "Gaadiidku si habsami leh ayuu u socdaa, saxmad ma jirto",
+                    icon = Icons.Default.CheckCircle,
+                    backgroundColor = Color(0xFF16A34A),
+                    textColor = Color.White,
+                    isActive = currentStatusEnum == TrafficStatus.FURAN,
+                    onClick = { submitQuickReport("Furan") },
+                    isLoading = isLoading
+                )
+
+                // 2. BUTTON: NORMAL (Yellow/Amber - 1 Tap)
+                OneTapStatusButton(
+                    title = "NORMAL (Moderate)",
+                    description = "Gaadiidku waa badan yahay balse wuu socdaa",
+                    icon = Icons.Default.DirectionsCar,
+                    backgroundColor = Color(0xFFD97706),
+                    textColor = Color.White,
+                    isActive = currentStatusEnum == TrafficStatus.NORMAL,
+                    onClick = { submitQuickReport("Normal") },
+                    isLoading = isLoading
+                )
+
+                // 3. BUTTON: JAAM (Red - 1 Tap)
+                OneTapStatusButton(
+                    title = "JAAM / SAXMAD (Heavy)",
+                    description = "Isgoysku waa saxmad daran yahay oo gaadiidku waa xanniban yahay",
+                    icon = Icons.Default.Traffic,
+                    backgroundColor = Color(0xFFE50914),
+                    textColor = Color.White,
+                    isActive = currentStatusEnum == TrafficStatus.JAAM,
+                    onClick = { submitQuickReport("Jaam") },
+                    isLoading = isLoading
+                )
+
+                // 4. BUTTON: XERAN / WADDADA XIRAN (Dark/Black - Opens Cause Sheet)
+                OneTapStatusButton(
+                    title = "XERAN / WADDADA XIRAN (Closed Road)",
+                    description = "Waddadu waa xiran tahay (Dhismo, Shil, Ciidan, iwm)",
+                    icon = Icons.Default.Block,
+                    backgroundColor = Color(0xFF1E293B),
+                    textColor = Color.White,
+                    isActive = currentStatusEnum == TrafficStatus.XERAN,
+                    onClick = { showCloseRoadDialog = true },
+                    isLoading = isLoading
+                )
             }
         }
     }
@@ -701,15 +810,17 @@ private fun OneTapStatusButton(
     icon: ImageVector,
     backgroundColor: Color,
     textColor: Color,
+    isActive: Boolean,
     onClick: () -> Unit,
     isLoading: Boolean
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         shape = RoundedCornerShape(16.dp),
+        border = if (isActive) BorderStroke(3.dp, Color.White) else null,
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .shadow(if (isActive) 8.dp else 4.dp, RoundedCornerShape(16.dp))
             .clickable(enabled = !isLoading) { onClick() }
     ) {
         Row(
@@ -724,19 +835,36 @@ private fun OneTapStatusButton(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f)),
+                        .background(if (isActive) Color.White.copy(alpha = 0.35f) else Color.White.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(imageVector = icon, contentDescription = null, tint = textColor, modifier = Modifier.size(24.dp))
                 }
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
-                    Text(
-                        text = title,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = textColor
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = title,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                        if (isActive) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                color = Color.White,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "ACTIVE",
+                                    color = backgroundColor,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = description,
@@ -748,12 +876,12 @@ private fun OneTapStatusButton(
             }
 
             Surface(
-                color = Color.White.copy(alpha = 0.25f),
+                color = if (isActive) Color.White else Color.White.copy(alpha = 0.25f),
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Text(
-                    text = "Taabo",
-                    color = Color.White,
+                    text = if (isActive) "✓ SHAQEYNAYA" else "Taabo",
+                    color = if (isActive) backgroundColor else Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)

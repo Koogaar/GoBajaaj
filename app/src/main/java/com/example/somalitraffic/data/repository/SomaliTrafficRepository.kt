@@ -1919,9 +1919,11 @@ class SomaliTrafficRepository(private val context: Context) {
 
     suspend fun syncIntersectionsFromSupabase(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val safeKey = getSafeApiKey()
+            val safeAuth = getSafeAuthHeader()
             val response = getApiService().getIntersections(
-                apiKey = prefs.getSupabaseKey(),
-                authHeader = "Bearer ${prefs.getSupabaseKey()}"
+                apiKey = safeKey,
+                authHeader = safeAuth
             )
             if (response.isSuccessful && response.body() != null) {
                 val remoteList = response.body()!!
@@ -1941,6 +1943,9 @@ class SomaliTrafficRepository(private val context: Context) {
                         else -> if (rawStatus.equals("hadda", ignoreCase = true) || rawStatus.isBlank()) "Furan" else rawStatus
                     }
                     val lastUpdated = map["last_updated"]?.toString() ?: "Hadda"
+                    val assignedRep = map["assigned_reporter_id"]?.toString()?.takeIf { it.isNotBlank() }
+                    val districtStr = map["district"]?.toString() ?: "Hodan"
+                    val statusStr = map["status"]?.toString() ?: "active"
                     Intersection(
                         id = id,
                         name = name,
@@ -1948,7 +1953,10 @@ class SomaliTrafficRepository(private val context: Context) {
                         longitude = lng,
                         allowedRadius = radius,
                         city = city,
+                        district = districtStr,
                         currentStatus = status,
+                        assignedReporterId = assignedRep,
+                        status = statusStr,
                         lastUpdated = lastUpdated
                     )
                 }
@@ -2091,7 +2099,8 @@ class SomaliTrafficRepository(private val context: Context) {
 
             if (prefs.isSupabaseConfigured()) {
                 try {
-                    val apiKey = prefs.getSupabaseKey()
+                    val apiKey = getSafeApiKey()
+                    val authHeader = getSafeAuthHeader()
                     val service = getApiService()
                     
                     // 1. Post Traffic Report
@@ -2123,14 +2132,14 @@ class SomaliTrafficRepository(private val context: Context) {
                     try {
                         val postResp = service.postTrafficReport(
                             apiKey = apiKey,
-                            authHeader = "Bearer $apiKey",
+                            authHeader = authHeader,
                             report = payload
                         )
-                        if (!postResp.isSuccessful && postResp.code() == 400) {
+                        if (!postResp.isSuccessful) {
                             payload["status"] = fallbackStatus
                             service.postTrafficReport(
                                 apiKey = apiKey,
-                                authHeader = "Bearer $apiKey",
+                                authHeader = authHeader,
                                 report = payload
                             )
                         }
@@ -2139,7 +2148,7 @@ class SomaliTrafficRepository(private val context: Context) {
                             payload["status"] = fallbackStatus
                             service.postTrafficReport(
                                 apiKey = apiKey,
-                                authHeader = "Bearer $apiKey",
+                                authHeader = authHeader,
                                 report = payload
                             )
                         } catch (_: Exception) {}
@@ -2151,17 +2160,17 @@ class SomaliTrafficRepository(private val context: Context) {
                         try {
                             val patchResp = service.updateIntersectionStatus(
                                 apiKey = apiKey,
-                                authHeader = "Bearer $apiKey",
+                                authHeader = authHeader,
                                 idFilter = "eq.${intersection.id}",
                                 updates = mapOf(
                                     "current_status" to status,
                                     "last_updated" to ts
                                 )
                             )
-                            if (!patchResp.isSuccessful && patchResp.code() == 400) {
+                            if (!patchResp.isSuccessful) {
                                 service.updateIntersectionStatus(
                                     apiKey = apiKey,
-                                    authHeader = "Bearer $apiKey",
+                                    authHeader = authHeader,
                                     idFilter = "eq.${intersection.id}",
                                     updates = mapOf(
                                         "current_status" to fallbackStatus,
@@ -2173,7 +2182,7 @@ class SomaliTrafficRepository(private val context: Context) {
                             try {
                                 service.updateIntersectionStatus(
                                     apiKey = apiKey,
-                                    authHeader = "Bearer $apiKey",
+                                    authHeader = authHeader,
                                     idFilter = "eq.${intersection.id}",
                                     updates = mapOf(
                                         "current_status" to fallbackStatus,
