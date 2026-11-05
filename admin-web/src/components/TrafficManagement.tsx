@@ -139,6 +139,13 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
 
   useEffect(() => {
     fetchTrafficData();
+
+    // Auto-refresh traffic and intersections every 5 seconds so Web Admin sees live changes immediately
+    const interval = setInterval(() => {
+      fetchTrafficData();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleCreateIntersection = async (e: React.FormEvent) => {
