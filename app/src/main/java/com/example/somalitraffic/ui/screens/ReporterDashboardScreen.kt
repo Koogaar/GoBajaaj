@@ -55,12 +55,10 @@ fun ReporterDashboardScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     var selectedIntersectionId by remember { mutableStateOf("") }
-    var hasAutoSelected by remember { mutableStateOf(false) } // Only auto-select ONCE on first load
     var feedbackMessage by remember { mutableStateOf<String?>(null) }
     var isWarning by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
     var showCloseRoadDialog by remember { mutableStateOf(false) }
-    var showIntersectionPicker by remember { mutableStateOf(false) }
 
     // Custom cause for Closed Road
     var selectedPresetCause by remember { mutableStateOf("Dhismo Waddo") }
@@ -81,13 +79,11 @@ fun ReporterDashboardScreen(
         }
     }
 
-    // Auto-select assigned intersection for this reporter — ONLY ONCE on first load
-    // After that, the reporter is FREE to pick any intersection manually
+    // Always lock reporter to their assigned intersection — admin controls assignment
     LaunchedEffect(intersections, currentUser) {
-        if (!hasAutoSelected && intersections.isNotEmpty()) {
+        if (intersections.isNotEmpty()) {
             val assigned = intersections.find { it.assignedReporterId == currentUser?.id }
             selectedIntersectionId = assigned?.id ?: intersections.first().id
-            hasAutoSelected = true
         }
     }
 
@@ -272,13 +268,12 @@ fun ReporterDashboardScreen(
                     HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Selected Intersection Selector
+                    // Assigned Intersection Display (READ-ONLY — set by Admin)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color.White.copy(alpha = 0.08f))
-                            .clickable { showIntersectionPicker = true }
                             .padding(12.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
@@ -287,20 +282,21 @@ fun ReporterDashboardScreen(
                             Icon(Icons.Default.Place, contentDescription = null, tint = Color(0xFFE50914), modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Column {
+                                val intDisplayName = currentIntersection?.name ?: "Lama helin"
                                 Text(
-                                    text = "Isgoyska: ${currentIntersection?.name ?: "Dooro Isgoys"}",
+                                    text = "Isgoyska: $intDisplayName",
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp
                                 )
                                 Text(
-                                    text = "Riix si aad u beddesho isgoyska aad joogto",
+                                    text = "Isgoyska Kuu Xilsaaray Admin",
                                     color = Color(0xFF94A3B8),
                                     fontSize = 11.sp
                                 )
                             }
                         }
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -678,69 +674,6 @@ fun ReporterDashboardScreen(
             }
         )
     }
-
-    // Modal: Intersection Picker
-    if (showIntersectionPicker) {
-        AlertDialog(
-            onDismissRequest = { showIntersectionPicker = false },
-            title = {
-                Text("Dooro Isgoyska Aad Joogto", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 350.dp)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    intersections.forEach { int ->
-                        val isSelected = int.id == (currentIntersection?.id ?: "")
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .clickable {
-                                    selectedIntersectionId = int.id
-                                    showIntersectionPicker = false
-                                },
-                            color = if (isSelected) Color(0xFFE50914).copy(alpha = 0.1f) else Color(0xFFF8FAFC),
-                            border = BorderStroke(1.dp, if (isSelected) Color(0xFFE50914) else Color(0xFFE2E8F0))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text(
-                                        text = int.name,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) Color(0xFFE50914) else Color(0xFF0F172A),
-                                        fontSize = 14.sp
-                                    )
-                                    Text(
-                                        text = "Xaaladda Hadda: ${int.currentStatus}",
-                                        fontSize = 11.sp,
-                                        color = Color(0xFF64748B)
-                                    )
-                                }
-                                if (isSelected) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = Color(0xFFE50914))
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showIntersectionPicker = false }) {
-                    Text("Xir", fontWeight = FontWeight.Bold)
-                }
-            }
-        )
-    }
-
     // Profile & Logout Dialog
     if (showProfileDialog) {
         AlertDialog(
