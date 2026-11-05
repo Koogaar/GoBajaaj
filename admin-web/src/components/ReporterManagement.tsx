@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, UserPlus, RefreshCw, AlertCircle, MapPin, Check, ShieldAlert, Eye, EyeOff, KeyRound, Copy, Mail, Phone, Sparkles } from 'lucide-react';
+import { UserCheck, UserPlus, RefreshCw, AlertCircle, MapPin, Check, ShieldAlert, Eye, EyeOff, KeyRound, Copy, Mail, Phone, Sparkles, Trash2 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { Profile, Intersection } from '../types';
 import { supabase } from '../supabase';
@@ -57,7 +57,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     reporterId: string;
-    action: 'deactivate' | 'activate';
+    action: 'deactivate' | 'activate' | 'delete';
     name: string;
   }>({ isOpen: false, reporterId: '', action: 'deactivate', name: '' });
 
@@ -434,25 +434,54 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
     }
   };
 
-  const handleToggleReporterStatus = async () => {
-    const { reporterId, action } = confirmModal;
-    const nextStatus = action === 'activate' ? 'active' : 'disabled';
+  const handleConfirmReporterAction = async () => {
+    const { reporterId, action, name } = confirmModal;
     setIsLoading(true);
     try {
-      await supabase.from('profiles').update({ status: nextStatus }).eq('id', reporterId);
+      if (action === 'delete') {
+        // 1. Remove intersection assignment
+        await supabase
+          .from('intersections')
+          .update({ assigned_reporter_id: null })
+          .eq('assigned_reporter_id', reporterId);
 
-      // If deactivating, remove intersection assignment
-      if (nextStatus === 'disabled') {
-        await supabase.from('intersections').update({ assigned_reporter_id: null }).eq('assigned_reporter_id', reporterId);
+        // 2. Delete profile
+        const { error: delErr } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', reporterId);
+
+        if (delErr) {
+          alert('Cilad tirtirista wariyaha: ' + delErr.message);
+        }
+
+        // 3. Write audit log
+        try {
+          await supabase.from('audit_logs').insert([{
+            actor_name: actorName,
+            action: 'REPORTER_DELETED',
+            target_type: 'reporter',
+            target_id: reporterId,
+            metadata: { name }
+          }]);
+        } catch (_) { }
+      } else {
+        const nextStatus = action === 'activate' ? 'active' : 'disabled';
+        await supabase.from('profiles').update({ status: nextStatus }).eq('id', reporterId);
+
+        // If deactivating, remove intersection assignment
+        if (nextStatus === 'disabled') {
+          await supabase.from('intersections').update({ assigned_reporter_id: null }).eq('assigned_reporter_id', reporterId);
+        }
+
+        await supabase.from('audit_logs').insert([{
+          actor_name: actorName,
+          action: `REPORTER_${nextStatus.toUpperCase()}`,
+          target_type: 'reporter',
+          target_id: reporterId,
+          metadata: { new_status: nextStatus }
+        }]);
       }
-
-      await supabase.from('audit_logs').insert([{
-        actor_name: actorName,
-        action: `REPORTER_${nextStatus.toUpperCase()}`,
-        target_type: 'reporter',
-        target_id: reporterId,
-        metadata: { new_status: nextStatus }
-      }]);
 
       await fetchReportersAndIntersections();
     } catch (err) {
@@ -489,7 +518,14 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
 
           {canManage && (
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => {
+                setFullName('');
+                setPhoneNumber('');
+                setPassword('');
+                setSelectedIntersectionId('');
+                setCustomIntersectionName('');
+                setShowAddModal(true);
+              }}
               className="px-4 py-2.5 bg-[#E50914] text-white rounded-xl text-sm font-bold shadow hover:bg-[#B91C1C] transition flex items-center space-x-2 cursor-pointer"
             >
               <UserPlus className="w-4 h-4" />
@@ -620,11 +656,25 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                                 name: rep.full_name
                               })}
                               className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition cursor-pointer ${rep.status === 'active'
-                                ? 'border-red-200 text-red-600 hover:bg-red-50'
+                                ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
                                 : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
                                 }`}
                             >
                               {rep.status === 'active' ? 'Deactivate' : 'Activate'}
+                            </button>
+
+                            <button
+                              onClick={() => setConfirmModal({
+                                isOpen: true,
+                                reporterId: rep.id,
+                                action: 'delete',
+                                name: rep.full_name
+                              })}
+                              className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition cursor-pointer flex items-center space-x-1"
+                              title="Tirtir Wariyaha"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Tirtir</span>
                             </button>
                           </div>
                         </td>
@@ -650,11 +700,18 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
               <button onClick={() => setShowAddModal(false)} className="text-neutral-400 hover:text-black">✕</button>
             </div>
 
-            <form onSubmit={handleCreateReporter} className="p-6 space-y-4">
+            <form onSubmit={handleCreateReporter} className="p-6 space-y-4" autoComplete="off">
+              {/* Dummy hidden inputs to stop aggressive Chrome/browser autofill */}
+              <input type="text" name="fake_user_block" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+              <input type="password" name="fake_pass_block" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+
               <div>
                 <label className="block text-xs font-bold text-black mb-1">Magaca Buuxa ee Wariyaha</label>
                 <input
                   type="text"
+                  name="reporter_full_name"
+                  id="reporter_full_name"
+                  autoComplete="off"
                   required
                   placeholder="m.g. Maxamed Cali Shire"
                   value={fullName}
@@ -676,6 +733,9 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                 </div>
                 <input
                   type="text"
+                  name="reporter_login_username"
+                  id="reporter_login_username"
+                  autoComplete="off"
                   required
                   placeholder="m.g. wariye@gmail.com ama 61XXXXXXX"
                   value={phoneNumber}
@@ -702,6 +762,9 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="reporter_secret_password"
+                    id="reporter_secret_password"
+                    autoComplete="new-password"
                     required
                     minLength={6}
                     placeholder="Qor password ama riix 'Dhali Password'..."
@@ -798,7 +861,11 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
               </button>
             </div>
 
-            <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-4">
+            <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-4" autoComplete="off">
+              {/* Dummy hidden inputs to block browser autofill */}
+              <input type="text" name="fake_user_block_reset" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+              <input type="password" name="fake_pass_block_reset" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+
               <div className="p-3 bg-neutral-100 rounded-xl">
                 <p className="text-xs text-neutral-500">Wariyaha la beddelayo:</p>
                 <p className="text-sm font-bold text-black">{resetModal.reporter.full_name}</p>
@@ -820,6 +887,9 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                 <div className="relative">
                   <input
                     type={showResetPassword ? 'text' : 'password'}
+                    name="reset_reporter_new_password"
+                    id="reset_reporter_new_password"
+                    autoComplete="new-password"
                     required
                     minLength={6}
                     placeholder="Geli furaha sirta ah ee cusub..."
@@ -930,16 +1000,20 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
         </div>
       )}
 
-      {/* Status Confirmation Modal */}
+      {/* Action Confirmation Modal */}
       <ConfirmationModal
         isOpen={confirmModal.isOpen}
-        title="Badelidda Xaaladda Wariyaha"
-        message={`Ma hubtaa inaad deactivat-gareyso ama badesho wariyaha "${confirmModal.name}"?`}
-        confirmLabel="Xaqiiji"
+        title={confirmModal.action === 'delete' ? 'Tirtir Wariyaha (Delete)' : 'Badelidda Xaaladda Wariyaha'}
+        message={
+          confirmModal.action === 'delete'
+            ? `Ma hubtaa inaad tirtirto wariyaha "${confirmModal.name}"?\nAkoonka iyo xogta wariyaha gabi ahaanba waa la tirtiri doonaa.`
+            : `Ma hubtaa inaad ${confirmModal.action === 'deactivate' ? 'joojiso (deactivate)' : 'furto (activate)'} wariyaha "${confirmModal.name}"?`
+        }
+        confirmLabel={confirmModal.action === 'delete' ? 'Haa, Tirtir' : 'Xaqiiji'}
         cancelLabel="Jooji"
-        isDanger={confirmModal.action === 'deactivate'}
+        isDanger={confirmModal.action === 'delete' || confirmModal.action === 'deactivate'}
         isLoading={isLoading}
-        onConfirm={handleToggleReporterStatus}
+        onConfirm={handleConfirmReporterAction}
         onCancel={() => setConfirmModal({ isOpen: false, reporterId: '', action: 'deactivate', name: '' })}
       />
     </div>
