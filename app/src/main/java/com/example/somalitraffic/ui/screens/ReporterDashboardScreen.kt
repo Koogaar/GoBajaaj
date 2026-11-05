@@ -55,6 +55,7 @@ fun ReporterDashboardScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     var selectedIntersectionId by remember { mutableStateOf("") }
+    var hasAutoSelected by remember { mutableStateOf(false) } // Only auto-select ONCE on first load
     var feedbackMessage by remember { mutableStateOf<String?>(null) }
     var isWarning by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
@@ -80,13 +81,13 @@ fun ReporterDashboardScreen(
         }
     }
 
-    // Auto-select assigned intersection for this reporter
+    // Auto-select assigned intersection for this reporter — ONLY ONCE on first load
+    // After that, the reporter is FREE to pick any intersection manually
     LaunchedEffect(intersections, currentUser) {
-        val assigned = intersections.find { it.assignedReporterId == currentUser?.id }
-        if (assigned != null && (selectedIntersectionId.isBlank() || selectedIntersectionId == "int-1")) {
-            selectedIntersectionId = assigned.id
-        } else if (selectedIntersectionId.isBlank() && intersections.isNotEmpty()) {
-            selectedIntersectionId = intersections.first().id
+        if (!hasAutoSelected && intersections.isNotEmpty()) {
+            val assigned = intersections.find { it.assignedReporterId == currentUser?.id }
+            selectedIntersectionId = assigned?.id ?: intersections.first().id
+            hasAutoSelected = true
         }
     }
 
