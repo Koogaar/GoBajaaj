@@ -707,8 +707,9 @@ class SomaliTrafficRepository(private val context: Context) {
         rawPass: String
     ): Result<UserProfile> {
         return try {
-            val e164 = prefs.toE164(cleanIdentifier)
-            val authEmail = DriverPassRules.phoneAuthEmail(e164)
+            val isEmail = cleanIdentifier.contains("@") && cleanIdentifier.contains(".")
+            val e164 = if (isEmail) cleanIdentifier else prefs.toE164(cleanIdentifier)
+            val authEmail = if (isEmail) cleanIdentifier.trim().lowercase() else DriverPassRules.phoneAuthEmail(e164)
             val apiKey = getSafeApiKey()
             val service = NetworkClient.createService(prefs.getSupabaseUrl())
 

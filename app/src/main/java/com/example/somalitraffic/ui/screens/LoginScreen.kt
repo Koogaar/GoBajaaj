@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -142,32 +143,47 @@ fun LoginScreen(
                     cursorColor = Color(0xFFE50914)
                 )
 
-                // Phone Number Input
+                // Phone Number or Email Input
                 OutlinedTextField(
                     value = phoneNumber,
                     onValueChange = { phoneNumber = it; errorMessage = null },
-                    placeholder = { Text("61XXXXXXX", fontSize = 14.sp, color = Color(0xFF94A3B8)) },
+                    placeholder = {
+                        Text(
+                            text = if (phoneNumber.contains("@")) "wariye@gmail.com" else "61XXXXXXX ama Gmail",
+                            fontSize = 14.sp,
+                            color = Color(0xFF94A3B8)
+                        )
+                    },
                     leadingIcon = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(start = 12.dp, end = 8.dp)
-                        ) {
-                            Text(
-                                text = "🇸🇴 +252",
-                                fontSize = 13.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF0F172A)
+                        if (phoneNumber.contains("@")) {
+                            Icon(
+                                Icons.Outlined.Email,
+                                contentDescription = null,
+                                tint = Color(0xFFE50914),
+                                modifier = Modifier.padding(start = 12.dp, end = 8.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Box(
-                                modifier = Modifier
-                                    .width(1.dp)
-                                    .height(18.dp)
-                                    .background(Color(0xFFCBD5E1))
-                            )
+                        } else {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(start = 12.dp, end = 8.dp)
+                            ) {
+                                Text(
+                                    text = "🇸🇴 +252",
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .width(1.dp)
+                                        .height(18.dp)
+                                        .background(Color(0xFFCBD5E1))
+                                )
+                            }
                         }
                     },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("input_login_phone"),
@@ -239,7 +255,7 @@ fun LoginScreen(
                     onClick = {
                         val cleanPhone = phoneNumber.trim().replace(" ", "")
                         if (cleanPhone.isBlank() || password.isBlank()) {
-                            errorMessage = "Fadlan geli nambarka iyo furaha sirta."
+                            errorMessage = "Fadlan geli nambarka/Gmail-ka iyo furaha sirta."
                             return@Button
                         }
                         viewModel.login(cleanPhone, password) { user ->

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import logoImg from './assets/logo.png';
-import { 
-  Shield, 
-  TrafficCone, 
-  Users, 
-  CreditCard, 
-  MapPin, 
-  Smartphone, 
-  Headphones, 
-  UserCheck, 
+import {
+  Shield,
+  TrafficCone,
+  Users,
+  CreditCard,
+  MapPin,
+  Smartphone,
+  Headphones,
+  UserCheck,
   FileText,
   AlertTriangle,
   LogOut,
@@ -83,7 +83,7 @@ export default function App() {
     localStorage.removeItem('gobajaaj_marketing_agent');
     setMarketingAgent(null);
   };
-  
+
   // Tab State
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -146,11 +146,11 @@ export default function App() {
 
       // 2. Delete related data first (subscriptions, payment_transactions, bajaj_rides, driver_presence, audit_logs)
       if (allIds.length > 0) {
-        try { await supabase.from('subscriptions').delete().in('user_id', allIds); } catch {}
-        try { await supabase.from('payment_transactions').delete().in('user_id', allIds); } catch {}
-        try { await supabase.from('bajaj_rides').delete().in('passenger_id', passengerIds); } catch {}
-        try { await supabase.from('bajaj_rides').delete().in('driver_id', driverIds); } catch {}
-        try { await supabase.from('driver_presence').delete().in('driver_id', driverIds); } catch {}
+        try { await supabase.from('subscriptions').delete().in('user_id', allIds); } catch { }
+        try { await supabase.from('payment_transactions').delete().in('user_id', allIds); } catch { }
+        try { await supabase.from('bajaj_rides').delete().in('passenger_id', passengerIds); } catch { }
+        try { await supabase.from('bajaj_rides').delete().in('driver_id', driverIds); } catch { }
+        try { await supabase.from('driver_presence').delete().in('driver_id', driverIds); } catch { }
       }
 
       // 3. Delete all driver profiles
@@ -172,13 +172,13 @@ export default function App() {
           action: 'DELETE_ALL_DEMO_DATA',
           target_type: 'profiles',
           target_id: 'bulk',
-          metadata: { 
-            drivers_deleted: driverIds.length, 
+          metadata: {
+            drivers_deleted: driverIds.length,
             passengers_deleted: passengerIds.length,
             total: deletedCount
           }
         }]);
-      } catch {}
+      } catch { }
 
       setDemoCleanupResult(`✅ Guul! ${deletedCount} akoon ayaa la tirtiray (${driverIds.length} darawal + ${passengerIds.length} rakaab). Dhammaan xogta demo-da waa la nadiifiyay.`);
 
@@ -297,7 +297,7 @@ export default function App() {
       const { count: sCount } = await supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active');
       const { data: pData } = await supabase.from('payment_transactions').select('amount, created_at').eq('status', 'completed');
       const rev = pData ? pData.reduce((acc, curr) => acc + Number(curr.amount || 0.25), 0) : 0;
-      
+
       const todayCompleted = pData ? pData.filter(p => {
         if (!p.created_at) return false;
         try {
@@ -437,7 +437,7 @@ export default function App() {
             target_id: user.id,
             metadata: { name: user.full_name, phone: user.phone_number }
           }]);
-        } catch {}
+        } catch { }
       } else {
         const newStatus = action === 'suspend' ? 'suspended' : 'active';
         await supabase.from('profiles').update({ status: newStatus }).eq('id', user.id);
@@ -449,7 +449,7 @@ export default function App() {
             target_id: user.id,
             metadata: { name: user.full_name, phone: user.phone_number, new_status: newStatus }
           }]);
-        } catch {}
+        } catch { }
       }
       setUserActionModal({ isOpen: false, user: null, action: 'delete', isProcessing: false });
       await fetchUsers();
@@ -612,7 +612,7 @@ export default function App() {
     <div className="min-h-screen bg-neutral-100 font-sans flex flex-col md:flex-row text-black">
       {/* Mobile Backdrop Overlay - closes sidebar on outside click */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           onClick={() => setIsMobileMenuOpen(false)}
           className="fixed inset-0 bg-black/70 backdrop-blur-xs z-40 md:hidden transition-opacity cursor-pointer"
           aria-label="Xir Sidebar"
@@ -622,10 +622,10 @@ export default function App() {
       {/* Mobile Top Header */}
       <div className="md:hidden bg-black text-white p-3.5 flex items-center justify-between border-b border-neutral-800 sticky top-0 z-30 shadow-md">
         <div className="flex items-center space-x-2.5">
-          <img 
-            src={logoImg} 
-            alt="GoBajaaj" 
-            className="w-8 h-8 rounded-lg object-cover shadow border border-neutral-700" 
+          <img
+            src={logoImg}
+            alt="GoBajaaj"
+            className="w-8 h-8 rounded-lg object-cover shadow border border-neutral-700"
           />
           <div>
             <span className="font-black text-xs tracking-wider block">GOBAJAAJ</span>
@@ -641,7 +641,7 @@ export default function App() {
               {overviewStats.pendingPaymentsCount} cusub
             </button>
           )}
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 text-white hover:bg-neutral-800 rounded-lg cursor-pointer transition"
             aria-label="Toggle Menu"
@@ -661,9 +661,9 @@ export default function App() {
           {/* Logo & Platform Name & Close / Collapse Toggle */}
           <div className="flex items-center justify-between">
             <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center w-full' : 'space-x-3 px-1'}`}>
-              <img 
-                src={logoImg} 
-                alt="GoBajaaj" 
+              <img
+                src={logoImg}
+                alt="GoBajaaj"
                 onClick={() => isSidebarCollapsed && setIsSidebarCollapsed(false)}
                 className="w-10 h-10 rounded-xl object-cover shadow-lg shrink-0 cursor-pointer border border-neutral-700"
                 title="GoBajaaj Admin"
@@ -715,7 +715,7 @@ export default function App() {
             bg-neutral-900 border border-neutral-800 rounded-2xl flex items-center transition-all
             ${isSidebarCollapsed ? 'p-2 justify-center' : 'p-3 space-x-3'}
           `}>
-            <div 
+            <div
               className="w-9 h-9 rounded-xl bg-[#E50914]/20 border border-[#E50914]/40 text-[#E50914] flex items-center justify-center font-black text-xs shrink-0"
               title={`${currentAdmin.full_name} (${roleDisplay.name})`}
             >
@@ -748,12 +748,12 @@ export default function App() {
                   title={tab.label}
                   className={`
                     w-full flex items-center rounded-xl text-xs font-bold transition cursor-pointer
-                    ${isSidebarCollapsed 
-                      ? 'justify-center p-3 relative' 
+                    ${isSidebarCollapsed
+                      ? 'justify-center p-3 relative'
                       : 'justify-between px-3.5 py-3'
                     }
-                    ${isActive 
-                      ? 'bg-[#E50914] text-white shadow-md' 
+                    ${isActive
+                      ? 'bg-[#E50914] text-white shadow-md'
                       : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
                     }
                   `}
@@ -874,7 +874,7 @@ export default function App() {
             {/* Overview Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
               {/* 1. Pending Payments Action Card */}
-              <div 
+              <div
                 onClick={() => setActiveTab('payments')}
                 className="bg-red-50 hover:bg-red-100/70 p-5 rounded-2xl border-2 border-[#E50914] shadow-xs cursor-pointer transition"
               >
@@ -939,7 +939,7 @@ export default function App() {
               </div>
 
               {/* 6. Isgoysyada Muqdisho */}
-              <div 
+              <div
                 onClick={() => setActiveTab('traffic')}
                 className="bg-white hover:bg-neutral-50 p-5 rounded-2xl border border-neutral-200 shadow-xs cursor-pointer transition"
               >
@@ -1095,22 +1095,20 @@ export default function App() {
             <div className="flex items-center space-x-2 overflow-x-auto pb-1">
               <button
                 onClick={() => setUserFilter('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                  userFilter === 'all'
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${userFilter === 'all'
                     ? 'bg-black text-white'
                     : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
-                }`}
+                  }`}
               >
                 Dhammaan ({usersList.length})
               </button>
 
               <button
                 onClick={() => setUserFilter('recent10')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shrink-0 ${
-                  userFilter === 'recent10'
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shrink-0 ${userFilter === 'recent10'
                     ? 'bg-emerald-600 text-white shadow'
                     : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
-                }`}
+                  }`}
               >
                 <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                 <span>10-Kii Daqiiqo ee Ugu Dambeeyay ({recentUsersCount})</span>
@@ -1118,22 +1116,20 @@ export default function App() {
 
               <button
                 onClick={() => setUserFilter('driver')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                  userFilter === 'driver'
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${userFilter === 'driver'
                     ? 'bg-black text-white'
                     : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
-                }`}
+                  }`}
               >
                 Darawallada
               </button>
 
               <button
                 onClick={() => setUserFilter('user')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                  userFilter === 'user'
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${userFilter === 'user'
                     ? 'bg-black text-white'
                     : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
-                }`}
+                  }`}
               >
                 Rakaabka
               </button>
@@ -1173,13 +1169,12 @@ export default function App() {
                         const isApproving = approvingUserId === u.id;
 
                         return (
-                          <tr 
-                            key={u.id} 
-                            className={`transition ${
-                              isRecent 
-                                ? 'bg-emerald-50/80 hover:bg-emerald-100/70 border-l-4 border-l-emerald-500' 
+                          <tr
+                            key={u.id}
+                            className={`transition ${isRecent
+                                ? 'bg-emerald-50/80 hover:bg-emerald-100/70 border-l-4 border-l-emerald-500'
                                 : 'hover:bg-neutral-50'
-                            }`}
+                              }`}
                           >
                             <td className="p-4">
                               <div className="flex items-center space-x-2">
@@ -1199,9 +1194,8 @@ export default function App() {
                               </span>
                             </td>
                             <td className="p-4">
-                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                                u.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                              }`}>
+                              <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${u.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                                }`}>
                                 {u.status}
                               </span>
                             </td>
@@ -1291,14 +1285,13 @@ export default function App() {
         {userActionModal.isOpen && userActionModal.user && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm border border-neutral-200 p-6 text-center">
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                userActionModal.action === 'delete' ? 'bg-red-100' : userActionModal.action === 'suspend' ? 'bg-amber-100' : 'bg-emerald-100'
-              }`}>
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${userActionModal.action === 'delete' ? 'bg-red-100' : userActionModal.action === 'suspend' ? 'bg-amber-100' : 'bg-emerald-100'
+                }`}>
                 {userActionModal.action === 'delete'
                   ? <Trash2 className="w-7 h-7 text-red-500" />
                   : userActionModal.action === 'suspend'
-                  ? <ShieldOff className="w-7 h-7 text-amber-500" />
-                  : <ShieldCheck className="w-7 h-7 text-emerald-500" />}
+                    ? <ShieldOff className="w-7 h-7 text-amber-500" />
+                    : <ShieldCheck className="w-7 h-7 text-emerald-500" />}
               </div>
               <h3 className="text-base font-black text-black mb-2">
                 {userActionModal.action === 'delete' ? 'Tirtirista Xaqiiji' : userActionModal.action === 'suspend' ? 'Hakinta Xaqiiji' : 'Furista Xaqiiji'}
@@ -1321,9 +1314,8 @@ export default function App() {
                 <button
                   onClick={handleUserAction}
                   disabled={userActionModal.isProcessing}
-                  className={`flex-1 py-2.5 text-white text-sm font-black rounded-xl transition cursor-pointer disabled:opacity-60 ${
-                    userActionModal.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : userActionModal.action === 'suspend' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'
-                  }`}
+                  className={`flex-1 py-2.5 text-white text-sm font-black rounded-xl transition cursor-pointer disabled:opacity-60 ${userActionModal.action === 'delete' ? 'bg-red-600 hover:bg-red-700' : userActionModal.action === 'suspend' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'
+                    }`}
                 >
                   {userActionModal.isProcessing ? 'Socda...' : 'Haa, Xaqiiji'}
                 </button>

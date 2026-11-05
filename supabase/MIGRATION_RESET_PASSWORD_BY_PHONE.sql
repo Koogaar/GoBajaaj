@@ -23,16 +23,42 @@ DECLARE
     v_profile_name text;
     v_encrypted_pw text;
 BEGIN
-    -- 1. Sanitize input phone
-    v_clean_phone := regexp_replace(p_phone, '[^0-9]', '', 'g');
-    IF length(v_clean_phone) >= 7 THEN
-        IF length(v_clean_phone) >= 9 THEN
-            v_e164 := '+252' || right(v_clean_phone, 9);
-        ELSE
-            v_e164 := '+252' || v_clean_phone;
+    -- 1. Check if input is email or phone
+    IF p_phone LIKE '%@%' THEN
+        -- Email lookup
+        SELECT id, full_name INTO v_user_id, v_profile_name
+        FROM public.profiles
+        WHERE lower(phone_number) = lower(trim(p_phone))
+        LIMIT 1;
+
+        IF v_user_id IS NULL THEN
+            SELECT id, email INTO v_user_id, v_profile_name
+            FROM auth.users
+            WHERE lower(email) = lower(trim(p_phone))
+            LIMIT 1;
         END IF;
     ELSE
-        RETURN jsonb_build_object('success', false, 'message', 'Fadlan geli nambar taleefan oo sax ah.');
+        -- Phone lookup
+        v_clean_phone := regexp_replace(p_phone, '[^0-9]', '', 'g');
+        IF length(v_clean_phone) >= 7 THEN
+            IF length(v_clean_phone) >= 9 THEN
+                v_e164 := '+252' || right(v_clean_phone, 9);
+            ELSE
+                v_e164 := '+252' || v_clean_phone;
+            END IF;
+        ELSE
+            RETURN jsonb_build_object('success', false, 'message', 'Fadlan geli nambar taleefan ama Gmail sax ah.');
+        END IF;
+
+        SELECT id, full_name INTO v_user_id, v_profile_name
+        FROM public.profiles
+        WHERE phone_number = v_e164
+           OR phone_number = right(v_clean_phone, 9)
+           OR phone_number = '0' || right(v_clean_phone, 9)
+           OR phone_number = '252' || right(v_clean_phone, 9)
+           OR phone_number = v_clean_phone
+           OR phone_number = p_phone
+        LIMIT 1;
     END IF;
 
     -- 2. Validate password length
@@ -40,18 +66,8 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', 'Furaha sirta waa inuu ugu yaraan 4 xaraf yahay.');
     END IF;
 
-    -- 3. Lookup user profile
-    SELECT id, full_name INTO v_user_id, v_profile_name
-    FROM public.profiles
-    WHERE phone_number = v_e164
-       OR phone_number = right(v_clean_phone, 9)
-       OR phone_number = '0' || right(v_clean_phone, 9)
-       OR phone_number = '252' || right(v_clean_phone, 9)
-       OR phone_number = v_clean_phone
-    LIMIT 1;
-
     IF v_user_id IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', 'Ma jiro akoon ku diiwaangashan nambarkan: ' || p_phone);
+        RETURN jsonb_build_object('success', false, 'message', 'Ma jiro akoon ku diiwaangashan: ' || p_phone);
     END IF;
 
     -- 4. Fuzzy check full name if provided (security verification)

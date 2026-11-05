@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, UserPlus, RefreshCw, AlertCircle, MapPin, Check, ShieldAlert, Eye, EyeOff, KeyRound, Copy } from 'lucide-react';
+import { UserCheck, UserPlus, RefreshCw, AlertCircle, MapPin, Check, ShieldAlert, Eye, EyeOff, KeyRound, Copy, Mail, Phone, Sparkles } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { Profile, Intersection } from '../types';
 import { supabase } from '../supabase';
@@ -24,6 +24,34 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
   const [showPassword, setShowPassword] = useState(false);
   const [selectedIntersectionId, setSelectedIntersectionId] = useState('');
   const [customIntersectionName, setCustomIntersectionName] = useState('');
+
+  // Password Reset Modal for existing wariye
+  const [resetModal, setResetModal] = useState<{
+    isOpen: boolean;
+    reporter: Profile | null;
+    newPassword: string;
+  }>({ isOpen: false, reporter: null, newPassword: '' });
+  const [showResetPassword, setShowResetPassword] = useState(false);
+
+  // Credentials Success Modal State
+  const [successCredentials, setSuccessCredentials] = useState<{
+    fullName: string;
+    username: string;
+    password: string;
+    intersectionName: string;
+    isReset?: boolean;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // Helper to generate a memorable secure password
+  const generateSecurePassword = () => {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+    let rnd = '';
+    for (let i = 0; i < 4; i++) {
+      rnd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `Wariye@${rnd}`;
+  };
 
   // Confirmation Modal
   const [confirmModal, setConfirmModal] = useState<{
@@ -87,7 +115,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       return;
     }
     if (!fullName.trim() || !phoneNumber.trim()) {
-      alert('Fadlan geli Magaca Buuxa iyo Nambarka Taleefanka.');
+      alert('Fadlan geli Magaca Buuxa iyo Username-ka (Gmail ama Nambarka Taleefanka).');
       return;
     }
     if (!password.trim() || password.trim().length < 6) {
@@ -95,26 +123,44 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       return;
     }
 
+    const cleanUsername = phoneNumber.trim();
+    const isEmail = cleanUsername.includes('@') && cleanUsername.includes('.');
+
+    if (isEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(cleanUsername)) {
+        alert('Fadlan geli cinwaan Gmail/Email sax ah.');
+        return;
+      }
+    } else {
+      const cleanDigits = cleanUsername.replace(/[^0-9]/g, '');
+      if (cleanDigits.length < 7) {
+        alert('Fadlan geli nambar taleefan oo sax ah (ugu yaraan 7 lambar) ama Gmail.');
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
-      // Check for duplicate phone number
-      const cleanInputPhone = phoneNumber.trim();
+      // Check for duplicate username / phone number in profiles
       const { data: existingProf } = await supabase
         .from('profiles')
-        .select('id, full_name')
-        .or(`phone_number.eq.${cleanInputPhone},phone_number.ilike.%${cleanInputPhone.slice(-8)}%`)
+        .select('id, full_name, phone_number')
+        .or(`phone_number.eq.${cleanUsername},phone_number.ilike.%${cleanUsername}%`)
         .limit(1);
 
       if (existingProf && existingProf.length > 0) {
-        alert(`Lambarkani (${cleanInputPhone}) hore ayaa loogu diiwaangeliyay (${existingProf[0].full_name || 'isticmaale kale'}). Fadlan geli lambar cusub.`);
+        alert(`Username-kan (${cleanUsername}) hore ayaa loogu diiwaangeliyay (${existingProf[0].full_name || 'isticmaale kale'}). Fadlan geli username kale.`);
         setIsLoading(false);
         return;
       }
 
       // Create Supabase Auth account for reporter
-      // Username = phone number, Email = phone@phone.gobajaaj.so
-      const cleanPhone = phoneNumber.trim().replace(/\s+/g, '');
-      const phoneEmail = `${cleanPhone.replace(/[^0-9]/g, '')}@phone.gobajaaj.so`;
+      // If email: use the email directly!
+      // If phone: use phone@phone.gobajaaj.so
+      const authEmail = isEmail
+        ? cleanUsername.toLowerCase()
+        : `${cleanUsername.replace(/[^0-9]/g, '')}@phone.gobajaaj.so`;
 
       const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
       const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
@@ -123,12 +169,12 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       });
 
       const { data: authData, error: authErr } = await tempClient.auth.signUp({
-        email: phoneEmail,
+        email: authEmail,
         password: password.trim(),
         options: {
           data: {
             full_name: fullName.trim(),
-            phone: cleanPhone,
+            phone: cleanUsername,
             role: 'reporter'
           }
         }
@@ -145,11 +191,11 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
           return v.toString(16);
         }));
 
-      // Insert profile
+      // Insert profile with clean username in phone_number field
       const { error: pErr } = await supabase.from('profiles').insert([{
         id: newId,
         full_name: fullName.trim(),
-        phone_number: phoneNumber.trim(),
+        phone_number: cleanUsername,
         role: 'reporter',
         status: 'active'
       }]);
@@ -162,6 +208,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       }
 
       let targetIntersectionId = selectedIntersectionId === 'NEW_CUSTOM' ? '' : selectedIntersectionId;
+      let targetIntersectionName = '';
 
       // Handle custom typed intersection name
       if (customIntersectionName.trim()) {
@@ -183,7 +230,11 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
           console.error('Error creating custom intersection:', newIntErr.message);
         } else if (newIntData) {
           targetIntersectionId = newIntData.id;
+          targetIntersectionName = newIntData.name;
         }
+      } else if (targetIntersectionId) {
+        const intMatch = intersections.find(i => i.id === targetIntersectionId);
+        targetIntersectionName = intMatch?.name || '';
       }
 
       // Assign intersection if selected or newly created
@@ -192,27 +243,114 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
       }
 
       // Write Audit Log
-      await supabase.from('audit_logs').insert([{
-        actor_name: actorName,
-        action: 'REPORTER_CREATED',
-        target_type: 'reporter',
-        target_id: newId,
-        metadata: { full_name: fullName, phone_number: phoneNumber, intersection_id: targetIntersectionId }
-      }]);
+      try {
+        await supabase.from('audit_logs').insert([{
+          actor_name: actorName,
+          action: 'REPORTER_CREATED',
+          target_type: 'reporter',
+          target_id: newId,
+          metadata: { full_name: fullName, username: cleanUsername, intersection_id: targetIntersectionId }
+        }]);
+      } catch (_) { }
 
       await fetchReportersAndIntersections();
       setShowAddModal(false);
+
+      // Show beautiful success credentials modal
+      setSuccessCredentials({
+        fullName: fullName.trim(),
+        username: cleanUsername,
+        password: password.trim(),
+        intersectionName: targetIntersectionName || 'Ma laha (Weli looma xilsaarin)'
+      });
+
       setFullName('');
       setPhoneNumber('');
       setPassword('');
       setSelectedIntersectionId('');
       setCustomIntersectionName('');
-      alert(`✅ Wariyaha si guul leh ayaa loogu diiwaangeliyay!\n\nXogta Login-ka:\n📱 Username: ${phoneNumber.trim()}\n🔑 Password: ${password.trim()}\n\nWariyaha gacanta uga sii xogahan si uu u galo app-ka.`);
     } catch (err: any) {
-      alert('Cilad ayaa dhacday marka la kaydinayay wariyaha.');
+      alert('Cilad ayaa dhacday marka la kaydinayay wariyaha: ' + (err?.message || ''));
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetModal.reporter || !resetModal.newPassword.trim()) return;
+    if (resetModal.newPassword.trim().length < 6) {
+      alert('Password-ka waa inuu ugu yaraan 6 xaraf yahay.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const rep = resetModal.reporter;
+      const cleanUsername = (rep.phone_number || '').trim();
+      const isEmail = cleanUsername.includes('@');
+      const authEmail = isEmail
+        ? cleanUsername.toLowerCase()
+        : `${cleanUsername.replace(/[^0-9]/g, '')}@phone.gobajaaj.so`;
+
+      // 1. Call reset_user_password_by_phone RPC
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('reset_user_password_by_phone', {
+        p_phone: cleanUsername,
+        p_full_name: '',
+        p_new_password: resetModal.newPassword.trim()
+      });
+
+      // 2. Also attempt direct signUp update via tempClient as fallback
+      const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL || '';
+      const supabaseAnonKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY || '';
+      const tempClient = createClient(supabaseUrl, supabaseAnonKey, {
+        auth: { persistSession: false }
+      });
+      await tempClient.auth.signUp({
+        email: authEmail,
+        password: resetModal.newPassword.trim(),
+        options: {
+          data: {
+            full_name: rep.full_name,
+            phone: cleanUsername,
+            role: 'reporter'
+          }
+        }
+      }).catch(() => { });
+
+      try {
+        await supabase.from('audit_logs').insert([{
+          actor_name: actorName,
+          action: 'REPORTER_PASSWORD_RESET',
+          target_type: 'reporter',
+          target_id: rep.id,
+          metadata: { reporter_name: rep.full_name, username: cleanUsername }
+        }]);
+      } catch (_) { }
+
+      const newPass = resetModal.newPassword.trim();
+      setResetModal({ isOpen: false, reporter: null, newPassword: '' });
+
+      setSuccessCredentials({
+        fullName: rep.full_name,
+        username: cleanUsername,
+        password: newPass,
+        intersectionName: 'Akoon hore',
+        isReset: true
+      });
+    } catch (err: any) {
+      alert('Cilad ayaa dhacday marka la beddelayay furaha: ' + (err?.message || ''));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const copyCredentialsToClipboard = () => {
+    if (!successCredentials) return;
+    const text = `GoBajaaj - Xogta Wariyaha Saxmadda:\n👤 Magaca: ${successCredentials.fullName}\n${successCredentials.username.includes('@') ? '📧' : '📱'} Username: ${successCredentials.username}\n🔑 Password: ${successCredentials.password}\n📍 Isgoyska: ${successCredentials.intersectionName}\n\nFadlan ku gal app-ka GoBajaaj qaybta Wariyaha.`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const assignReporterToIntersection = async (reporterId: string, intersectionId: string) => {
@@ -344,7 +482,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
               <thead className="bg-neutral-100 border-b border-neutral-200 text-black">
                 <tr>
                   <th className="p-4 font-bold">Wariyaha</th>
-                  <th className="p-4 font-bold">Nambarka Taleefanka</th>
+                  <th className="p-4 font-bold">Username (Gmail / Tel)</th>
                   <th className="p-4 font-bold">Isgoyska Loo Xilsaaray (1 Active Rule)</th>
                   <th className="p-4 font-bold">Xaaladda</th>
                   {canManage && <th className="p-4 font-bold text-right">Ficil</th>}
@@ -353,6 +491,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
               <tbody className="divide-y divide-neutral-100">
                 {reporters.map((rep) => {
                   const assignedInt = intersections.find(i => i.assigned_reporter_id === rep.id);
+                  const isEmailUser = (rep.phone_number || '').includes('@');
                   return (
                     <tr key={rep.id} className="hover:bg-neutral-50 transition">
                       <td className="p-4 font-bold text-black flex items-center space-x-3">
@@ -361,10 +500,24 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                         </div>
                         <div>
                           <p className="font-bold text-black">{rep.full_name}</p>
-                          <p className="text-[11px] text-neutral-400 font-mono">ID: {rep.id}</p>
+                          <p className="text-[11px] text-neutral-400 font-mono">ID: {rep.id.slice(0, 8)}...</p>
                         </div>
                       </td>
-                      <td className="p-4 text-black font-mono text-xs">{rep.phone_number}</td>
+                      <td className="p-4 font-mono text-xs">
+                        <div className="flex items-center space-x-1.5">
+                          {isEmailUser ? (
+                            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
+                              <Mail className="w-3.5 h-3.5 text-blue-600" />
+                              <span>{rep.phone_number}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-neutral-100 text-neutral-800 text-xs font-bold border border-neutral-200">
+                              <Phone className="w-3.5 h-3.5 text-neutral-600" />
+                              <span>{rep.phone_number}</span>
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-4">
                         {canManage ? (
                           <select
@@ -393,20 +546,37 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                       </td>
                       {canManage && (
                         <td className="p-4 text-right">
-                          <button
-                            onClick={() => setConfirmModal({
-                              isOpen: true,
-                              reporterId: rep.id,
-                              action: rep.status === 'active' ? 'deactivate' : 'activate',
-                              name: rep.full_name
-                            })}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition cursor-pointer ${rep.status === 'active'
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => {
+                                setResetModal({
+                                  isOpen: true,
+                                  reporter: rep,
+                                  newPassword: generateSecurePassword()
+                                });
+                              }}
+                              className="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition cursor-pointer flex items-center space-x-1"
+                              title="Bedel Furaha Sirta ah"
+                            >
+                              <KeyRound className="w-3.5 h-3.5" />
+                              <span>Furaha</span>
+                            </button>
+
+                            <button
+                              onClick={() => setConfirmModal({
+                                isOpen: true,
+                                reporterId: rep.id,
+                                action: rep.status === 'active' ? 'deactivate' : 'activate',
+                                name: rep.full_name
+                              })}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition cursor-pointer ${rep.status === 'active'
                                 ? 'border-red-200 text-red-600 hover:bg-red-50'
                                 : 'border-emerald-200 text-emerald-600 hover:bg-emerald-50'
-                              }`}
-                          >
-                            {rep.status === 'active' ? 'Deactivate' : 'Activate'}
-                          </button>
+                                }`}
+                            >
+                              {rep.status === 'active' ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
@@ -423,7 +593,10 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-neutral-200 overflow-hidden">
             <div className="p-6 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
-              <h3 className="font-black text-lg text-black">Ku Dar Wariye Gaadiid</h3>
+              <div className="flex items-center space-x-2">
+                <UserPlus className="w-5 h-5 text-[#E50914]" />
+                <h3 className="font-black text-lg text-black">Ku Dar Wariye Cusub</h3>
+              </div>
               <button onClick={() => setShowAddModal(false)} className="text-neutral-400 hover:text-black">✕</button>
             </div>
 
@@ -433,7 +606,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                 <input
                   type="text"
                   required
-                  placeholder="m.g. Wariye Cabdi Shire"
+                  placeholder="m.g. Maxamed Cali Shire"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black"
@@ -441,26 +614,47 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-black mb-1">Nambarka Taleefanka (= Username ee Login-ka)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-black">
+                    Username ee Login-ka (Gmail ama Taleefan)
+                  </label>
+                  {phoneNumber.trim() && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${phoneNumber.includes('@') ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                      {phoneNumber.includes('@') ? '📧 Gmail Account' : '📱 Taleefan Soomaali'}
+                    </span>
+                  )}
+                </div>
                 <input
                   type="text"
                   required
-                  placeholder="+252 61XXXXXXX"
+                  placeholder="m.g. wariye@gmail.com ama 61XXXXXXX"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black font-mono"
                 />
-                <p className="text-[11px] text-neutral-500 mt-1">📱 Nambarkani waa username-ka ee wariyahu ku galay app-ka.</p>
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  💡 Wariyuhu wuxuu app-ka ku gali karaa Gmail-kiisa tooska ah ama lambarkiisa taleefanka.
+                </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-black mb-1">Password ee App-ka (ugu yaraan 6 xaraf)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-black">Password (ugu yaraan 6 xaraf)</label>
+                  <button
+                    type="button"
+                    onClick={() => setPassword(generateSecurePassword())}
+                    className="text-[11px] font-bold text-[#E50914] hover:underline flex items-center space-x-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>🎲 Dhali Password (Auto)</span>
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     minLength={6}
-                    placeholder="Password cusub..."
+                    placeholder="Qor password ama riix 'Dhali Password'..."
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black font-mono pr-10"
@@ -473,7 +667,9 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <p className="text-[11px] text-neutral-500 mt-1">🔑 Password-kan wariyaha ayaa isticmaali doona marka uu app-ka ku galo.</p>
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  🔑 Waxaad qori kartaa password kasta ama badhanka kor riix si automatic loogu sameeyo.
+                </p>
               </div>
 
               <div>
@@ -510,7 +706,7 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                   className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-[#E50914] focus:outline-none text-black font-semibold bg-white"
                 />
                 <p className="text-[11px] text-neutral-500 mt-1">
-                  Xusuusin: Halkan ku qor isgoyska aad rabto ama ka dooro kuwa aad abuurtay. Sharciga nidaamku waa 1 Wariye Isgoyskiiba.
+                  Xusuusin: Sharciga nidaamku waa 1 Wariye Isgoyskiiba.
                 </p>
               </div>
 
@@ -518,19 +714,162 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-sm font-bold text-neutral-600 hover:text-black"
+                  className="px-4 py-2 text-sm font-bold text-neutral-600 hover:text-black cursor-pointer"
                 >
                   Ka noqo
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-5 py-2 bg-[#E50914] text-white text-sm font-bold rounded-xl shadow hover:bg-[#B91C1C]"
+                  className="px-5 py-2 bg-[#E50914] text-white text-sm font-bold rounded-xl shadow hover:bg-[#B91C1C] transition cursor-pointer"
                 >
-                  Kaydi Wariyaha
+                  {isLoading ? 'Kaydinaya...' : 'Kaydi Wariyaha'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Password Reset Modal */}
+      {resetModal.isOpen && resetModal.reporter && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-neutral-200 overflow-hidden">
+            <div className="p-6 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
+              <div className="flex items-center space-x-2">
+                <KeyRound className="w-5 h-5 text-blue-600" />
+                <h3 className="font-black text-lg text-black">Bedel Furaha Wariyaha</h3>
+              </div>
+              <button
+                onClick={() => setResetModal({ isOpen: false, reporter: null, newPassword: '' })}
+                className="text-neutral-400 hover:text-black"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPasswordSubmit} className="p-6 space-y-4">
+              <div className="p-3 bg-neutral-100 rounded-xl">
+                <p className="text-xs text-neutral-500">Wariyaha la beddelayo:</p>
+                <p className="text-sm font-bold text-black">{resetModal.reporter.full_name}</p>
+                <p className="text-xs font-mono text-neutral-600 mt-0.5">Username: {resetModal.reporter.phone_number}</p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-black">Furaha Sirta ah ee Cusub</label>
+                  <button
+                    type="button"
+                    onClick={() => setResetModal(s => ({ ...s, newPassword: generateSecurePassword() }))}
+                    className="text-[11px] font-bold text-blue-600 hover:underline flex items-center space-x-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>🎲 Dhali Password (Auto)</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showResetPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    placeholder="Geli furaha sirta ah ee cusub..."
+                    value={resetModal.newPassword}
+                    onChange={(e) => setResetModal(s => ({ ...s, newPassword: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 text-sm border border-neutral-300 rounded-xl focus:border-blue-600 focus:outline-none text-black font-mono pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(!showResetPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black cursor-pointer"
+                  >
+                    {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-neutral-500 mt-1">
+                  🔑 Waxaad gacanta ku qori kartaa furaha sirta ah ama riix badhanka "Dhali Password".
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-neutral-200 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setResetModal({ isOpen: false, reporter: null, newPassword: '' })}
+                  className="px-4 py-2 text-sm font-bold text-neutral-600 hover:text-black cursor-pointer"
+                >
+                  Ka noqo
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-5 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl shadow hover:bg-blue-700 transition cursor-pointer"
+                >
+                  {isLoading ? 'Beddelaya...' : 'Xaqiiji & Bedel'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Credentials Success Modal with One-Click Copy */}
+      {successCredentials && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-neutral-200 overflow-hidden">
+            <div className="p-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <Check className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="font-black text-lg">
+                  {successCredentials.isReset ? 'Furaha Wariyaha Waa La Beddelay!' : 'Wariyaha Si Guul Leh Ayaa Loo Abuuray!'}
+                </h3>
+              </div>
+              <p className="text-xs text-white/80 mt-1">
+                Kani waa faahfaahinta xogta login-ka ee wariyaha. Fadlan nuqul ka qaad oo u dir.
+              </p>
+            </div>
+
+            <div className="p-6 space-y-3">
+              <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-500">Magaca:</span>
+                  <span className="font-bold text-black">{successCredentials.fullName}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-500">Username:</span>
+                  <span className="font-bold text-black font-mono">{successCredentials.username}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-500">Password:</span>
+                  <span className="font-bold text-[#E50914] font-mono text-sm bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                    {successCredentials.password}
+                  </span>
+                </div>
+                {!successCredentials.isReset && (
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-neutral-200">
+                    <span className="text-neutral-500">Isgoyska:</span>
+                    <span className="font-bold text-emerald-700">{successCredentials.intersectionName}</span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={copyCredentialsToClipboard}
+                className="w-full py-2.5 bg-neutral-900 text-white rounded-xl text-xs font-bold hover:bg-black transition flex items-center justify-center space-x-2 cursor-pointer shadow-sm"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                <span>{copied ? '✅ Waa La Koobiyeeyay Xogtii!' : '📋 Koobiye Xogta Login-ka (WhatsApp / SMS)'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSuccessCredentials(null)}
+                className="w-full py-2 text-xs font-bold text-neutral-600 hover:text-black cursor-pointer border border-neutral-200 rounded-xl"
+              >
+                Xir
+              </button>
+            </div>
           </div>
         </div>
       )}
