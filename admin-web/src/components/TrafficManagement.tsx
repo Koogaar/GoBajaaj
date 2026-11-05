@@ -5,7 +5,40 @@ import { supabase } from '../supabase';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ActiveRides } from './ActiveRides';
 
-type IntersectionStatus = 'Furan' | 'Normal' | 'Jaam' | 'Xeran';
+type IntersectionStatus = 'Furan' | 'Normal' | 'Jaam' | 'Xeran' | 'Xiran' | 'Dhexdhexaad' | 'Mashquul' | 'Saxmad badan';
+
+const toDbStatus = (s: string): string => {
+  switch (s) {
+    case 'Normal':
+      return 'Dhexdhexaad';
+    case 'Jaam':
+      return 'Mashquul';
+    case 'Xeran':
+    case 'Xiran':
+      return 'Saxmad badan';
+    default:
+      return s;
+  }
+};
+
+const formatDisplayStatus = (st: string): string => {
+  switch (st) {
+    case 'Furan':
+      return 'Furan';
+    case 'Normal':
+    case 'Dhexdhexaad':
+      return 'Normal';
+    case 'Jaam':
+    case 'Mashquul':
+      return 'Jaam';
+    case 'Xeran':
+    case 'Xiran':
+    case 'Saxmad badan':
+      return 'Xiran';
+    default:
+      return st;
+  }
+};
 
 interface TrafficManagementProps {
   actorName: string;
@@ -159,13 +192,34 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
     const { intersectionId, newStatus, name } = confirmModal;
     setIsLoading(true);
     try {
-      await supabase
+      // 1. Try directly with newStatus
+      let { error } = await supabase
         .from('intersections')
         .update({
           current_status: newStatus,
           last_updated: new Date().toISOString()
         })
         .eq('id', intersectionId);
+
+      // 2. If rejected due to database check constraint, fallback to Somali equivalent
+      if (error && (error.code === '23514' || error.message?.includes('check constraint'))) {
+        const fallback = toDbStatus(newStatus);
+        const { error: fbErr } = await supabase
+          .from('intersections')
+          .update({
+            current_status: fallback,
+            last_updated: new Date().toISOString()
+          })
+          .eq('id', intersectionId);
+
+        if (fbErr) {
+          alert('Cilad badelidda xaaladda: ' + fbErr.message);
+          return;
+        }
+      } else if (error) {
+        alert('Cilad badelidda xaaladda: ' + error.message);
+        return;
+      }
 
       await supabase.from('audit_logs').insert([{
         actor_name: actorName,
@@ -176,8 +230,8 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
       }]);
 
       await fetchTrafficData();
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      alert('Cilad: ' + (err?.message || ''));
     } finally {
       setIsLoading(false);
       setConfirmModal({ isOpen: false, intersectionId: '', newStatus: 'Furan', name: '' });
@@ -231,8 +285,8 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
     try {
       const intId = editModal.intersection.id;
 
-      // Update intersection data
-      const { error: updateErr } = await supabase
+      // Update intersection data with fallback
+      let { error: updateErr } = await supabase
         .from('intersections')
         .update({
           name: editName.trim(),
@@ -243,6 +297,22 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
           last_updated: new Date().toISOString()
         })
         .eq('id', intId);
+
+      if (updateErr && (updateErr.code === '23514' || updateErr.message?.includes('check constraint'))) {
+        const fallback = toDbStatus(editStatus);
+        const { error: fbErr } = await supabase
+          .from('intersections')
+          .update({
+            name: editName.trim(),
+            latitude: parseFloat(editLatitude) || editModal.intersection.latitude,
+            longitude: parseFloat(editLongitude) || editModal.intersection.longitude,
+            allowed_radius: parseInt(editRadius) || editModal.intersection.allowed_radius,
+            current_status: fallback,
+            last_updated: new Date().toISOString()
+          })
+          .eq('id', intId);
+        updateErr = fbErr;
+      }
 
       if (updateErr) {
         alert('Cilad: ' + updateErr.message);
@@ -424,13 +494,12 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                   </div>
                   <div className="flex items-center space-x-1.5 shrink-0">
                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
-                      int.current_status === 'Furan' ? 'bg-emerald-100 text-emerald-800' :
-                      int.current_status === 'Normal' ? 'bg-amber-100 text-amber-800' :
-                      int.current_status === 'Jaam' ? 'bg-orange-100 text-orange-800' :
-                      int.current_status === 'Xeran' ? 'bg-neutral-950 text-white border border-black' :
-                      'bg-red-100 text-red-800'
+                      formatDisplayStatus(int.current_status) === 'Furan' ? 'bg-emerald-100 text-emerald-800' :
+                      formatDisplayStatus(int.current_status) === 'Normal' ? 'bg-amber-100 text-amber-800' :
+                      formatDisplayStatus(int.current_status) === 'Jaam' ? 'bg-orange-100 text-orange-800' :
+                      'bg-neutral-950 text-white border border-black'
                     }`}>
-                      {int.current_status}
+                      {formatDisplayStatus(int.current_status)}
                     </span>
                     {canManage && (
                       <button
@@ -454,9 +523,9 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                 </div>
 
                 {canManage && (
-                  <div className="flex flex-wrap items-center gap-1 pt-2 border-t border-neutral-200">
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-neutral-200">
                     <span className="text-[11px] text-neutral-500 font-semibold mr-1">Badel:</span>
-                    {(['Furan', 'Normal', 'Jaam', 'Xeran'] as const).map((st) => (
+                    {(['Furan', 'Normal', 'Jaam', 'Xiran'] as const).map((st) => (
                       <button
                         key={st}
                         onClick={() => setConfirmModal({
@@ -465,8 +534,8 @@ export const TrafficManagement: React.FC<TrafficManagementProps> = ({ actorName,
                           newStatus: st,
                           name: int.name
                         })}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition cursor-pointer ${
-                          int.current_status === st ? 'bg-black text-white border-black' : 'bg-white text-neutral-700 hover:bg-neutral-200'
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer ${
+                          formatDisplayStatus(int.current_status) === st ? 'bg-black text-white border-black shadow-xs' : 'bg-white text-neutral-700 hover:bg-neutral-200'
                         }`}
                       >
                         {st}

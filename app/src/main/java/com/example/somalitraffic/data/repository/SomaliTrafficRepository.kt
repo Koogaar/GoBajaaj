@@ -1933,7 +1933,13 @@ class SomaliTrafficRepository(private val context: Context) {
                     val radius = (map["allowed_radius"] as? Number)?.toInt() ?: 400
                     val city = map["city"]?.toString() ?: "Muqdisho"
                     val rawStatus = map["current_status"]?.toString()?.trim() ?: "Furan"
-                    val status = if (rawStatus.equals("hadda", ignoreCase = true) || rawStatus.isBlank()) "Furan" else rawStatus
+                    val status = when (rawStatus.lowercase()) {
+                        "dhexdhexaad" -> "Normal"
+                        "mashquul" -> "Jaam"
+                        "saxmad badan" -> "Xiran"
+                        "xeran" -> "Xiran"
+                        else -> if (rawStatus.equals("hadda", ignoreCase = true) || rawStatus.isBlank()) "Furan" else rawStatus
+                    }
                     val lastUpdated = map["last_updated"]?.toString() ?: "Hadda"
                     Intersection(
                         id = id,
@@ -2106,23 +2112,76 @@ class SomaliTrafficRepository(private val context: Context) {
                         payload["reporter_id"] = user.id
                     }
 
-                    service.postTrafficReport(
-                        apiKey = apiKey,
-                        authHeader = "Bearer $apiKey",
-                        report = payload
-                    )
+                    val fallbackStatus = when (status.trim().lowercase()) {
+                        "normal" -> "Dhexdhexaad"
+                        "jaam", "jam" -> "Mashquul"
+                        "xeran", "xiran", "closed" -> "Saxmad badan"
+                        else -> "Furan"
+                    }
+
+                    // 1. Post Traffic Report (with fallback for legacy check constraint)
+                    try {
+                        val postResp = service.postTrafficReport(
+                            apiKey = apiKey,
+                            authHeader = "Bearer $apiKey",
+                            report = payload
+                        )
+                        if (!postResp.isSuccessful && postResp.code() == 400) {
+                            payload["status"] = fallbackStatus
+                            service.postTrafficReport(
+                                apiKey = apiKey,
+                                authHeader = "Bearer $apiKey",
+                                report = payload
+                            )
+                        }
+                    } catch (e: Exception) {
+                        try {
+                            payload["status"] = fallbackStatus
+                            service.postTrafficReport(
+                                apiKey = apiKey,
+                                authHeader = "Bearer $apiKey",
+                                report = payload
+                            )
+                        } catch (_: Exception) {}
+                    }
 
                     // 2. Patch Intersection status on Supabase in real-time
                     if (intersection.id.contains("-") && intersection.id.length >= 32) {
-                        service.updateIntersectionStatus(
-                            apiKey = apiKey,
-                            authHeader = "Bearer $apiKey",
-                            idFilter = "eq.${intersection.id}",
-                            updates = mapOf(
-                                "current_status" to status,
-                                "last_updated" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date())
+                        val ts = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date())
+                        try {
+                            val patchResp = service.updateIntersectionStatus(
+                                apiKey = apiKey,
+                                authHeader = "Bearer $apiKey",
+                                idFilter = "eq.${intersection.id}",
+                                updates = mapOf(
+                                    "current_status" to status,
+                                    "last_updated" to ts
+                                )
                             )
-                        )
+                            if (!patchResp.isSuccessful && patchResp.code() == 400) {
+                                service.updateIntersectionStatus(
+                                    apiKey = apiKey,
+                                    authHeader = "Bearer $apiKey",
+                                    idFilter = "eq.${intersection.id}",
+                                    updates = mapOf(
+                                        "current_status" to fallbackStatus,
+                                        "last_updated" to ts
+                                    )
+                                )
+                            }
+                        } catch (e: Exception) {
+                            try {
+                                service.updateIntersectionStatus(
+                                    apiKey = apiKey,
+                                    authHeader = "Bearer $apiKey",
+                                    idFilter = "eq.${intersection.id}",
+                                    updates = mapOf(
+                                        "current_status" to fallbackStatus,
+                                        "last_updated" to ts
+                                    )
+                                )
+                            } catch (_: Exception) {}
+                        }
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("TrafficRepo", "Supabase sync error: ${e.message}")
