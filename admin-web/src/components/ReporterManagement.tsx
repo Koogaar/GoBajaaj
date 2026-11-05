@@ -445,17 +445,26 @@ export const ReporterManagement: React.FC<ReporterManagementProps> = ({ actorNam
           .update({ assigned_reporter_id: null })
           .eq('assigned_reporter_id', reporterId);
 
-        // 2. Delete profile
-        const { error: delErr } = await supabase
+        // 2. Call delete RPC if present
+        await supabase.rpc('delete_reporter_by_id', { p_reporter_id: reporterId });
+
+        // 3. Demote role to passenger and disable so they disappear from reporters immediately
+        await supabase
+          .from('profiles')
+          .update({
+            role: 'passenger',
+            status: 'disabled',
+            phone_number: `deleted_${Date.now()}_${reporterId.slice(0, 8)}`
+          })
+          .eq('id', reporterId);
+
+        // 4. Also attempt direct delete from profiles
+        await supabase
           .from('profiles')
           .delete()
           .eq('id', reporterId);
 
-        if (delErr) {
-          alert('Cilad tirtirista wariyaha: ' + delErr.message);
-        }
-
-        // 3. Write audit log
+        // 5. Write audit log
         try {
           await supabase.from('audit_logs').insert([{
             actor_name: actorName,
