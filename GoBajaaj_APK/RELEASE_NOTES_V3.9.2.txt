@@ -22,6 +22,8 @@ WAXA CUSUB OO LAGU XALLIYAY NOOCA v3.9.2:
    - Tirtirista (Delete) wariyeyaasha waxay u dhacaysaa si nadiif ah oo degdeg ah.
 
 =============================================================================
-Faylka Cusub ee La Dhisay:
-- GoBajaaj_APK/GoBajaaj_v3.9.2.apk (Toos ugu shub taleefannada wariyeyaasha iyo darawallada)
+Faylasha Cusub ee La Dhisay:
+- GoBajaaj_APK/GoBajaaj_v3.9.2.apk (Toos ugu shub taleefannada wariyeyaasha - Direct Install)
+- GoBajaaj_APK/GoBajaaj_v3.9.2.aab (Google Play Console Release Bundle)
 =============================================================================
+
