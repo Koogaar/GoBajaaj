@@ -422,92 +422,6 @@ fun HomeDashboardScreen(
                 }
 
                 // ==============================================================
-                // 3. SHIRI TRAFFIC (FULL-WIDTH PURPLE CARD FROM POSTER)
-                // ==============================================================
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    shadowElevation = 3.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigate("live_traffic") }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.horizontalGradient(
-                                    listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED), Color(0xFF6D28D9))
-                                )
-                            )
-                            .padding(horizontal = 18.dp, vertical = 15.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(14.dp)
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = Color.White.copy(alpha = 0.25f),
-                                    modifier = Modifier.size(46.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize(),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Traffic,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(26.dp)
-                                        )
-                                    }
-                                }
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "SHIRI TRAFFIC",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color.White
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Surface(
-                                            color = Color.White,
-                                            shape = RoundedCornerShape(8.dp)
-                                        ) {
-                                            Text(
-                                                text = "Live",
-                                                fontSize = 9.sp,
-                                                fontWeight = FontWeight.Black,
-                                                color = Color(0xFF7C3AED),
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                            )
-                                        }
-                                    }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "La soco Jaamka & Khariidadda Tooska ah",
-                                        fontSize = 12.5.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.White.copy(alpha = 0.92f)
-                                    )
-                                }
-                            }
-                            Icon(
-                                Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                }
-                // ==============================================================
                 // 2. CONNECTIVITY & LOW-DATA / AMBIENT STATUS BAR
                 // ==============================================================
                 Row(
@@ -1045,14 +959,14 @@ private fun ShiriHubCard(
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         modifier = modifier
-            .height(155.dp)
+            .height(148.dp)
             .clickable { onClick() }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Brush.linearGradient(gradientColors))
-                .padding(12.dp)
+                .padding(11.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -1066,12 +980,12 @@ private fun ShiriHubCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(36.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(Color.White.copy(alpha = 0.22f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+                        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                     Surface(
                         color = Color.White,
@@ -1079,10 +993,12 @@ private fun ShiriHubCard(
                     ) {
                         Text(
                             text = badgeText,
-                            fontSize = 9.5.sp,
+                            fontSize = 8.5.sp,
                             fontWeight = FontWeight.Black,
                             color = gradientColors.first(),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
                         )
                     }
                 }
@@ -1091,21 +1007,26 @@ private fun ShiriHubCard(
                 Column {
                     Text(
                         text = title,
-                        fontSize = 15.sp,
+                        fontSize = 13.5.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.White,
-                        letterSpacing = (-0.2).sp
+                        letterSpacing = (-0.2).sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(1.dp))
                     Text(
                         text = subtitle,
-                        fontSize = 10.5.sp,
+                        fontSize = 10.sp,
                         color = Color.White.copy(alpha = 0.9f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(5.dp)
@@ -1115,9 +1036,11 @@ private fun ShiriHubCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = statusTag,
-                            fontSize = 10.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White.copy(alpha = 0.95f)
+                            color = Color.White.copy(alpha = 0.95f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

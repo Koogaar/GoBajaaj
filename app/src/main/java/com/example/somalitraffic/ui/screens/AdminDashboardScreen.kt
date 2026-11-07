@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.somalitraffic.data.model.*
@@ -42,6 +43,7 @@ fun AdminDashboardScreen(
     val tabs = listOf(
         "Guudmar",
         "Macaamiisha",
+        "Meheradaha",
         "Lacagaha",
         "Saxmadda",
         "Wariyeyaasha",
@@ -55,7 +57,7 @@ fun AdminDashboardScreen(
     Scaffold(
         topBar = {
             SomaliTopBar(
-                title = "Maamulka GoBajaaj",
+                title = "Maamulka SHIRI",
                 actions = {
                     IconButton(onClick = { viewModel.logout(onLogout) }) {
                         Icon(Icons.Default.Logout, contentDescription = "Ka bax", tint = Color.White)
@@ -141,14 +143,15 @@ fun AdminDashboardScreen(
                 when (selectedTab) {
                     0 -> AdminOverviewTab(intersections.size, incidents.size, auditLogs.size, allSubscriptions)
                     1 -> AdminUsersTab(allSubscriptions)
-                    2 -> AdminSubscriptionsTab(allSubscriptions, viewModel)
-                    3 -> AdminTrafficTab(incidents)
-                    4 -> AdminReportersTab(intersections, viewModel)
-                    5 -> AdminIntersectionsTab(intersections, viewModel)
-                    6 -> AdminDevicesTab(allDevices)
-                    7 -> AdminSupportTab(supportTickets)
-                    8 -> AdminStaffTab(currentUser)
-                    9 -> AdminAuditLogsTab(auditLogs)
+                    2 -> AdminMerchantsTab()
+                    3 -> AdminSubscriptionsTab(allSubscriptions, viewModel)
+                    4 -> AdminTrafficTab(incidents)
+                    5 -> AdminReportersTab(intersections, viewModel)
+                    6 -> AdminIntersectionsTab(intersections, viewModel)
+                    7 -> AdminDevicesTab(allDevices)
+                    8 -> AdminSupportTab(supportTickets)
+                    9 -> AdminStaffTab(currentUser)
+                    10 -> AdminAuditLogsTab(auditLogs)
                 }
             }
         }
@@ -247,6 +250,157 @@ private fun AdminUsersTab(subscriptions: List<Subscription>) {
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (sub.status.equals("active", ignoreCase = true)) Color(0xFF15803D) else BrandRedPrimary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdminMerchantsTab() {
+    val sampleMerchants = remember { mutableStateListOf<Triple<String, String, String>>() }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var nameInput by remember { mutableStateOf("") }
+    var typeInput by remember { mutableStateOf("Maqaayad") }
+    var tillInput by remember { mutableStateOf("") }
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Ku dar Meherad Cusub", fontWeight = FontWeight.Bold, color = TextBlack) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Magaca Meheradda") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = typeInput,
+                        onValueChange = { typeInput = it },
+                        label = { Text("Nooca (Maqaayad, Dukaan, Farmashi...)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = tillInput,
+                        onValueChange = { tillInput = it },
+                        label = { Text("Telefoonka / Till Number") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (nameInput.isNotBlank()) {
+                            sampleMerchants.add(Triple(nameInput.trim(), typeInput.trim(), tillInput.trim()))
+                            android.widget.Toast.makeText(context, "'$nameInput' waa lagu daray!", android.widget.Toast.LENGTH_SHORT).show()
+                            nameInput = ""
+                            tillInput = ""
+                            showAddDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandRedPrimary)
+                ) {
+                    Text("Ku dar", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text("Ka noqo", color = Color.Gray)
+                }
+            }
+        )
+    }
+
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Ganacsiyada & Meheradaha Diiwaangashan",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = TextBlack
+                )
+                Button(
+                    onClick = { showAddDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandRedPrimary),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.White)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Ku dar", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        if (sampleMerchants.isEmpty()) {
+            item {
+                Surface(
+                    color = BrandLightGray,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Ma jiraan meherado diiwaangashan hadda.",
+                            fontSize = 13.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Riiq 'Ku dar' si aad u diiwaangeliso ganacsi cusub.",
+                            fontSize = 11.5.sp,
+                            color = BrandRedPrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        } else {
+            items(sampleMerchants) { (name, type, till) ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = BrandWhite),
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, BrandBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextBlack)
+                            Text("Nooca: $type • Till: $till", fontSize = 12.sp, color = Color.Gray)
+                        }
+                        Surface(
+                            color = Color(0xFFDCFCE7),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "APPROVED",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF15803D),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                             )
                         }

@@ -69,7 +69,8 @@ private fun dialUssdCode(context: Context, ussdCode: String) {
 fun DriverPassScreen(
     viewModel: SomaliTrafficViewModel,
     onPaymentSuccess: () -> Unit,
-    onBackClick: (() -> Unit)? = null
+    onBackClick: (() -> Unit)? = null,
+    onNavigateToTraffic: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val currentSub by viewModel.subscription.collectAsState()
@@ -222,7 +223,66 @@ fun DriverPassScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            // Quick Access to SHIRI TRAFFIC (Traffic Live Map for Drivers)
+            if (onNavigateToTraffic != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color(0xFF7C3AED),
+                    shadowElevation = 2.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateToTraffic() }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color.White.copy(alpha = 0.25f),
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.Traffic,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                            }
+                            Column {
+                                Text(
+                                    text = "SHIRI TRAFFIC LIVE",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "Khariidadda Tooska ah ee Jaamka & Isgoysyada",
+                                    fontSize = 11.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             when (currentStep) {
                 PaymentStep.SELECT_METHOD -> {

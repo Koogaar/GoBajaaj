@@ -189,6 +189,9 @@ fun SomaliTrafficNavHost(
                             popUpTo(NavRoutes.DRIVER_PASS) { inclusive = true }
                         }
                     }
+                },
+                onNavigateToTraffic = {
+                    navController.navigate(NavRoutes.LIVE_TRAFFIC)
                 }
             )
         }
