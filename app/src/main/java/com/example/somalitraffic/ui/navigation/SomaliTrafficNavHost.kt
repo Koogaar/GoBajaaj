@@ -95,8 +95,8 @@ fun SomaliTrafficNavHost(
                         UserRole.REPORTER_MANAGER,
                         UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
                         UserRole.DRIVER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
-                        UserRole.PASSENGER -> NavRoutes.RIDE
-                        else -> NavRoutes.RIDE
+                        UserRole.PASSENGER -> NavRoutes.HOME
+                        else -> NavRoutes.HOME
                     }
                     navController.navigate(destination) {
                         popUpTo(NavRoutes.LOGIN) { inclusive = true }
@@ -120,8 +120,8 @@ fun SomaliTrafficNavHost(
                         UserRole.REPORTER_MANAGER,
                         UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
                         UserRole.DRIVER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
-                        UserRole.PASSENGER -> NavRoutes.RIDE
-                        else -> NavRoutes.RIDE
+                        UserRole.PASSENGER -> NavRoutes.HOME
+                        else -> NavRoutes.HOME
                     }
                     navController.navigate(destination) {
                         popUpTo(NavRoutes.LOGIN) { inclusive = true }
