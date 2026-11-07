@@ -1,5 +1,6 @@
 package com.example.somalitraffic.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -201,87 +202,56 @@ fun SomaliBottomNavigation(
     onNavigate: (String) -> Unit,
     isDriver: Boolean = false
 ) {
-    val tabs = if (isDriver) {
-        listOf(
-            Triple("home", Icons.Filled.Dashboard, "Guudmar"),
-            Triple("live_traffic", Icons.Filled.Map, "Khariiradda"),
-            Triple("profile_settings", Icons.Filled.AccountCircle, "Akoonka")
-        )
-    } else {
-        listOf(
-            Triple("home", Icons.Filled.Dashboard, "Guudmar"),
-            Triple("ride", Icons.Filled.ElectricRickshaw, "Dalbo"),
-            Triple("profile_settings", Icons.Filled.AccountCircle, "Akoonka")
-        )
-    }
+    val tabs = listOf(
+        Triple("home", Icons.Filled.Home, "Home"),
+        Triple("ride", Icons.Filled.ReceiptLong, "Orders"),
+        Triple(if (isDriver) "driver_pass" else "home", Icons.Filled.AccountBalanceWallet, "Wallet"),
+        Triple("profile_settings", Icons.Filled.Person, "Profile")
+    )
 
-    Box(
+    Surface(
+        color = Color.White,
+        shadowElevation = 8.dp,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         modifier = Modifier
             .fillMaxWidth()
-            .background(NavBgDark)
             .navigationBarsPadding()
     ) {
-        // Top divider line subtle
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(Color.White.copy(alpha = 0.06f))
-                .align(Alignment.TopCenter)
-        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 4.dp),
+                .height(60.dp)
+                .padding(horizontal = 6.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             tabs.forEach { (route, icon, label) ->
                 val selected = currentRoute == route
-                val iconTint = if (selected) NavActiveRed else NavTextInactive
-                val labelColor = if (selected) NavTextActive else NavTextInactive
-                val labelWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                val iconTint = if (selected) Color(0xFFE50914) else Color(0xFF64748B)
+                val labelColor = if (selected) Color(0xFFE50914) else Color(0xFF64748B)
+                val labelWeight = if (selected) FontWeight.Black else FontWeight.Medium
 
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
                         .clickable { onNavigate(route) }
-                        .testTag("nav_${label.lowercase().replace(" ", "_")}"),
+                        .testTag("nav_${label.lowercase()}"),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Active indicator pill behind icon
-                    Box(
-                        modifier = Modifier
-                            .width(48.dp)
-                            .height(28.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(if (selected) NavActiveRedBg else Color.Transparent),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (selected) icon else when (icon) {
-                                Icons.Filled.Dashboard      -> Icons.Outlined.Dashboard
-                                Icons.Filled.Map            -> Icons.Outlined.Map
-                                Icons.Filled.ElectricRickshaw -> Icons.Filled.ElectricRickshaw
-                                Icons.Filled.AccountCircle  -> Icons.Outlined.AccountCircle
-                                else                        -> icon
-                            },
-                            contentDescription = label,
-                            tint = iconTint,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = label,
+                        tint = iconTint,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = label,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = labelWeight,
-                        color = labelColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = labelColor
                     )
                 }
             }

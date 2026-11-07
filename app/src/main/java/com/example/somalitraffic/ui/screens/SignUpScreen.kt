@@ -7,11 +7,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Visibility
@@ -66,6 +68,13 @@ fun SignUpScreen(
     var businessType by remember { mutableStateOf("Maqaayad / Cunto") }
     var merchantPaymentNumber by remember { mutableStateOf("") }
     var district by remember { mutableStateOf("Hodan") }
+
+    // Digital House Number & Somali Voice Landmark
+    var digitalHouseNumber by remember { mutableStateOf("SH-" + (1000..9999).random()) }
+    var isRecordingVoice by remember { mutableStateOf(false) }
+    var isPlayingVoice by remember { mutableStateOf(false) }
+    var voiceDurationSeconds by remember { mutableStateOf(0) }
+    var hasVoiceNote by remember { mutableStateOf(false) }
     
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -78,6 +87,20 @@ fun SignUpScreen(
     LaunchedEffect(Unit) {
         viewModel.uiMessage.collect { msg ->
             errorMessage = msg
+        }
+    }
+
+    LaunchedEffect(isRecordingVoice) {
+        if (isRecordingVoice) {
+            voiceDurationSeconds = 0
+            while (isRecordingVoice && voiceDurationSeconds < 30) {
+                kotlinx.coroutines.delay(1000)
+                voiceDurationSeconds++
+            }
+            if (isRecordingVoice) {
+                isRecordingVoice = false
+                hasVoiceNote = true
+            }
         }
     }
 
@@ -511,7 +534,250 @@ fun SignUpScreen(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // ==============================================================
+                // DIGITAL HOUSE NUMBER (Guri Number Digital ah oo Gaaban)
+                // ==============================================================
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    shadowElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🏠", fontSize = 18.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Guri Number Digital ah",
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Text(
+                                        text = "Nambarka goobta ama guriga",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF64748B)
+                                    )
+                                }
+                            }
+                            Surface(
+                                color = Color(0xFFDC2626),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.clickable {
+                                    digitalHouseNumber = "SH-" + (1000..9999).random()
+                                }
+                            ) {
+                                Text(
+                                    text = "Beddel 🔄",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        OutlinedTextField(
+                            value = digitalHouseNumber,
+                            onValueChange = { digitalHouseNumber = it },
+                            placeholder = { Text("Tusaale: SH-4029 ama HOD-105", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                            leadingIcon = { Text("📍", fontSize = 14.sp, modifier = Modifier.padding(start = 12.dp, end = 4.dp)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = fieldColors,
+                            singleLine = true
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "Nambarkaan digital-ka ah waxaa toos u arkaya bajaajta & mootada si ay goobtaada si sax ah ugu yimaadaan.",
+                            fontSize = 11.sp,
+                            color = Color(0xFF0284C7),
+                            lineHeight = 15.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
+
+                // ==============================================================
+                // CODKA TILMAAMAHA GOOBTA (SOMALI VOICE LANDMARK MEMO)
+                // ==============================================================
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, if (hasVoiceNote) Color(0xFF10B981) else Color(0xFFE2E8F0)),
+                    shadowElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🎙️", fontSize = 18.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Codka Tilmaamaha Goobta",
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Text(
+                                        text = "Voice note Af-Soomaali ah oo gaaban",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF64748B)
+                                    )
+                                }
+                            }
+
+                            if (hasVoiceNote) {
+                                Surface(
+                                    color = Color(0xFFECFDF5),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = "Diyaar ✅",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF059669),
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            text = "Ku duub cod gaaban oo tilmaamaya guriga/ganacsiga (m.g. 'Wadnaha KM4 ka soo leexo, dabaqa cagaaran agtiisa...')",
+                            fontSize = 11.5.sp,
+                            color = Color(0xFF475569),
+                            lineHeight = 16.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        if (isRecordingVoice) {
+                            // Recording in progress
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFFFEF2F2),
+                                border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(0xFFDC2626))
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Wuu duubayaa: 00:${voiceDurationSeconds.toString().padStart(2, '0')}s / 30s",
+                                            fontSize = 12.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF991B1B)
+                                        )
+                                    }
+                                    Button(
+                                        onClick = {
+                                            isRecordingVoice = false
+                                            hasVoiceNote = true
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(32.dp)
+                                    ) {
+                                        Text("Jooji ⏹️", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+                            }
+                        } else if (hasVoiceNote) {
+                            // Audio Recorded - Play & Re-record
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFFF0FDF4),
+                                border = BorderStroke(1.dp, Color(0xFF86EFAC)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.clickable { isPlayingVoice = !isPlayingVoice }
+                                    ) {
+                                        Text(if (isPlayingVoice) "⏸️" else "▶️", fontSize = 18.sp)
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Column {
+                                            Text(
+                                                text = if (isPlayingVoice) "Wuu yeerayaa..." else "Codka Goobta (00:${voiceDurationSeconds.toString().padStart(2, '0')}s)",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF166534)
+                                            )
+                                            Text(
+                                                text = "Taabo si aad u dhageysato",
+                                                fontSize = 10.sp,
+                                                color = Color(0xFF15803D)
+                                            )
+                                        }
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            hasVoiceNote = false
+                                            isRecordingVoice = true
+                                            voiceDurationSeconds = 0
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Text("Dib u duub 🔄", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
+                                    }
+                                }
+                            }
+                        } else {
+                            // Button to start recording
+                            Button(
+                                onClick = { isRecordingVoice = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A)),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().height(42.dp)
+                            ) {
+                                Icon(Icons.Default.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Duub Codka Tilmaamaha Goobta", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // 3. Password
                 OutlinedTextField(
@@ -649,7 +915,7 @@ fun SignUpScreen(
                             businessName = if (isMerchant) businessName.trim() else null,
                             businessType = if (isMerchant) businessType else null,
                             merchantPaymentNumber = if (isMerchant) merchantPaymentNumber.trim() else null,
-                            district = if (isMerchant) district.trim() else null
+                            district = if (isMerchant) "${district.trim()} • Guri: $digitalHouseNumber" else "Guri: $digitalHouseNumber"
                         ) { user ->
                             onSignUpSuccess()
                         }

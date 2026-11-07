@@ -73,7 +73,8 @@ fun SplashScreen(
                 else -> onNavigateNext("home")
             }
         } else {
-            onNavigateNext("login")
+            // Marka app-ka la furo toos u gee Home (Super App Home Dashboard)
+            onNavigateNext("home")
         }
     }
 
