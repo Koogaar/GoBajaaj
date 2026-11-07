@@ -13,6 +13,8 @@ object NavRoutes {
     const val HOME = "home"
     const val LIVE_TRAFFIC = "live_traffic"
     const val RIDE = "ride"
+    const val DELIVERY = "delivery"
+    const val EATS_AND_MARKET = "eats_and_market"
     const val TRAFFIC_DETAILS = "traffic_details/{intersectionId}"
     fun trafficDetails(intersectionId: String) = "traffic_details/$intersectionId"
     const val ALTERNATIVE_ROUTES = "alternative_routes"

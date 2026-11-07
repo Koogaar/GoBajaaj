@@ -361,36 +361,33 @@ fun HomeDashboardScreen(
                 }
 
                 // ==============================================================
-                // 2. THE 4 PROMINENT HUBS (2x2 VIBRANT COLOR GRID FROM POSTER)
+                // 2. THE 4 PROMINENT HUBS (2x2 ROLES GRID)
                 // ==============================================================
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // 1. SHIRI RIDE (Red - Dalbo Bajaaj)
+                    // 1. DALBO BAJAAJ (Red - Rakaab)
                     ShiriHubCard(
-                        title = "SHIRI RIDE",
-                        subtitle = "Dalbo Bajaaj",
-                        statusTag = "Bajaaj & Taxi",
-                        badgeText = "Dalbo",
+                        title = "DALBO BAJAAJ",
+                        subtitle = "Rakaab • Safar Degdeg",
+                        statusTag = "Bilaash ($0)",
+                        badgeText = "SHIRI RIDE",
                         icon = Icons.Default.TwoWheeler,
                         gradientColors = listOf(Color(0xFFE50914), Color(0xFFDC2626), Color(0xFFB91C1C)),
                         onClick = { onNavigate("ride") },
                         modifier = Modifier.weight(1f)
                     )
 
-                    // 2. SHIRI FOOD (Orange - Dalbo Cunto)
+                    // 2. DARAWAL BAJAAJ (Orange - Driver Pass)
                     ShiriHubCard(
-                        title = "SHIRI FOOD",
-                        subtitle = "Dalbo Cunto",
-                        statusTag = "Maqaayadaha",
-                        badgeText = "Cunto",
-                        icon = Icons.Default.Restaurant,
+                        title = "DARAWAL BAJAAJ",
+                        subtitle = "Driver Pass • Shaqo",
+                        statusTag = "$0.25 Maalintii",
+                        badgeText = "BAJAAJLE",
+                        icon = Icons.Default.SportsMotorsports,
                         gradientColors = listOf(Color(0xFFF97316), Color(0xFFEA580C), Color(0xFFC2410C)),
-                        onClick = {
-                            Toast.makeText(context, "🍔 SHIRI FOOD: Maqaayadaha Muqdisho (Hodan, Bakaaro, Taleex)", Toast.LENGTH_SHORT).show()
-                            onNavigate("ride")
-                        },
+                        onClick = { onNavigate("driver_pass") },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -399,33 +396,27 @@ fun HomeDashboardScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // 3. SHIRI DELIVERY (Blue - Dirso Alaab)
+                    // 3. SHIRI DELIVERY (Blue - Mooto Courier)
                     ShiriHubCard(
                         title = "SHIRI DELIVERY",
-                        subtitle = "Dirso Alaab",
+                        subtitle = "Dirso Alaab • Baakado",
                         statusTag = "Mooto Express",
-                        badgeText = "Baakado",
+                        badgeText = "COURIER",
                         icon = Icons.Default.LocalShipping,
                         gradientColors = listOf(Color(0xFF0284C7), Color(0xFF0369A1), Color(0xFF075985)),
-                        onClick = {
-                            Toast.makeText(context, "📦 SHIRI DELIVERY: Mootooyinka Xirmooyinka & Gaarsiinta", Toast.LENGTH_SHORT).show()
-                            onNavigate("ride")
-                        },
+                        onClick = { onNavigate("delivery") },
                         modifier = Modifier.weight(1f)
                     )
 
-                    // 4. SHIRI MARKET (Green - Wax Iibso)
+                    // 4. SHIRI EATS & MARKET (Green - Ganacsade)
                     ShiriHubCard(
-                        title = "SHIRI MARKET",
-                        subtitle = "Wax Iibso",
+                        title = "SHIRI EATS & MARKET",
+                        subtitle = "Dalbo Cunto & Wax Iibso",
                         statusTag = "Suuqa Bakaaro",
-                        badgeText = "Dukaan",
+                        badgeText = "GANACSADE",
                         icon = Icons.Default.ShoppingBag,
                         gradientColors = listOf(Color(0xFF16A34A), Color(0xFF15803D), Color(0xFF166534)),
-                        onClick = {
-                            Toast.makeText(context, "🛍️ SHIRI MARKET: Suuqa Bakaaraha & Dukaamada Muqdisho", Toast.LENGTH_SHORT).show()
-                            onNavigate("ride")
-                        },
+                        onClick = { onNavigate("eats_and_market") },
                         modifier = Modifier.weight(1f)
                     )
                 }

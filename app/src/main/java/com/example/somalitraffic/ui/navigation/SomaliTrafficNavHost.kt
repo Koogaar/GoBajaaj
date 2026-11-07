@@ -165,7 +165,7 @@ fun SomaliTrafficNavHost(
                             }
                         }
                         else -> {
-                            navController.navigate(NavRoutes.RIDE) {
+                            navController.navigate(NavRoutes.HOME) {
                                 popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
                             }
                         }
@@ -217,6 +217,22 @@ fun SomaliTrafficNavHost(
             BajajRideScreen(
                 viewModel = viewModel,
                 onNavigate = { route -> safeNavigate(route) }
+            )
+        }
+
+        // Screen 7c: SHIRI Delivery (Courier / Mooto Express)
+        composable(NavRoutes.DELIVERY) {
+            ShiriDeliveryScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        // Screen 7d: SHIRI Eats & Market (Food & Shopping)
+        composable(NavRoutes.EATS_AND_MARKET) {
+            ShiriEatsMarketScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
             )
         }
 
