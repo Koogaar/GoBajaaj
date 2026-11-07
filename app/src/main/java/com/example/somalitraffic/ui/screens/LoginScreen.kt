@@ -82,8 +82,8 @@ fun LoginScreen(
             ) {
                 // App Logo Badge
                 Image(
-                    painter = painterResource(id = com.example.R.drawable.ic_gobajaaj_logo),
-                    contentDescription = "GoBajaaj Logo",
+                    painter = painterResource(id = com.example.R.drawable.shiri_logo),
+                    contentDescription = "SHIRI Logo",
                     modifier = Modifier
                         .size(80.dp)
                         .clip(RoundedCornerShape(18.dp))
@@ -92,25 +92,13 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Brand Name
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "Go",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF44349A),
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = "Bajaaj",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFFE50914),
-                        letterSpacing = 0.5.sp
-                    )
-                }
+                Text(
+                    text = "SHIRI",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    color = com.example.ui.theme.ShiriCrimson,
+                    letterSpacing = 1.sp
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 

@@ -230,7 +230,7 @@ fun ProfileSettingsScreen(
 
             // Contact Phone & WhatsApp Card
             com.example.somalitraffic.ui.components.GoBajaajContactHotlineCard(
-                title = "Xafiiska Taageerada GoBajaaj",
+                title = "Xafiiska Taageerada SHIRI",
                 subtitle = "Wicitaan & WhatsApp: 061 809 2060"
             )
 
@@ -261,15 +261,15 @@ fun ProfileSettingsScreen(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
             ) {
                 androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_gobajaaj_logo),
-                    contentDescription = "GoBajaaj Logo",
+                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.shiri_logo),
+                    contentDescription = "SHIRI Logo",
                     modifier = Modifier
                         .size(46.dp)
                         .clip(RoundedCornerShape(12.dp))
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "GoBajaaj Somalia • v3.3",
+                    text = "SHIRI Somalia • v4.0.0",
                     fontSize = 12.sp,
                     color = Color.Gray,
                     fontWeight = FontWeight.Medium

@@ -25,11 +25,11 @@ data class DriverExpenseEntry(
     val category: String, // "shidaal", "pass", "dayactir", "kiro", "cunto", "safar_gobajaaj", "safar_caadi", "kale"
     val categoryLabelSomali: String = when (category.lowercase()) {
         "shidaal" -> "Batrool / Shidaal"
-        "pass" -> "GoBajaaj Driver Pass"
+        "pass" -> "SHIRI Driver Pass"
         "dayactir" -> "Dayactir & Farsamo"
         "kiro" -> "Kirada Bajaajta"
         "cunto" -> "Cunto & Shaah"
-        "safar_gobajaaj" -> "Safar GoBajaaj"
+        "safar_gobajaaj" -> "Safar SHIRI"
         "safar_caadi" -> "Safar Caadi ah"
         else -> "Kharash / Dakhli Kale"
     },

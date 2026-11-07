@@ -103,7 +103,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 "Waqtigii xiriirku wuu dhacay. Internet-ka ayaa gaabis ah, fadlan dib u tijaabi."
 
             e is java.net.ConnectException ->
-                "Lama xiriiri karin server-ka GoBajaaj. Fadlan hubi xiriirkaaga internet-ka."
+                "Lama xiriiri karin server-ka SHIRI. Fadlan hubi xiriirkaaga internet-ka."
 
             e is javax.net.ssl.SSLException || fullMsg.contains("ssl") || fullMsg.contains("cert") ->
                 "Xiriir ammaan ah lama samayn karin. Fadlan hubi waqtiga iyo taariikhda taleefankaaga."
@@ -284,7 +284,7 @@ class SomaliTrafficRepository(private val context: Context) {
 
                 if (errBody.contains("phone_provider_disabled") || resp.code() == 400) {
                     return@withContext Result.failure(
-                        Exception("SMS OTP lama diri karin: Adeegga SMS Provider (Twilio/Supabase Phone) lama hawlgelin dashboard-ka. Fadlan la xiriir Maamulka GoBajaaj (061 809 2060).")
+                        Exception("SMS OTP lama diri karin: Adeegga SMS Provider (Twilio/Supabase Phone) lama hawlgelin dashboard-ka. Fadlan la xiriir Maamulka SHIRI (061 809 2060).")
                     )
                 }
 
@@ -674,7 +674,7 @@ class SomaliTrafficRepository(private val context: Context) {
             val errStr = resp.errorBody()?.string().orEmpty()
             if (resp.code() == 404 || errStr.contains("function", ignoreCase = true) || errStr.contains("PGRST202", ignoreCase = true)) {
                 return@withContext Result.failure(
-                    Exception("Fadlan orod Supabase Dashboard → SQL Editor oo ku dar faylka 'MIGRATION_RESET_PASSWORD_BY_PHONE.sql' ama la xiriir Taageerada GoBajaaj (061 809 2060).")
+                    Exception("Fadlan orod Supabase Dashboard → SQL Editor oo ku dar faylka 'MIGRATION_RESET_PASSWORD_BY_PHONE.sql' ama la xiriir Taageerada SHIRI (061 809 2060).")
                 )
             }
             Result.failure(Exception("Beddelka furaha sirta wuu fashilantay: ${errStr.take(120)}"))
@@ -731,7 +731,7 @@ class SomaliTrafficRepository(private val context: Context) {
                     code == 400 && errStr.contains("invalid", true) ->
                         "Nambarka ama furaha sirta waa khalad."
                     code == 400 && errStr.contains("confirm", true) ->
-                        "Akoonka lama xaqiijin. La xiriir taageerada GoBajaaj."
+                        "Akoonka lama xaqiijin. La xiriir taageerada SHIRI."
                     else -> "Galitaanku wuu fashilantay ($code). ${errStr.take(140)}"
                 }
                 return Result.failure(Exception(msg))
@@ -807,7 +807,7 @@ class SomaliTrafficRepository(private val context: Context) {
      */
     suspend fun loginWithGoogle(
         email: String = "user.google",
-        displayName: String = "Macmiil GoBajaaj"
+        displayName: String = "Macmiil SHIRI"
     ): Result<UserProfile> = withContext(Dispatchers.IO) {
         Result.failure(
             Exception("Google Sign-In lama hawlgelin. Fadlan isticmaal nambarka iyo furaha sirta.")
@@ -1400,7 +1400,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 // 2. Ensure driver profile exists in Supabase so foreign keys in subscriptions/payment_transactions pass
                 val driverProfilePayload = mutableMapOf<String, Any>(
                     "id" to targetUserId,
-                    "full_name" to (currentUser.fullName.ifBlank { "Darawal GoBajaaj" }),
+                    "full_name" to (currentUser.fullName.ifBlank { "Darawal SHIRI" }),
                     "phone_number" to currentUser.phoneNumber.ifBlank { effectivePhone },
                     "role" to "driver",
                     "status" to "active",
@@ -2369,7 +2369,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 deviceId = deviceId,
                 userId = userId,
                 eventType = "PROTECTION_ENABLED",
-                description = "GoBajaaj Phone Guard waxaa loo furay ${device.deviceName}",
+                description = "SHIRI Phone Guard waxaa loo furay ${device.deviceName}",
                 createdAt = nowStr
             )
             deviceDao.insertDeviceEvent(event)

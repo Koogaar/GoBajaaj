@@ -82,10 +82,10 @@ fun SplashScreen(
             .fillMaxSize()
             .background(Color(0xFF031433))
     ) {
-        // High-resolution full splash graphic matching Image 1
+        // High-resolution full splash graphic matching SHIRI design
         Image(
             painter = painterResource(id = com.example.R.drawable.ic_gobajaaj_splash_bg),
-            contentDescription = "GoBajaaj Splash",
+            contentDescription = "SHIRI Splash",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )

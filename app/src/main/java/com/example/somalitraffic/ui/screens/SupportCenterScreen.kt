@@ -60,7 +60,7 @@ fun SupportCenterScreen(
         ) {
             // Support Hotline Card with Direct Call & WhatsApp
             com.example.somalitraffic.ui.components.GoBajaajContactHotlineCard(
-                title = "Khadka Tooska ah ee GoBajaaj (24/7)",
+                title = "Khadka Tooska ah ee SHIRI (24/7)",
                 subtitle = "Wicitaan toos ah & WhatsApp Heegan ah"
             )
 

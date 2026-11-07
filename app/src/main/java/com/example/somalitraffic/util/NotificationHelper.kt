@@ -43,10 +43,10 @@ object NotificationHelper {
             nm.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL_RIDES,
-                    "GoBajaaj – Dalabaadka",
+                    "SHIRI – Dalabaadka",
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
-                    description = "Ogeysiinta dalabaadka cusub ee GoBajaaj"
+                    description = "Ogeysiinta dalabaadka cusub ee SHIRI"
                     enableVibration(true)
                     vibrationPattern = longArrayOf(0, 250, 150, 250)
                 }
@@ -57,7 +57,7 @@ object NotificationHelper {
             nm.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL_ARRIVAL,
-                    "GoBajaaj – Imaanshaha Bajaajta",
+                    "SHIRI – Imaanshaha Bajaajta",
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
                     description = "Ogeysiinta marka bajaajlaha yimaado"
@@ -242,7 +242,7 @@ object NotificationHelper {
         val n = NotificationCompat.Builder(context, CHANNEL_RIDES)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("🏁 Safarkii wuu dhammaaday!")
-            .setContentText("Mahadsanid inaad GoBajaaj isticmaashay!")
+            .setContentText("Mahadsanid inaad SHIRI isticmaashay!")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(buildMainActivityIntent(context, requestCode = 15))

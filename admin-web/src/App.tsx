@@ -526,7 +526,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center p-4">
         <div className="w-16 h-16 border-4 border-[#E50914] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-white font-bold text-sm tracking-wider">GOBAJAAJ MAAMULKA GUUD...</p>
+        <p className="text-white font-bold text-sm tracking-wider">SHIRI HQ MAAMULKA GUUD...</p>
       </div>
     );
   }
@@ -656,11 +656,11 @@ export default function App() {
         <div className="flex items-center space-x-2.5">
           <img
             src={logoImg}
-            alt="GoBajaaj"
+            alt="SHIRI"
             className="w-8 h-8 rounded-lg object-cover shadow border border-neutral-700"
           />
           <div>
-            <span className="font-black text-xs tracking-wider block">GOBAJAAJ</span>
+            <span className="font-black text-xs tracking-wider block">SHIRI</span>
             <span className="text-[9px] text-[#E50914] font-bold uppercase tracking-widest block -mt-0.5">Admin Portal</span>
           </div>
         </div>
@@ -695,10 +695,10 @@ export default function App() {
             <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center w-full' : 'space-x-3 px-1'}`}>
               <img
                 src={logoImg}
-                alt="GoBajaaj"
+                alt="SHIRI"
                 onClick={() => isSidebarCollapsed && setIsSidebarCollapsed(false)}
                 className="w-10 h-10 rounded-xl object-cover shadow-lg shrink-0 cursor-pointer border border-neutral-700"
-                title="GoBajaaj Admin"
+                title="SHIRI Admin"
               />
               {!isSidebarCollapsed && (
                 <div className="overflow-hidden">
@@ -1123,7 +1123,7 @@ export default function App() {
             <div className="bg-white p-5 sm:p-6 rounded-2xl border border-neutral-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-black">Macaamiisha & Darawallada ({usersList.length})</h2>
-                <p className="text-xs text-neutral-500 mt-0.5">Liiska dhammaan isticmaalayaasha GoBajaaj (Kuwa cusub waxay ku jiraan dusha sare).</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Liiska dhammaan isticmaalayaasha SHIRI (Kuwa cusub waxay ku jiraan dusha sare).</p>
               </div>
               <div className="relative w-full sm:w-64">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-neutral-400" />

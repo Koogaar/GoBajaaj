@@ -235,7 +235,7 @@ fun DriverPassScreen(
                             color = TextBlack
                         )
                         Text(
-                            text = "Waa kaa dhammaaday adeegga maalinlaha ah ee GoBajaaj, fadlan dib ugu shubo ($0.25) si aad shaqada u wadato.",
+                            text = "Waa kaa dhammaaday adeegga maalinlaha ah ee SHIRI, fadlan dib ugu shubo ($0.25) si aad shaqada u wadato.",
                             fontSize = 12.sp,
                             color = Color.Gray,
                             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -566,29 +566,22 @@ fun DriverPassScreen(
                                 modifier = Modifier.size(110.dp)
                             ) {
                                 androidx.compose.foundation.Image(
-                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_gobajaaj_logo),
-                                    contentDescription = "GoBajaaj Logo",
+                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.shiri_logo),
+                                    contentDescription = "SHIRI Logo",
                                     modifier = Modifier.padding(12.dp)
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // "GoBajaaj" Text
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "Go",
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFF00C853) // Green
-                                )
-                                Text(
-                                    text = "Bajaaj",
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color.White
-                                )
-                            }
+                            // "SHIRI" Text
+                            Text(
+                                text = "SHIRI",
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.Black,
+                                color = com.example.ui.theme.ShiriCrimson,
+                                letterSpacing = 1.sp
+                            )
 
                             Spacer(modifier = Modifier.height(56.dp))
 

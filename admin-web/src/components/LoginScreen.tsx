@@ -244,10 +244,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         <div className="bg-black p-8 text-center text-white border-b border-neutral-800">
           <img 
             src={logoImg} 
-            alt="GoBajaaj Logo" 
+            alt="SHIRI Logo" 
             className="w-16 h-16 rounded-2xl mx-auto mb-4 object-cover shadow-lg border border-neutral-700" 
           />
-          <h1 className="text-2xl font-black tracking-wider text-white uppercase">Maamulka GoBajaaj</h1>
+          <h1 className="text-2xl font-black tracking-wider text-white uppercase">Maamulka SHIRI HQ</h1>
           <p className="text-xs text-[#E50914] font-bold mt-1 tracking-wider">
             Gal Dashboard-ka Maamulka
           </p>
@@ -327,7 +327,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
         </form>
 
         <div className="p-4 bg-neutral-50 border-t border-neutral-200 text-center text-[11px] text-neutral-500 font-medium">
-          Maamulka GoBajaaj Dashboard © 2026
+          SHIRI Command Center HQ © 2026
         </div>
       </div>
     </div>

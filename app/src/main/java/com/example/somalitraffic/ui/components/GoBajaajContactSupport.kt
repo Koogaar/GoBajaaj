@@ -45,7 +45,7 @@ fun launchGoBajaajCall(context: Context, phone: String = GOBAJAAJ_CONTACT_PHONE)
 fun launchGoBajaajWhatsApp(
     context: Context,
     phone: String = GOBAJAAJ_WHATSAPP_PHONE,
-    defaultMessage: String = "Asc GoBajaaj, waxaan u baahanahay caawinaad."
+    defaultMessage: String = "Asc SHIRI, waxaan u baahanahay caawinaad."
 ) {
     try {
         val cleanPhone = phone.filter { it.isDigit() }

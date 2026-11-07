@@ -131,8 +131,8 @@ fun ForgotPasswordScreen(
 
                 // Brand Logo
                 Image(
-                    painter = painterResource(id = com.example.R.drawable.ic_gobajaaj_logo),
-                    contentDescription = "GoBajaaj Logo",
+                    painter = painterResource(id = com.example.R.drawable.shiri_logo),
+                    contentDescription = "SHIRI Logo",
                     modifier = Modifier
                         .size(72.dp)
                         .clip(RoundedCornerShape(16.dp))
@@ -140,13 +140,13 @@ fun ForgotPasswordScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Text(text = "Go", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFF44349A))
-                    Text(text = "Bajaaj", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color(0xFFE50914))
-                }
+                Text(
+                    text = "SHIRI",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    color = com.example.ui.theme.ShiriCrimson,
+                    letterSpacing = 1.sp
+                )
 
                 Spacer(modifier = Modifier.height(6.dp))
 
@@ -500,7 +500,7 @@ fun ForgotPasswordScreen(
                             color = Color(0xFF0F172A)
                         )
                         Text(
-                            text = "Haddii aad xogta akoonkaaga xasuusan weydo, la xiriir xafiiska GoBajaaj:",
+                            text = "Haddii aad xogta akoonkaaga xasuusan weydo, la xiriir xafiiska SHIRI:",
                             fontSize = 11.5.sp,
                             color = Color(0xFF64748B),
                             textAlign = TextAlign.Center,
@@ -530,9 +530,9 @@ fun ForgotPasswordScreen(
                                 onClick = {
                                     val clean = phoneNumber.trim().filter { it.isDigit() }
                                     val msg = if (clean.isNotBlank())
-                                        "Asc GoBajaaj, waxaan u baahanahay caawinaad ku saabsan furaha sirta akoonkayga: $clean"
+                                        "Asc SHIRI, waxaan u baahanahay caawinaad ku saabsan furaha sirta akoonkayga: $clean"
                                     else
-                                        "Asc GoBajaaj, waxaan u baahanahay caawinaad ku saabsan furaha sirta akoonkayga."
+                                        "Asc SHIRI, waxaan u baahanahay caawinaad ku saabsan furaha sirta akoonkayga."
                                     launchGoBajaajWhatsApp(context, defaultMessage = msg)
                                 },
                                 modifier = Modifier.weight(1f),

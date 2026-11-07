@@ -60,8 +60,8 @@ fun DriverPassLockScreen(
         ) {
             // App Logo
             Image(
-                painter = painterResource(id = R.drawable.ic_gobajaaj_logo),
-                contentDescription = "GoBajaaj",
+                painter = painterResource(id = R.drawable.shiri_logo),
+                contentDescription = "SHIRI",
                 modifier = Modifier
                     .size(96.dp)
                     .clip(RoundedCornerShape(22.dp))
