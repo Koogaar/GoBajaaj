@@ -11,6 +11,9 @@ export type AdminRole =
 export type UserRole = 
   | AdminRole
   | 'driver' 
+  | 'courier'
+  | 'merchant'
+  | 'passenger'
   | 'reporter';
 
 export type PermissionKey =
@@ -39,6 +42,16 @@ export interface Profile {
   status: 'active' | 'suspended' | 'disabled' | 'pending';
   plate_number?: string;
   bajaaj_model?: string;
+  license_number?: string;
+  guarantor_name?: string;
+  guarantor_phone?: string;
+  cid_letter_number?: string;
+  business_name?: string;
+  business_type?: string;
+  merchant_payment_number?: string;
+  district?: string;
+  verification_status?: string;
+  monthly_fee?: number;
   subscription_status?: string;
   subscription_expiry?: string;
   created_at: string;

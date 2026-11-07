@@ -1,64 +1,67 @@
 ========================================================================
-SHIRI SUPER APP - VERSION 4.0.0 (MAJOR RELEASE)
+SHIRI - VERSION 4.0.0 (MAJOR RELEASE)
 ========================================================================
 Nooca: Version 4.0.0 (versionCode = 43)
 Taariikhda: 2026-11-07
 Aqoonsiga Play Store: com.aistudio.gobajaaj.app
 
-FAYLALKA DIYAARKA AH:
-1. SHIRI_v4.0.0_release.apk  -> Direct Phone Install (70.5 MB)
-2. SHIRI_v4.0.0_release.aab  -> Google Play Console Upload (40.1 MB)
-3. admin-web/dist            -> Web Admin Production Build (Vite + React)
+FAYLALKA RASMIGA AH EE DIYAARKA AH:
+1. SHIRI_v4.0.0_release.apk  -> Direct Phone Install (Android APK)
+2. SHIRI_v4.0.0_release.aab  -> Google Play Console Upload (Android App Bundle)
+3. SHIRI_BRAND_ASSETS/       -> Faylasha Logada iyo App Icon-ka Play Store (512x512 PNG)
+4. admin-web/dist            -> Web Admin Production Build (SHIRI HQ Command Center)
 
 ========================================================================
-WIXII CUSUB EE V4.0.0 (SHIRI SUPER APP RESTOCK & EVOLUTION):
+WIXII CUSUB EE V4.0.0 (SHIRI EVOLUTION & UPGRADES):
 ========================================================================
 
-1. MAGACA & ASTAANTA CUSUB (BRANDING):
-   - Magaca rasmiga ah: "SHIRI"
-   - Astaanta cusub (Icon & Launcher): Logo-da casriga ah ee SHIRI (Kinetic Horizon)
-   - Palette-ka midabada: Shiri Crimson (#DC2626), Dark Slate (#0F172A), Emerald (#10B981)
+1. MAGACA & ASTAANTA RASMIGA AH (BRANDING):
+   - Magaca rasmiga ah ee App-ka: "SHIRI" (waa magac gaaban oo heersare ah; lagama dhigin Super App).
+   - Astaanta cusub (Icon & Launcher): Logo-da casriga ah ee SHIRI oo ah 512x512 PNG tayo sare leh, background casaan/crimson ah oo leh squircle card cad iyo astaanta SHIRI.
+   - Folder gaar ah oo lagu diyaariyay: `SHIRI_BRAND_ASSETS/` oo ay ku jiraan:
+     * `shiri_app_icon_playstore.png` (512x512 Play Store App Icon)
+     * `shiri_logo_transparent.png` (512x512 Transparent Logo)
+     * `shiri_logo_with_text.png` (512x512 Wordmark Logo)
+     * `shiri_logo_512x512.png`
 
-2. DASHBOARD-KA WEECINTA GUUD (4-HUB SUPER APP 2x2 GRID):
-   - SHIRI RIDE: Bajaaj, Taxi & Live Radar
-   - SHIRI FOOD: Maqaayadaha, Cuntada Soomaalida & Cafes
-   - SHIRI DELIVERY: Mooto Gaarsiinta Baakadaha & Ganacsiyada
-   - SHIRI MARKET: Dukamada, Qalabka & Dharka
+2. KALA REEBIDDA DOORKA & QIIMAHA ADEEGGA (PRICING & ROLES):
+   - 1) Macmiil / Rakaab (Passenger): Bilaash ($0.00). Dalbo bajaaj, cuntada maqaayadaha, iyo mootada.
+   - 2) Darawal Bajaaj (Bajaajle): $0.25 / Maalin (Driver Pass 24-saac oo xafidan sidii hore).
+   - 3) Gaarsiiye Mooto (Courier): $5.00 / Bil (Mooto 2-lugood ah oo qaada baakadaha iyo cuntada maqaayadaha). Waxaa laga rabaa:
+        * Nambarka Shatiga Wadista (Driving License)
+        * Magaca Damiinka (Guarantor Name)
+        * Telefoonka Damiinka (Guarantor Phone)
+        * Warqadda Baarista CID (Police Clearance)
+        * Xaalad: Sugaya Hubinta Admin-ka (Pending Approval).
+   - 4) Ganacsade / Maqaayad (Merchant): $5.00 / Bil (Maqaayadaha cuntada, Dukaamada & Farmashiyeyaasha).
+        * Waxay iska diiwaangelin karaan App-ka ama Admin-ka ayaa toos u diiwaangelin kara.
+        * Waxaa laga rabaa Magaca Ganacsiga, Degmada, Nooca Ganacsiga, iyo Nambarka Lacag Bixinta (Merchant Payment Number / Till).
+        * Xaalad: Sugaya Ansixinta Maamulka (Pending Approval).
+
+3. KALA SOOCIDDA XISAABAADKA LACAG BIXINTA (PAYMENT ACCOUNTS SEPARATION):
+   - Lacagta Cuntada & Dalabka Macmiilka: Macmiilku marka uu cunto ama alaab dalbado, lacagta waxay toos u aadaysaa Akoonka/Till-ka gaarka ah ee Maqaayadda (Merchant Payment Number). Shirkadda SHIRI lacagta cuntada gacanta kuma hayso mana dhex fariisato.
+   - Lacagta Adeegga SHIRI: Kaliya lacagta shatiga/rukumashada ($0.25 Bajaajle, $5.00 Mooto, $5.00 Maqaayad) ayaa toos ugu dhacda nambarada shirkadda SHIRI (EVC: 618092060 / eDahab: 628512131).
+
+4. DASHBOARD-KA GUUD EE SHIRI (4-HUB GRID):
+   - SHIRI RIDE: Bajaaj, Taxi & Live Radar Traffic
+   - SHIRI FOOD: Maqaayadaha & Cuntada Muqdisho
+   - SHIRI DELIVERY: Mootooyinka Xirmooyinka & Ganacsiyada
+   - SHIRI MARKET: Dukaamada & Suuqyada Muqdisho
    - Khad Yar (Low-Data Mode) Toggle Pill
    - Mogadishu Grid Live Mesh & Fast Pay (EVC+, eDahab, Sahal)
-   - Universal Landmark Search & Voice Mic
 
-3. SHIRI RIDE & TRAFFIC INTELLIGENCE OO LA MIDEECEY (UNIFIED):
-   - Adeeg gaar ah oo la dhoho "Traffic" MA JIRO Home Screen-ka!
-   - Dhammaan xogta saxmadda waxaa loo raray gudaha SHIRI RIDE:
-     * Tab 1: 🛺 Dalbo Safar (Book Ride) - 13 feature oo buuxa (Matching, Live GPS, Driver Info, Faraha Cad, Cash/EVC)
+5. SHIRI RIDE & TRAFFIC INTELLIGENCE OO LA MIDEECEY (UNIFIED):
+   - Wax Traffic ah oo banaanka yaalla ma jiro; dhammaan xogta saxmadda waxay ku dhex jirtaa SHIRI RIDE:
+     * Tab 1: 🛺 Dalbo Safar (Book Ride) - 13 qodob oo buuxa (Matching, Live GPS, Driver Info, Qiimaha Cad, Cash/EVC)
      * Tab 2: 🚦 Isgoysyada Live (18 Isgoys oo toos ah: KM4, Zoobe, Dabka, Tarabuunka, Sayidka, iwm + badhanka "Dalbo Safar Meeshan")
-     * Tab 3: 🛣️ Waddooyinka (Wadada Makka Al-Mukarama, Wadada Wadnaha, Wadada Soddonka, Wadada Garoonka, Taleex Alternate)
+     * Tab 3: 🛣️ Waddooyinka (Makka Al-Mukarama, Wadnaha, Soddonka, Garoonka, Taleex)
      * Tab 4: ⚠️ Digniinaha (Alerts & Somali Voice Horn/Speech alert button)
 
-4. KALA REEBIDDA BAJAAJLE (RIDE) & GAARSIIYE MOOTO (COURIER):
-   - RIDE: Waa Bajaaj 3-lugood ah oo rakaabka qaada (Core GoBajaaj oo la xafiday).
-   - COURIER: Waa Mooto 2-lugood ah oo si gaar ah loogu talagalay gaarsiinta xamuulka, cuntada & baakadaha.
-   - Diiwaangelinta Gaarsiiyaha Mootada waxaa lagu daray xogta khasabka ah:
-     * Nambarka Shatiga Wadista (Driving License)
-     * Magaca Damiinka (Guarantor Full Name)
-     * Telefoonka Damiinka (Guarantor Phone Number)
-     * Nambarka Warqadda CID (Police Criminal Clearance)
-
-5. WEB ADMIN-KA OO LA MIDEECEY (6 UNIFIED HUBS):
+6. WEB ADMIN-KA OO LA MIDEECEY (SHIRI HQ COMMAND CENTER):
    - 1. Command & Analytics: Tusmada Guud & Aqoonta Xogta
-   - 2. Gaadiidka & Gaarsiinta: Darawallada Bajaajta, Mootooyinka & Safarrada
-   - 3. Traffic Ops & Wariyeyaasha: Saxmadda, Isgoysyada Live & Wariyeyaasha
-   - 4. Maaliyadda & Driver Pass: Ku shubtay Maanta ($0.25) & EVC/eDahab/Sahal
-   - 5. Taageerada & Suuq-geynta: Taleefannada Lumay & Suuq-geynta Wakiillada
-   - 6. Nidaamka & Amniga: Macaamiisha, Maamulayaasha & Audit Logs
-   - Dhismaha Vite ee `admin-web` wuxuu u synced yahay toos `root public/`.
-
-========================================================================
-XAFIIDIDDA NIDAAMKII HORE (ZERO BREAKING CHANGES):
-========================================================================
-- Xogta database-ka Supabase & Room DB lama tirtirin.
-- Nidaamka Driver Pass ($0.25) sidoodii ayuu u shaqeynayaa.
-- Dhammaan nidaamka taleefan ku gelidda (+252 E.164) waa sidoodii.
-- ApplicationId: com.aistudio.gobajaaj.app waa sidii hore si update toos ah ugu noqdo Play Console.
+   - 2. Gaadiidka & Gaarsiinta: Darawallada Bajaajta ($0.25), Mootooyinka ($5.00), iyo Maqaayadaha ($5.00)
+   - 3. Maamulka Maqaayadaha: Ansixinta (Approval) iyo Diiwaangelinta Cusub ee Maqaayadaha
+   - 4. Saxmadda Waddooyinka & Isgoysyada Tooska ah
+   - 5. Digniinaha Degdegga ah & Codadka Soomaaliga
+   - 6. Dejinta Nidaamka & Badbaadada Guud
 ========================================================================

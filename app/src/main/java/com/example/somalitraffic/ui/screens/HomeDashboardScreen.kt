@@ -162,21 +162,14 @@ fun HomeDashboardScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = "SHIRI",
-                                    fontSize = 19.sp,
-                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Black,
                                     color = ShiriCrimson,
-                                    letterSpacing = (-0.5).sp
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Home",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ShiriDarkSlate
+                                    letterSpacing = 0.5.sp
                                 )
                             }
                             Text(
-                                text = "Super App",
+                                text = "Mogadishu",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF64748B)

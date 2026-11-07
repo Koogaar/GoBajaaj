@@ -92,18 +92,18 @@ fun RoleSelectionScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "SHIRI Super App • Rakaab, Bajaajle ama Mooto Gaarsiin",
+                    text = "SHIRI • Dooro adeegga aad u baahan tahay",
                     fontSize = 13.sp,
                     color = Color(0xFF64748B),
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // 1. Macmiil / Rakaab Card
                 RoleCard(
                     title = "MACMIIL / RAKAAB",
-                    subtitle = "Dalbo Bajaaj • Guri Number Digital ah • Ammaan & Qiimo Jaban",
+                    subtitle = "Dalbo Bajaaj & Mooto • Guri Number Digital ah • Bilaash ($0)",
                     iconEmoji = "👤",
                     isSelected = selectedRole == "passenger",
                     onClick = {
@@ -112,12 +112,12 @@ fun RoleSelectionScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // 2. Darawal / Bajaajle Card
                 RoleCard(
-                    title = "DARAWAL (BAJAAJLE)",
-                    subtitle = "Qaadista Rakaabka Bajaajta • Shaqo & Dakhli • Pass $0.25 • 18 Isgoys Live",
+                    title = "DARAWAL BAJAAJ",
+                    subtitle = "Qaadista Rakaabka Bajaajta • Driver Pass $0.25 Maalintii • 18 Isgoys Live",
                     iconEmoji = "🛺",
                     isSelected = selectedRole == "driver",
                     onClick = {
@@ -126,16 +126,30 @@ fun RoleSelectionScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // 3. Gaarsiiye Mooto / Courier Card
                 RoleCard(
                     title = "GAARSIIYE MOOTO (COURIER)",
-                    subtitle = "Gaarsiinta Cuntada & Baakadaha • Shatiga Wadista, Damiin & Warqadda CID",
+                    subtitle = "Gaarsiinta Cuntada & Baakadaha • Shatiga, Damiin & CID • $5/Bishii",
                     iconEmoji = "🏍️",
                     isSelected = selectedRole == "courier",
                     onClick = {
                         selectedRole = "courier"
+                        showErrorMessage = false
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // 4. Ganacsade / Maqaayad Card
+                RoleCard(
+                    title = "GANACSADE / MAQAAYAD",
+                    subtitle = "Maqaayadaha, Dukamada & Farmashiyaha • Qoro Till-kaaga • $5/Bishii",
+                    iconEmoji = "🏪",
+                    isSelected = selectedRole == "merchant",
+                    onClick = {
+                        selectedRole = "merchant"
                         showErrorMessage = false
                     }
                 )

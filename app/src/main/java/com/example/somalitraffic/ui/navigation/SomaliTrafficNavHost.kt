@@ -159,7 +159,7 @@ fun SomaliTrafficNavHost(
                                 popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
                             }
                         }
-                        UserRole.COURIER -> {
+                        UserRole.COURIER, UserRole.MERCHANT -> {
                             navController.navigate(NavRoutes.HOME) {
                                 popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
                             }

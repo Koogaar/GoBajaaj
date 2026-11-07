@@ -834,7 +834,11 @@ class SomaliTrafficRepository(private val context: Context) {
         licenseNumber: String? = null,
         guarantorName: String? = null,
         guarantorPhone: String? = null,
-        cidLetterNumber: String? = null
+        cidLetterNumber: String? = null,
+        businessName: String? = null,
+        businessType: String? = null,
+        merchantPaymentNumber: String? = null,
+        district: String? = null
     ): Result<UserProfile> = withContext(Dispatchers.IO) {
         try {
             val cleanName = fullName.trim()
@@ -954,8 +958,13 @@ class SomaliTrafficRepository(private val context: Context) {
             if (!guarantorName.isNullOrBlank()) profilePayload["guarantor_name"] = guarantorName
             if (!guarantorPhone.isNullOrBlank()) profilePayload["guarantor_phone"] = guarantorPhone
             if (!cidLetterNumber.isNullOrBlank()) profilePayload["cid_letter_number"] = cidLetterNumber
-            if (actualRoleStr == "courier") {
-                profilePayload["verification_status"] = "pending_verification"
+            if (!businessName.isNullOrBlank()) profilePayload["business_name"] = businessName
+            if (!businessType.isNullOrBlank()) profilePayload["business_type"] = businessType
+            if (!merchantPaymentNumber.isNullOrBlank()) profilePayload["merchant_payment_number"] = merchantPaymentNumber
+            if (!district.isNullOrBlank()) profilePayload["district"] = district
+            if (actualRoleStr == "courier" || actualRoleStr == "merchant") {
+                profilePayload["verification_status"] = "pending_approval"
+                profilePayload["monthly_fee"] = 5.00
             }
             if (!referralCode.isNullOrBlank()) {
                 profilePayload["referred_by"] = referralCode.trim().uppercase()
@@ -991,7 +1000,12 @@ class SomaliTrafficRepository(private val context: Context) {
                 guarantorName = guarantorName,
                 guarantorPhone = guarantorPhone,
                 cidLetterNumber = cidLetterNumber,
-                verificationStatus = if (actualRoleStr == "courier") "pending_verification" else "approved"
+                verificationStatus = if (actualRoleStr == "courier" || actualRoleStr == "merchant") "pending_approval" else "approved",
+                businessName = businessName,
+                businessType = businessType,
+                merchantPaymentNumber = merchantPaymentNumber,
+                district = district,
+                monthlyFee = if (actualRoleStr == "courier" || actualRoleStr == "merchant") 5.00 else null
             )
 
             if (isDriver && !plateNumber.isNullOrBlank()) prefs.registerPlate(plateNumber)

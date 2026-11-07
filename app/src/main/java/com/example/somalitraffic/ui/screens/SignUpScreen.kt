@@ -1,6 +1,7 @@
 package com.example.somalitraffic.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,6 +44,7 @@ fun SignUpScreen(
     onSignUpSuccess: () -> Unit
 ) {
     val isCourier = initialRole == "courier"
+    val isMerchant = initialRole == "merchant"
     var fullName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -50,7 +52,7 @@ fun SignUpScreen(
     var referralCode by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var isDriverMode by remember { mutableStateOf(initialRole == "driver" || (!isCourier && initialIsDriver)) }
+    var isDriverMode by remember { mutableStateOf(initialRole == "driver" || (!isCourier && !isMerchant && initialIsDriver)) }
     var vehicleType by remember { mutableStateOf(if (isCourier) "Mooto (Courier)" else "Bajaaj") }
     
     // Courier Specific Fields
@@ -58,6 +60,12 @@ fun SignUpScreen(
     var guarantorName by remember { mutableStateOf("") }
     var guarantorPhone by remember { mutableStateOf("") }
     var cidLetterNumber by remember { mutableStateOf("") }
+    
+    // Merchant Specific Fields
+    var businessName by remember { mutableStateOf("") }
+    var businessType by remember { mutableStateOf("Maqaayad / Cunto") }
+    var merchantPaymentNumber by remember { mutableStateOf("") }
+    var district by remember { mutableStateOf("Hodan") }
     
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
@@ -146,6 +154,7 @@ fun SignUpScreen(
                 // Title & Subtitle
                 Text(
                     text = when {
+                        isMerchant -> "Diiwaangelinta Ganacsiga / Maqaayadda"
                         isCourier -> "Diiwaangelinta Gaarsiiye Mooto"
                         isDriverMode -> "Diiwaangelinta Darawalka"
                         else -> "Diiwaangelinta Rakaabka"
@@ -155,12 +164,12 @@ fun SignUpScreen(
                     color = Color(0xFF0F172A),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (isCourier) {
-                        "Geli xogtaada, shatiga wadista, damiinka iyo warqadda CID-da"
-                    } else {
-                        "Geli magacaaga, nambarkaaga iyo furaha sirta"
+                    text = when {
+                        isMerchant -> "Qoro magaca ganacsiga, goobta iyo nambarkaaga Till-ka"
+                        isCourier -> "Geli xogtaada, shatiga wadista, damiinka iyo warqadda CID-da"
+                        else -> "Geli magacaaga, nambarkaaga iyo furaha sirta"
                     },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
@@ -168,7 +177,46 @@ fun SignUpScreen(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Official Pricing Notice Pill
+                Surface(
+                    color = when {
+                        isMerchant || isCourier -> Color(0xFFFEF2F2)
+                        isDriverMode -> Color(0xFFFEF3C7)
+                        else -> Color(0xFFECFDF5)
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, when {
+                        isMerchant || isCourier -> Color(0xFFFCA5A5)
+                        isDriverMode -> Color(0xFFFDE68A)
+                        else -> Color(0xFFA7F3D0)
+                    }),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = when {
+                                isMerchant -> "🏪 Rukhumadda Ganacsiga: $5.00 / Bishii • Xaqiijin Admin"
+                                isCourier -> "🏍️ Rukhumadda Gaarsiiyaha: $5.00 / Bishii • Xaqiijin Admin"
+                                isDriverMode -> "🛺 Driver Pass-ka Bajaajta: $0.25 / Maalintii (24 Saac)"
+                                else -> "👤 Akoonka Rakaabka: Bilaash ($0.00)"
+                            },
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                isMerchant || isCourier -> Color(0xFF991B1B)
+                                isDriverMode -> Color(0xFF92400E)
+                                else -> Color(0xFF065F46)
+                            }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 val fieldColors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.White,
@@ -240,11 +288,87 @@ fun SignUpScreen(
                     Spacer(modifier = Modifier.height(14.dp))
                 }
 
+                if (isMerchant) {
+                    // Magaca Ganacsiga
+                    OutlinedTextField(
+                        value = businessName,
+                        onValueChange = { businessName = it; errorMessage = null },
+                        placeholder = { Text("Magaca Maqaayadda ama Dukaanka", fontSize = 13.5.sp, color = Color(0xFF94A3B8)) },
+                        leadingIcon = { Text("🏪", fontSize = 16.sp, modifier = Modifier.padding(start = 12.dp, end = 4.dp)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Nooca Ganacsiga (Business Category)
+                    Text(
+                        text = "Nooca Ganacsiga:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF334155),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFFF1F5F9))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        listOf("Maqaayad", "Fast Food", "Dukaan", "Farmashiye").forEach { type ->
+                            val isSel = businessType.contains(type)
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSel) Color(0xFFDC2626) else Color.Transparent)
+                                    .clickable { businessType = type }
+                                    .padding(vertical = 7.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = type,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSel) Color.White else Color(0xFF475569)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Degmada
+                    OutlinedTextField(
+                        value = district,
+                        onValueChange = { district = it; errorMessage = null },
+                        placeholder = { Text("Degmada Ganacsiga (Hodan, Waaberi...)", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                        leadingIcon = { Text("📍", fontSize = 16.sp, modifier = Modifier.padding(start = 12.dp, end = 4.dp)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
                 // 1. Full Name Input
                 OutlinedTextField(
                     value = fullName,
                     onValueChange = { fullName = it; errorMessage = null },
-                    placeholder = { Text("Magaca buuxa (Full Name)", fontSize = 14.sp, color = Color(0xFF94A3B8)) },
+                    placeholder = { 
+                        Text(
+                            if (isMerchant) "Magaca Mulkiilaha ama Maamulaha" else "Magaca buuxa (Full Name)", 
+                            fontSize = 14.sp, 
+                            color = Color(0xFF94A3B8)
+                        ) 
+                    },
                     leadingIcon = { Icon(Icons.Outlined.Person, contentDescription = null, tint = Color(0xFF475569)) },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -289,6 +413,33 @@ fun SignUpScreen(
                     colors = fieldColors,
                     singleLine = true
                 )
+
+                if (isMerchant) {
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Nambarka Lacag-qabashada Ganacsiga (Customer Payment Till / Number)
+                    OutlinedTextField(
+                        value = merchantPaymentNumber,
+                        onValueChange = { merchantPaymentNumber = it; errorMessage = null },
+                        placeholder = { Text("Nambarka Till-ka / EVC ee Macmiilka", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                        leadingIcon = { Text("💳", fontSize = 16.sp, modifier = Modifier.padding(start = 12.dp, end = 4.dp)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = "ℹ️ Macaamiishu lacagta cuntada/alaabta toos ayay nambarkan ugu soo dirayaan.",
+                        fontSize = 11.sp,
+                        color = Color(0xFF0284C7),
+                        lineHeight = 15.sp,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp)
+                    )
+                }
 
                 if (isCourier) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -448,6 +599,12 @@ fun SignUpScreen(
                             errorMessage = "Fadlan buuxi dhammaan xogta."
                             return@Button
                         }
+                        if (isMerchant) {
+                            if (businessName.isBlank() || district.isBlank() || merchantPaymentNumber.isBlank()) {
+                                errorMessage = "Fadlan buuxi magaca ganacsiga, degmada iyo nambarkaaga Till-ka."
+                                return@Button
+                            }
+                        }
                         if (isCourier) {
                             if (licenseNumber.isBlank() || guarantorName.isBlank() || guarantorPhone.isBlank() || cidLetterNumber.isBlank()) {
                                 errorMessage = "Gaarsiiyaha waxaa khasab ku ah: Shatiga, Damiinka & CID-da."
@@ -467,13 +624,21 @@ fun SignUpScreen(
                             phone = cleanPhone,
                             pass = password,
                             isDriver = isDriverMode,
-                            vehicleModel = if (isCourier) "Mooto (Courier)" else vehicleType,
+                            vehicleModel = when {
+                                isCourier -> "Mooto (Courier)"
+                                isMerchant -> "Ganacsi ($businessType)"
+                                else -> vehicleType
+                            },
                             referralCode = if (isDriverMode) referralCode.trim().ifBlank { null } else null,
                             roleStr = initialRole,
                             licenseNumber = if (isCourier) licenseNumber.trim() else null,
                             guarantorName = if (isCourier) guarantorName.trim() else null,
                             guarantorPhone = if (isCourier) guarantorPhone.trim() else null,
-                            cidLetterNumber = if (isCourier) cidLetterNumber.trim() else null
+                            cidLetterNumber = if (isCourier) cidLetterNumber.trim() else null,
+                            businessName = if (isMerchant) businessName.trim() else null,
+                            businessType = if (isMerchant) businessType else null,
+                            merchantPaymentNumber = if (isMerchant) merchantPaymentNumber.trim() else null,
+                            district = if (isMerchant) district.trim() else null
                         ) { user ->
                             onSignUpSuccess()
                         }

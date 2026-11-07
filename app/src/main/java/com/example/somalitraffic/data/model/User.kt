@@ -89,7 +89,12 @@ data class UserProfile(
     val guarantorName: String? = null,
     val guarantorPhone: String? = null,
     val cidLetterNumber: String? = null,
-    val verificationStatus: String = "approved"
+    val verificationStatus: String = "approved",
+    val businessName: String? = null,
+    val businessType: String? = null,
+    val merchantPaymentNumber: String? = null,
+    val district: String? = null,
+    val monthlyFee: Double? = null
 )
 
 data class OtpSendResult(

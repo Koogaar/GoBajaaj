@@ -702,7 +702,7 @@ export default function App() {
               />
               {!isSidebarCollapsed && (
                 <div className="overflow-hidden">
-                  <h1 className="font-black text-sm tracking-wider text-white truncate">SHIRI SUPER APP</h1>
+                  <h1 className="font-black text-sm tracking-wider text-white truncate">SHIRI</h1>
                   <p className="text-[9px] text-[#DC2626] font-bold uppercase tracking-widest truncate">Command Center HQ</p>
                 </div>
               )}
@@ -885,7 +885,7 @@ export default function App() {
                 {allowedTabs.find(t => t.id === activeTab)?.label || 'Dashboard'}
               </h1>
               <p className="text-xs text-neutral-500 mt-0.5">
-                SHIRI Super App • Nidaamka Mideysan ee Gaadiidka, Gaarsiinta & Saxmadda Muqdisho
+                SHIRI • Nidaamka Mideysan ee Gaadiidka, Gaarsiinta & Saxmadda Muqdisho
               </p>
             </div>
           </div>
@@ -1142,8 +1142,8 @@ export default function App() {
               <button
                 onClick={() => setUserFilter('all')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${userFilter === 'all'
-                    ? 'bg-black text-white'
-                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
+                  ? 'bg-black text-white'
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
                   }`}
               >
                 Dhammaan ({usersList.length})
@@ -1152,8 +1152,8 @@ export default function App() {
               <button
                 onClick={() => setUserFilter('recent10')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shrink-0 ${userFilter === 'recent10'
-                    ? 'bg-emerald-600 text-white shadow'
-                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                  ? 'bg-emerald-600 text-white shadow'
+                  : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
                   }`}
               >
                 <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
@@ -1163,8 +1163,8 @@ export default function App() {
               <button
                 onClick={() => setUserFilter('driver')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${userFilter === 'driver'
-                    ? 'bg-black text-white'
-                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
+                  ? 'bg-black text-white'
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
                   }`}
               >
                 Darawallada
@@ -1173,8 +1173,8 @@ export default function App() {
               <button
                 onClick={() => setUserFilter('user')}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${userFilter === 'user'
-                    ? 'bg-black text-white'
-                    : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
+                  ? 'bg-black text-white'
+                  : 'bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200'
                   }`}
               >
                 Rakaabka
@@ -1218,8 +1218,8 @@ export default function App() {
                           <tr
                             key={u.id}
                             className={`transition ${isRecent
-                                ? 'bg-emerald-50/80 hover:bg-emerald-100/70 border-l-4 border-l-emerald-500'
-                                : 'hover:bg-neutral-50'
+                              ? 'bg-emerald-50/80 hover:bg-emerald-100/70 border-l-4 border-l-emerald-500'
+                              : 'hover:bg-neutral-50'
                               }`}
                           >
                             <td className="p-4">

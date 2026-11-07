@@ -450,6 +450,10 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         guarantorName: String? = null,
         guarantorPhone: String? = null,
         cidLetterNumber: String? = null,
+        businessName: String? = null,
+        businessType: String? = null,
+        merchantPaymentNumber: String? = null,
+        district: String? = null,
         onSuccess: (UserProfile) -> Unit
     ) {
         viewModelScope.launch {
@@ -466,7 +470,11 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
                 licenseNumber = licenseNumber,
                 guarantorName = guarantorName,
                 guarantorPhone = guarantorPhone,
-                cidLetterNumber = cidLetterNumber
+                cidLetterNumber = cidLetterNumber,
+                businessName = businessName,
+                businessType = businessType,
+                merchantPaymentNumber = merchantPaymentNumber,
+                district = district
             )
             _isLoading.value = false
             res.onSuccess { user ->
