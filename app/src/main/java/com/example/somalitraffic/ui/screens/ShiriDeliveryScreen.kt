@@ -49,8 +49,8 @@ fun ShiriDeliveryScreen(
 ) {
     val context = LocalContext.current
 
-    // View Mode: "driver" (Image 3) or "customer" (5-Step Customer Flow)
-    var currentDeliveryView by remember { mutableStateOf("driver") }
+    // View Mode: "customer" (5-Step Customer Flow) or "driver" (Image 3)
+    var currentDeliveryView by remember { mutableStateOf("customer") }
 
     // Driver States (Image 3)
     var isDriverOnline by remember { mutableStateOf(true) }
@@ -207,51 +207,45 @@ fun ShiriDeliveryScreen(
                             )
                         }
 
-                        // Switch Pills: Driver App (Image 3) vs Customer Delivery
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color(0xFF1E293B),
-                            border = BorderStroke(1.dp, Color(0xFF334155))
-                        ) {
-                            Row(modifier = Modifier.padding(3.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = if (currentDeliveryView == "driver") Color(0xFFDC2626) else Color.Transparent,
-                                    modifier = Modifier.clickable { currentDeliveryView = "driver" }
+                        // Discrete Courier mode button
+                        if (currentDeliveryView == "customer") {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color.White.copy(alpha = 0.12f),
+                                modifier = Modifier.clickable { currentDeliveryView = "driver" }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(text = "🏍️", fontSize = 11.sp)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "Courier App",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
+                                    Text(text = "🏍️", fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Darawal Gaarsiiye",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
                                 }
-
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = if (currentDeliveryView == "customer") Color(0xFF0284C7) else Color.Transparent,
-                                    modifier = Modifier.clickable { currentDeliveryView = "customer" }
+                            }
+                        } else {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(0xFF0284C7),
+                                modifier = Modifier.clickable { currentDeliveryView = "customer" }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(text = "📦", fontSize = 11.sp)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "Dalbo Gaarsiin",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
+                                    Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Ku Noqo Macmiilka",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
                                 }
                             }
                         }

@@ -530,54 +530,48 @@ fun ShiriEatsMarketScreen(
                             )
                         }
 
-                        // Switch Pills: Customer App vs Business App (as seen in screenshots 1 & 2)
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color(0xFF1E293B),
-                            border = BorderStroke(1.dp, Color(0xFF334155))
-                        ) {
-                            Row(modifier = Modifier.padding(3.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = if (currentAppMode == "customer") Color(0xFFDC2626) else Color.Transparent,
-                                    modifier = Modifier.clickable {
-                                        currentAppMode = "customer"
-                                        viewingStore = null
-                                    }
+                        // Discrete Merchant portal button
+                        if (currentAppMode == "customer") {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color.White.copy(alpha = 0.12f),
+                                modifier = Modifier.clickable { currentAppMode = "merchant" }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(text = "📱", fontSize = 11.sp)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "Customer App",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
+                                    Text(text = "🏪", fontSize = 12.sp)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Maamul Meherad",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
                                 }
-
-                                Surface(
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = if (currentAppMode == "merchant") Color(0xFFDC2626) else Color.Transparent,
-                                    modifier = Modifier.clickable { currentAppMode = "merchant" }
+                            }
+                        } else {
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(0xFFDC2626),
+                                modifier = Modifier.clickable { 
+                                    currentAppMode = "customer"
+                                    viewingStore = null
+                                }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(text = "🏪", fontSize = 11.sp)
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "Business App",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
+                                    Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White, modifier = Modifier.size(13.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Ku Noqo Macmiilka",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
                                 }
                             }
                         }
