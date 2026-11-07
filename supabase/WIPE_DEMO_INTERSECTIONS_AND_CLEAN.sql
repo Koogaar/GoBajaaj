@@ -38,3 +38,4 @@ WHERE id IN (
 COMMIT;
 
 SELECT 'GUUL! Dhammaan isgoysyadii demo-da ahaa waa la tirtiray database-ka. Hadda waxaad ka abuuran kartaa Web Admin.' as natiijo;
+

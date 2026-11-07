@@ -58,14 +58,25 @@ fun DriverPassLockScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App Logo
-            Image(
-                painter = painterResource(id = R.drawable.shiri_logo),
-                contentDescription = "SHIRI",
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(RoundedCornerShape(22.dp))
-            )
+            // App Logo on Pure White Card
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White,
+                shadowElevation = 4.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                modifier = Modifier.size(96.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.shiri_logo),
+                        contentDescription = "SHIRI",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 

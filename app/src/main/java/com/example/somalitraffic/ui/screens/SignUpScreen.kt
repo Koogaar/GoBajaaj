@@ -124,14 +124,25 @@ fun SignUpScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // App Logo Badge
-                Image(
-                    painter = painterResource(id = com.example.R.drawable.shiri_logo),
-                    contentDescription = "SHIRI Logo",
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                )
+                // App Logo Badge on Pure White Card
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp,
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.size(76.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = com.example.R.drawable.shiri_logo),
+                            contentDescription = "SHIRI Logo",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -157,7 +168,7 @@ fun SignUpScreen(
                         isMerchant -> "Diiwaangelinta Ganacsiga / Maqaayadda"
                         isCourier -> "Diiwaangelinta Gaarsiiye Mooto"
                         isDriverMode -> "Diiwaangelinta Darawalka"
-                        else -> "Diiwaangelinta Rakaabka"
+                        else -> "Diiwaangelinta Dalbo Bajaaj (Rakaab)"
                     },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,

@@ -3,6 +3,7 @@ package com.example.somalitraffic.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -129,14 +130,25 @@ fun ForgotPasswordScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Brand Logo
-                Image(
-                    painter = painterResource(id = com.example.R.drawable.shiri_logo),
-                    contentDescription = "SHIRI Logo",
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                )
+                // Brand Logo on Pure White Card
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp,
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.size(76.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = com.example.R.drawable.shiri_logo),
+                            contentDescription = "SHIRI Logo",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 

@@ -657,53 +657,97 @@ fun HomeDashboardScreen(
                 }
 
                 // ==============================================================
-                // 7. THE 4 MAIN HUBS (PROMINENT 2x2 GRID — NO SEPARATE TRAFFIC TILE)
+                // 7. THE 4 MAIN HUBS + TRAFFIC (MATCHING OFFICIAL SHIRI DESIGN)
                 // ==============================================================
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Welcome Banner (Matching Phone Mockup 1)
+                    Surface(
+                        color = Color.White,
+                        shape = RoundedCornerShape(18.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        shadowElevation = 1.dp,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = "Adeegyada SHIRI • Hubs",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = ShiriDarkSlate
-                        )
-                        Text(
-                            text = "Dhammaan 4",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ShiriCrimson
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(
+                                            Color(0xFFEFF6FF),
+                                            Color(0xFFFFFFFF),
+                                            Color(0xFFFEF2F2)
+                                        )
+                                    )
+                                )
+                                .padding(horizontal = 16.dp, vertical = 14.dp)
+                        ) {
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Surface(
+                                        color = ShiriCrimson,
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "SUPER APP",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color.White,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "Smart City • Smart Choice",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFF64748B)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Welcome to SHIRI",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Text(
+                                    text = "Everything, One Journey.",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF475569)
+                                )
+                            }
+                        }
                     }
 
-                    // 2x2 Grid
+                    // 2x2 Grid (Red: Ride, Orange: Food, Blue: Delivery, Green: Market)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // 1. SHIRI RIDE (Crimson Gradient)
+                        // 1. SHIRI RIDE (Red - Dalbo Bajaaj)
                         ShiriHubCard(
                             title = "SHIRI RIDE",
-                            subtitle = "Bajaaj, Taxi & Live Radar",
-                            statusTag = "350+ Bajaaj",
-                            badgeText = "GoBajaaj",
+                            subtitle = "Dalbo Bajaaj",
+                            statusTag = "Bajaaj & Taxi",
+                            badgeText = "Dalbo",
                             icon = Icons.Default.TwoWheeler,
-                            gradientColors = listOf(ShiriCrimson, Color(0xFFB70011), Color(0xFF7F1D1D)),
+                            gradientColors = listOf(Color(0xFFE50914), Color(0xFFDC2626), Color(0xFFB91C1C)),
                             onClick = { onNavigate("ride") },
                             modifier = Modifier.weight(1f)
                         )
 
-                        // 2. SHIRI FOOD (Warm Coral Gradient)
+                        // 2. SHIRI FOOD / EATS (Orange - Dalbo Cunto)
                         ShiriHubCard(
                             title = "SHIRI FOOD",
-                            subtitle = "Hilib Ari, Baasto & Qaxwo",
-                            statusTag = "85+ Furan",
-                            badgeText = "25 Min",
+                            subtitle = "Dalbo Cunto",
+                            statusTag = "Maqaayadaha",
+                            badgeText = "Cunto",
                             icon = Icons.Default.Restaurant,
-                            gradientColors = listOf(Color(0xFFEA580C), Color(0xFFC2410C), Color(0xFF9A3412)),
+                            gradientColors = listOf(Color(0xFFF97316), Color(0xFFEA580C), Color(0xFFC2410C)),
                             onClick = {
                                 Toast.makeText(context, "🍔 SHIRI FOOD: Maqaayadaha Muqdisho (Hodan, Bakaaro, Taleex)", Toast.LENGTH_SHORT).show()
                                 onNavigate("ride")
@@ -716,35 +760,119 @@ fun HomeDashboardScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // 3. SHIRI DELIVERY (Teal Gradient)
+                        // 3. SHIRI DELIVERY (Blue - Dirso Alaab)
                         ShiriHubCard(
                             title = "SHIRI DELIVERY",
-                            subtitle = "Baakidh, Daawo & Raashin",
-                            statusTag = "Cod Tilmaameed",
-                            badgeText = "Voice GPS",
+                            subtitle = "Dirso Alaab",
+                            statusTag = "Mooto Express",
+                            badgeText = "Baakado",
                             icon = Icons.Default.LocalShipping,
-                            gradientColors = listOf(Color(0xFF0D9488), Color(0xFF047857), Color(0xFF064E3B)),
+                            gradientColors = listOf(Color(0xFF0284C7), Color(0xFF0369A1), Color(0xFF075985)),
                             onClick = {
-                                Toast.makeText(context, "📦 SHIRI DELIVERY: Mootooyinka Xirmooyinka & Farmashiyaha", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "📦 SHIRI DELIVERY: Mootooyinka Xirmooyinka & Gaarsiinta", Toast.LENGTH_SHORT).show()
                                 onNavigate("ride")
                             },
                             modifier = Modifier.weight(1f)
                         )
 
-                        // 4. SHIRI MARKET (Indigo Gradient)
+                        // 4. SHIRI MARKET (Green - Wax Iibso)
                         ShiriHubCard(
                             title = "SHIRI MARKET",
-                            subtitle = "Mobiles, Dharka & Tech",
-                            statusTag = "Bakaara Wholesale",
-                            badgeText = "Suuqa B2C",
+                            subtitle = "Wax Iibso",
+                            statusTag = "Suuqa Bakaaro",
+                            badgeText = "Dukaan",
                             icon = Icons.Default.ShoppingBag,
-                            gradientColors = listOf(Color(0xFF6366F1), Color(0xFF4338CA), Color(0xFF312E81)),
+                            gradientColors = listOf(Color(0xFF16A34A), Color(0xFF15803D), Color(0xFF166534)),
                             onClick = {
                                 Toast.makeText(context, "🛍️ SHIRI MARKET: Suuqa Bakaaraha & Dukaamada Muqdisho", Toast.LENGTH_SHORT).show()
                                 onNavigate("ride")
                             },
                             modifier = Modifier.weight(1f)
                         )
+                    }
+
+                    // 5. SHIRI TRAFFIC (Purple Card - La soco Jaamka)
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        shadowElevation = 2.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigate("traffic_map") }
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(Color(0xFF8B5CF6), Color(0xFF7C3AED), Color(0xFF6D28D9))
+                                    )
+                                )
+                                .padding(horizontal = 16.dp, vertical = 14.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color.White.copy(alpha = 0.25f),
+                                        modifier = Modifier.size(44.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Traffic,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        }
+                                    }
+                                    Column {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = "SHIRI TRAFFIC",
+                                                fontSize = 15.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color.White
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Surface(
+                                                color = Color.White,
+                                                shape = RoundedCornerShape(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Live",
+                                                    fontSize = 9.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color(0xFF7C3AED),
+                                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                                )
+                                            }
+                                        }
+                                        Text(
+                                            text = "La soco Jaamka & Khariidadda Tooska ah",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color.White.copy(alpha = 0.9f)
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        }
                     }
                 }
 

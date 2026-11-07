@@ -80,14 +80,25 @@ fun LoginScreen(
                     .padding(top = 40.dp, bottom = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // App Logo Badge
-                Image(
-                    painter = painterResource(id = com.example.R.drawable.shiri_logo),
-                    contentDescription = "SHIRI Logo",
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                )
+                // App Logo Badge on Pure White Card
+                Surface(
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.White,
+                    shadowElevation = 3.dp,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.size(84.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = com.example.R.drawable.shiri_logo),
+                            contentDescription = "SHIRI Logo",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
