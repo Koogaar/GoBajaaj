@@ -1941,23 +1941,8 @@ class SomaliTrafficRepository(private val context: Context) {
     fun getIntersections(): Flow<List<Intersection>> = trafficDao.getAllIntersections()
 
     suspend fun seedIntersectionsIfEmpty() = withContext(Dispatchers.IO) {
-        val existing = trafficDao.getAllIntersectionsSync()
-        if (existing.isNotEmpty()) return@withContext
-
-        // Real production intersections matching Supabase database exactly
-        val list = listOf(
-            Intersection("11111111-1111-4111-a111-111111111111", "Isgoyska KM4", 2.0335, 45.3190, 400, "Muqdisho", "Furan", "Hadda", "Wadada Maka Al-Mukarama & Airport"),
-            Intersection("22222222-2222-4222-a222-222222222222", "Isgoyska Benaadir", 2.0435, 45.3115, 400, "Muqdisho", "Furan", "Hadda", "Wadada Wadnaha & Digfeer"),
-            Intersection("33333333-3333-4333-a333-333333333333", "Isgoyska Tarabuunka", 2.0490, 45.3180, 400, "Muqdisho", "Furan", "Hadda", "Hodan Tarabuunka"),
-            Intersection("44444444-4444-4444-a444-444444444444", "Isgoyska Zoobe (KM5)", 2.0298, 45.3125, 400, "Muqdisho", "Furan", "Hadda", "Wadada Zoobe - Hodan"),
-            Intersection("55555555-5555-4555-a555-555555555555", "Isgoyska Dabka", 2.0390, 45.3280, 400, "Muqdisho", "Furan", "Hadda", "Wadada Maka Al-Mukarama & Dabka"),
-            Intersection("66666666-6666-4666-a666-666666666666", "Isgoyska Sayidka", 2.0430, 45.3330, 400, "Muqdisho", "Furan", "Hadda", "Wadada Sayidka"),
-            Intersection("77777777-7777-4777-a777-777777777777", "Isgoyska Jubba", 2.0510, 45.3400, 400, "Muqdisho", "Furan", "Hadda", "Wadada Jubba & Shibis"),
-            Intersection("88888888-8888-4888-a888-888888888888", "Isgoyska Taleex", 2.0381, 45.3175, 400, "Muqdisho", "Furan", "Hadda", "Wadada Taleex & Maka"),
-            Intersection("99999999-9999-4999-a999-999999999999", "Isgoyska Sanaa", 2.0620, 45.3520, 400, "Muqdisho", "Furan", "Hadda", "Wadada Sanaa - Kaaraan"),
-            Intersection("aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa", "Isgoyska Ex-Control Afgooye", 2.0550, 45.2750, 400, "Muqdisho", "Furan", "Hadda", "Wadada Ex-Control Afgooye")
-        )
-        trafficDao.insertIntersections(list)
+        // Isgoysyada waxay ka yimaadaan Supabase kaliya — demo data lama gelin karo
+        // Haddii Supabase madhan yahay, app-ku isgoysyo ma tusi doono ilaa admin-ku ku daro
     }
 
     suspend fun getIntersectionById(id: String): Intersection? = trafficDao.getIntersectionById(id)
@@ -2008,9 +1993,8 @@ class SomaliTrafficRepository(private val context: Context) {
                 if (mapped.isNotEmpty()) {
                     trafficDao.deleteMockIntersections()
                     trafficDao.insertIntersections(mapped)
-                } else {
-                    seedIntersectionsIfEmpty()
                 }
+                // Haddii Supabase madhan yahay, isgoysyo lama gelin karo — admin-ka waa inuu ku daro
             }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -2098,16 +2082,7 @@ class SomaliTrafficRepository(private val context: Context) {
             val user = prefs.getCurrentUser() ?: return@withContext Result.failure(Exception("Fadlan gal"))
             val intersection = trafficDao.getIntersectionById(intersectionId)
                 ?: trafficDao.getAllIntersectionsSync().firstOrNull()
-                ?: Intersection(
-                    id = intersectionId.ifBlank { "int-1" },
-                    name = "Isgoyska KM4",
-                    latitude = reporterLat,
-                    longitude = reporterLng,
-                    allowedRadius = 800,
-                    city = "Muqdisho",
-                    currentStatus = status,
-                    lastUpdated = "Hadda"
-                ).also { trafficDao.insertIntersections(listOf(it)) }
+                ?: return@withContext Result.failure(Exception("Isgoyska lama helin. Fadlan isgoys dooro oo mar kale isku day."))
 
             // Haversine distance calculation in meters
             val distance = calculateDistanceInMeters(

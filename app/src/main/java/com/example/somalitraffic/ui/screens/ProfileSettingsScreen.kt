@@ -269,7 +269,7 @@ fun ProfileSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "SHIRI Somalia • v4.0.0",
+                    text = "SHIRI Somalia • v3.9.4",
                     fontSize = 12.sp,
                     color = Color.Gray,
                     fontWeight = FontWeight.Medium
