@@ -1,22 +1,46 @@
 -- ============================================================================
--- SHIRI DELIVERY — PRODUCTION POSTGRESQL / SUPABASE DATABASE SCHEMA
+-- SHIRI DELIVERY — PRODUCTION POSTGRESQL / SUPABASE DATABASE SCHEMA (IDEMPOTENT & SAFE)
 -- Market: Mogadishu, Somalia & International Expansion
--- Includes Row Level Security (RLS), Triggers, Spatial Geometry & Telecom Payments
+-- Includes Safe Type Checks, RLS, Triggers, Spatial Geometry & Telecom Payments
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "postgis";
 
--- 1. ENUMS
-CREATE TYPE user_role_type AS ENUM ('customer', 'merchant_owner', 'merchant_staff', 'courier', 'admin', 'dispatcher');
-CREATE TYPE order_status_type AS ENUM (
-  'pending', 'accepted', 'preparing', 'ready_for_pickup',
-  'courier_assigned', 'picked_up', 'in_transit', 'delivered',
-  'cancelled', 'failed_delivery'
-);
-CREATE TYPE payment_method_type AS ENUM ('evc_plus', 'zaad', 'edahab', 'sahal', 'cash_on_delivery');
-CREATE TYPE payment_status_type AS ENUM ('pending', 'authorized', 'paid', 'failed', 'refunded');
-CREATE TYPE vehicle_type_enum AS ENUM ('motorcycle', 'bajaj', 'car', 'bicycle');
+-- 1. ENUMS (Safe creation - will not fail if already exists)
+DO $$ BEGIN
+  CREATE TYPE user_role_type AS ENUM ('customer', 'merchant_owner', 'merchant_staff', 'courier', 'admin', 'dispatcher');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE order_status_type AS ENUM (
+    'pending', 'accepted', 'preparing', 'ready_for_pickup',
+    'courier_assigned', 'picked_up', 'in_transit', 'delivered',
+    'cancelled', 'failed_delivery'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE payment_method_type AS ENUM ('evc_plus', 'zaad', 'edahab', 'sahal', 'cash_on_delivery');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE payment_status_type AS ENUM ('pending', 'authorized', 'paid', 'failed', 'refunded');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE vehicle_type_enum AS ENUM ('motorcycle', 'bajaj', 'car', 'bicycle');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- 2. USER PROFILES & ROLES
 CREATE TABLE IF NOT EXISTS profiles (
@@ -191,7 +215,7 @@ CREATE TABLE IF NOT EXISTS system_audit_logs (
 );
 
 -- ----------------------------------------------------------------------------
--- ROW LEVEL SECURITY (RLS) POLICIES
+-- ROW LEVEL SECURITY (RLS) POLICIES (Safe drop & recreate)
 -- ----------------------------------------------------------------------------
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE shiri_addresses ENABLE ROW LEVEL SECURITY;
@@ -200,22 +224,33 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE courier_profiles ENABLE ROW LEVEL SECURITY;
 
--- Customers can view/edit their own profiles & addresses
+-- Profiles & Addresses
+DROP POLICY IF EXISTS "Users read own profile" ON profiles;
 CREATE POLICY "Users read own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users manage own addresses" ON shiri_addresses;
 CREATE POLICY "Users manage own addresses" ON shiri_addresses FOR ALL USING (auth.uid() = owner_id);
 
--- Anyone authenticated or guest can read open merchants and active products
+-- Merchants & Products
+DROP POLICY IF EXISTS "Public read merchants" ON merchants;
 CREATE POLICY "Public read merchants" ON merchants FOR SELECT USING (is_open = true OR verification_status = 'verified');
+
+DROP POLICY IF EXISTS "Public read products" ON products;
 CREATE POLICY "Public read products" ON products FOR SELECT USING (in_stock = true);
 
--- Merchants can manage their own products
+DROP POLICY IF EXISTS "Merchants manage products" ON products;
 CREATE POLICY "Merchants manage products" ON products FOR ALL USING (
   EXISTS (SELECT 1 FROM merchants WHERE merchants.id = products.merchant_id AND merchants.owner_id = auth.uid())
 );
 
--- Orders: Customer can read own orders; Merchant can read merchant orders; Courier can read assigned orders
+-- Orders
+DROP POLICY IF EXISTS "Customer reads own orders" ON orders;
 CREATE POLICY "Customer reads own orders" ON orders FOR SELECT USING (auth.uid() = customer_id);
+
+DROP POLICY IF EXISTS "Merchant reads assigned orders" ON orders;
 CREATE POLICY "Merchant reads assigned orders" ON orders FOR SELECT USING (
   EXISTS (SELECT 1 FROM merchants WHERE merchants.id = orders.merchant_id AND merchants.owner_id = auth.uid())
 );
+
+DROP POLICY IF EXISTS "Courier reads assigned orders" ON orders;
 CREATE POLICY "Courier reads assigned orders" ON orders FOR SELECT USING (courier_id = auth.uid());
