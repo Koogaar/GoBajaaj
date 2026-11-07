@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,20 +34,106 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
+import com.example.somalitraffic.util.ArrivalSoundManager
 import java.util.UUID
 
-data class RegisteredBusiness(
+// ─── Data Models ─────────────────────────────────────────────────────────────
+data class ShiriProductItem(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
-    val type: String,
-    val category: String, // "food" or "market"
-    val district: String,
-    val tillNumber: String,
-    val phone: String,
-    val description: String = "",
-    val isVerified: Boolean = true
+    val price: Double,
+    val category: String,
+    val imageUrl: String,
+    val inStock: Boolean = true,
+    val emoji: String = "🍽️"
 )
+
+data class ShiriMerchantStore(
+    val id: String = UUID.randomUUID().toString(),
+    val name: String,
+    val shiriCode: String,
+    val district: String,
+    val category: String, // "food", "market", "pharmacy"
+    val rating: Double,
+    val deliveryTimeMin: Int,
+    val deliveryFee: Double,
+    val imageUrl: String,
+    val emoji: String = "🏪",
+    val phone: String = "0612345678"
+)
+
+// Helper: auto-detect image & emoji based on product name
+fun getAutoImageForProduct(name: String): Pair<String, String> {
+    val q = name.lowercase().trim()
+    return when {
+        q.contains("pizza") -> Pair(
+            "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80",
+            "🍕"
+        )
+        q.contains("shuwarma") || q.contains("shawarma") || q.contains("shawerma") -> Pair(
+            "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400&auto=format&fit=crop&q=80",
+            "🌯"
+        )
+        q.contains("burger") -> Pair(
+            "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80",
+            "🍔"
+        )
+        q.contains("fries") || q.contains("chips") || q.contains("baradho") -> Pair(
+            "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&auto=format&fit=crop&q=80",
+            "🍟"
+        )
+        q.contains("cola") || q.contains("coca") || q.contains("pepsi") || q.contains("soda") || q.contains("drink") -> Pair(
+            "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80",
+            "🥤"
+        )
+        q.contains("chicken") || q.contains("digaag") -> Pair(
+            "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=400&auto=format&fit=crop&q=80",
+            "🍗"
+        )
+        q.contains("rice") || q.contains("bariis") -> Pair(
+            "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&auto=format&fit=crop&q=80",
+            "🍚"
+        )
+        q.contains("sambusa") || q.contains("samosa") -> Pair(
+            "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&auto=format&fit=crop&q=80",
+            "🥟"
+        )
+        q.contains("coffee") || q.contains("qaxwo") -> Pair(
+            "https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400&auto=format&fit=crop&q=80",
+            "☕"
+        )
+        q.contains("tea") || q.contains("shaah") -> Pair(
+            "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=400&auto=format&fit=crop&q=80",
+            "🫖"
+        )
+        q.contains("cake") || q.contains("macmacaan") -> Pair(
+            "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&auto=format&fit=crop&q=80",
+            "🍰"
+        )
+        q.contains("fish") || q.contains("kalluun") -> Pair(
+            "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400&auto=format&fit=crop&q=80",
+            "🐟"
+        )
+        q.contains("milk") || q.contains("caano") -> Pair(
+            "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&auto=format&fit=crop&q=80",
+            "🥛"
+        )
+        q.contains("water") || q.contains("biyo") -> Pair(
+            "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&auto=format&fit=crop&q=80",
+            "💧"
+        )
+        q.contains("medicine") || q.contains("daawo") || q.contains("panadol") -> Pair(
+            "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&auto=format&fit=crop&q=80",
+            "💊"
+        )
+        else -> Pair(
+            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&auto=format&fit=crop&q=80",
+            "🍽️"
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,58 +142,150 @@ fun ShiriEatsMarketScreen(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
-    var selectedTab by remember { mutableStateOf("food") } // "food" or "market"
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategoryFilter by remember { mutableStateOf("All") }
-    var showAddBusinessDialog by remember { mutableStateOf(false) }
 
-    // Real dynamic list of businesses — NO hardcoded fake demo mockups
-    val businessList = remember { mutableStateListOf<RegisteredBusiness>() }
+    // App Mode: "customer" (Image 1) or "merchant" (Image 2)
+    var currentAppMode by remember { mutableStateOf("customer") }
 
-    // Dialog state for adding a new business
-    var newBizName by remember { mutableStateOf("") }
-    var newBizType by remember { mutableStateOf("Maqaayad (Restaurant)") }
-    var newBizDistrict by remember { mutableStateOf("Hodan, Muqdisho") }
-    var newBizTill by remember { mutableStateOf("") }
-    var newBizPhone by remember { mutableStateOf("") }
-    var newBizDesc by remember { mutableStateOf("") }
+    // Bottom tab inside Customer App: "home", "explore", "orders", "profile"
+    var customerBottomTab by remember { mutableStateOf("home") }
 
-    val businessTypeOptions = listOf(
-        "Maqaayad (Restaurant)" to "food",
-        "Dukaan / Supermarket" to "market",
-        "Hilib & Khudaar" to "market",
-        "Cabitaan & Macmacaan" to "food",
-        "Farmashi (Pharmacy)" to "market",
-        "Qalabka Elektaroonigga" to "market",
-        "Dharka & Fashion" to "market"
-    )
+    // Bottom tab inside Merchant App: "dashboard", "orders", "products", "finance"
+    var merchantBottomTab by remember { mutableStateOf("products") }
 
-    // Filtered businesses
-    val filteredBusinesses = remember(businessList.toList(), selectedTab, searchQuery, selectedCategoryFilter) {
-        businessList.filter { biz ->
-            biz.category == selectedTab &&
-            (searchQuery.isBlank() || biz.name.contains(searchQuery, ignoreCase = true) ||
-             biz.district.contains(searchQuery, ignoreCase = true) ||
-             biz.type.contains(searchQuery, ignoreCase = true)) &&
-            (selectedCategoryFilter == "All" || biz.type.contains(selectedCategoryFilter, ignoreCase = true))
-        }
+    // Customer Category Filter: "all", "cunto", "supermarket", "daawo"
+    var selectedCategoryFilter by remember { mutableStateOf("all") }
+    var customerSearchQuery by remember { mutableStateOf("") }
+
+    // Sound toggle state
+    var isSoundEnabled by remember { mutableStateOf(true) }
+
+    // Active order banner visibility
+    var hasActiveOrder by remember { mutableStateOf(true) }
+
+    // Selected merchant to view products from customer side
+    var viewingStore by remember { mutableStateOf<ShiriMerchantStore?>(null) }
+
+    // Master Product List for Pizza House Mogadishu (as shown in Image 2)
+    val pizzaHouseProducts = remember {
+        mutableStateListOf(
+            ShiriProductItem(
+                name = "chicken shuwarma",
+                price = 2.00,
+                category = "Main Dish",
+                imageUrl = "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400&auto=format&fit=crop&q=80",
+                emoji = "🌯"
+            ),
+            ShiriProductItem(
+                name = "Margherita Pizza",
+                price = 8.50,
+                category = "Pizza",
+                imageUrl = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80",
+                emoji = "🍕"
+            ),
+            ShiriProductItem(
+                name = "Crispy Chicken Burger",
+                price = 6.50,
+                category = "Burgers",
+                imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80",
+                emoji = "🍔"
+            ),
+            ShiriProductItem(
+                name = "French Fries",
+                price = 3.00,
+                category = "Sides",
+                imageUrl = "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&auto=format&fit=crop&q=80",
+                emoji = "🍟"
+            ),
+            ShiriProductItem(
+                name = "Coca Cola 330ml Can",
+                price = 1.50,
+                category = "Drinks",
+                imageUrl = "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80",
+                emoji = "🥤"
+            )
+        )
     }
 
-    // Dialog for Admin / Merchant to register real business
-    if (showAddBusinessDialog) {
+    // List of Famous Mogadishu Businesses (Image 1)
+    val famousStores = remember {
+        mutableStateListOf(
+            ShiriMerchantStore(
+                name = "Pizza House Mogadishu",
+                shiriCode = "SHR-BO-1024",
+                district = "Hodan",
+                category = "cunto",
+                rating = 4.8,
+                deliveryTimeMin = 25,
+                deliveryFee = 2.00,
+                imageUrl = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80",
+                emoji = "🍕"
+            ),
+            ShiriMerchantStore(
+                name = "Sahra Somali Restaurant",
+                shiriCode = "SHR-BO-2041",
+                district = "Waberi",
+                category = "cunto",
+                rating = 4.9,
+                deliveryTimeMin = 20,
+                deliveryFee = 1.50,
+                imageUrl = "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&auto=format&fit=crop&q=80",
+                emoji = "🍲"
+            ),
+            ShiriMerchantStore(
+                name = "Bakaaro Fresh Supermarket",
+                shiriCode = "SHR-BO-3392",
+                district = "Bakaaro",
+                category = "supermarket",
+                rating = 4.7,
+                deliveryTimeMin = 30,
+                deliveryFee = 2.00,
+                imageUrl = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=80",
+                emoji = "🛒"
+            ),
+            ShiriMerchantStore(
+                name = "Al-Najax Pharmacy",
+                shiriCode = "SHR-BO-4911",
+                district = "Taleex",
+                category = "daawo",
+                rating = 4.9,
+                deliveryTimeMin = 15,
+                deliveryFee = 1.50,
+                imageUrl = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&auto=format&fit=crop&q=80",
+                emoji = "💊"
+            )
+        )
+    }
+
+    // Dialog state for "+ Kudar Alaab Cusub"
+    var showAddProductDialog by remember { mutableStateOf(false) }
+    var newProductName by remember { mutableStateOf("") }
+    var newProductPrice by remember { mutableStateOf("") }
+    var newProductCategory by remember { mutableStateOf("Main Dish") }
+    var newProductInStock by remember { mutableStateOf(true) }
+
+    // Auto-detected image for newly typed product
+    val autoImagePair = remember(newProductName) {
+        getAutoImageForProduct(newProductName)
+    }
+
+    // Modal to add new product
+    if (showAddProductDialog) {
         AlertDialog(
-            onDismissRequest = { showAddBusinessDialog = false },
+            onDismissRequest = { showAddProductDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Storefront,
-                        contentDescription = null,
-                        tint = if (selectedTab == "food") Color(0xFFEA580C) else Color(0xFF16A34A),
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = Color(0xFFDC2626).copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(text = autoImagePair.second, fontSize = 20.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Diiwaangeli Meherad Cusub",
+                        text = "Kudar Alaab Cusub",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF0F172A)
@@ -115,137 +294,192 @@ fun ShiriEatsMarketScreen(
             },
             text = {
                 Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Geli xogta saxda ah ee ganacsigaaga ama maqaayaddaada.",
-                        fontSize = 12.sp,
+                        text = "Markaad qorto magaca, sawrka alaabta si toos ah ayuu u soo baxayaa!",
+                        fontSize = 11.5.sp,
                         color = Color(0xFF64748B)
                     )
 
-                    // Business Name
+                    // Product Name
                     OutlinedTextField(
-                        value = newBizName,
-                        onValueChange = { newBizName = it },
-                        label = { Text("Magaca Meheradda (Business Name)") },
-                        placeholder = { Text("Tusaale: Dukaanka Taleex") },
+                        value = newProductName,
+                        onValueChange = { newProductName = it },
+                        label = { Text("Magaca Alaabta (Product Name)") },
+                        placeholder = { Text("Tusaale: Pizza, Burger, Shuwarma, Fries...") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp)
                     )
 
-                    // Business Type dropdown / chip selector
+                    // Quick suggestion chips
                     Text(
-                        text = "Nooca Meheradda:",
-                        fontSize = 12.sp,
+                        text = "Tusaalooyinka Degdegga ah:",
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF0F172A)
                     )
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        businessTypeOptions.forEach { (typeLabel, _) ->
-                            val isSel = newBizType == typeLabel
+                        listOf(
+                            "Pizza" to "🍕",
+                            "Burger" to "🍔",
+                            "Shuwarma" to "🌯",
+                            "Fries" to "🍟",
+                            "Coca Cola" to "🥤",
+                            "Bariis" to "🍚",
+                            "Sambusa" to "🥟",
+                            "Shaah" to "🫖"
+                        ).forEach { (sugName, sugEmoji) ->
                             FilterChip(
-                                selected = isSel,
-                                onClick = { newBizType = typeLabel },
-                                label = { Text(typeLabel, fontSize = 11.sp, maxLines = 1) }
+                                selected = newProductName.equals(sugName, ignoreCase = true),
+                                onClick = { newProductName = sugName },
+                                label = { Text("$sugEmoji $sugName", fontSize = 11.sp) }
                             )
                         }
                     }
 
-                    // District
+                    // Live Image Preview Card
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        color = Color(0xFFF8FAFC),
+                        modifier = Modifier.fillMaxWidth().height(110.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.size(90.dp),
+                                color = Color(0xFFE2E8F0)
+                            ) {
+                                AsyncImage(
+                                    model = autoImagePair.first,
+                                    contentDescription = newProductName,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Surface(
+                                    color = Color(0xFF16A34A).copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "✓ Sawir Toos ah",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF16A34A),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (newProductName.isNotBlank()) newProductName else "Magaca qor...",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF0F172A),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "Waxaa loo diyaariyay Customer App",
+                                    fontSize = 10.sp,
+                                    color = Color(0xFF64748B)
+                                )
+                            }
+                        }
+                    }
+
+                    // Price
                     OutlinedTextField(
-                        value = newBizDistrict,
-                        onValueChange = { newBizDistrict = it },
-                        label = { Text("Degmada / Goobta (District/Area)") },
-                        placeholder = { Text("Taleex, Hodan, Bakaaro, KM4...") },
+                        value = newProductPrice,
+                        onValueChange = { newProductPrice = it },
+                        label = { Text("Qiimaha ($ USD)") },
+                        placeholder = { Text("Tusaale: 4.50") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        leadingIcon = { Text("$", fontWeight = FontWeight.Bold, color = Color(0xFFDC2626)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp)
                     )
 
-                    // Phone Number
+                    // Category
                     OutlinedTextField(
-                        value = newBizPhone,
-                        onValueChange = { newBizPhone = it },
-                        label = { Text("Telefoonka Ganacsiga (Phone)") },
-                        placeholder = { Text("61XXXXXXX") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        value = newProductCategory,
+                        onValueChange = { newProductCategory = it },
+                        label = { Text("Qeybta (Category)") },
+                        placeholder = { Text("Main Dish, Pizza, Burgers, Drinks...") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp)
                     )
 
-                    // Merchant Till Number
-                    OutlinedTextField(
-                        value = newBizTill,
-                        onValueChange = { newBizTill = it },
-                        label = { Text("Merchant Till / EVC Number (Ikhtiyaari)") },
-                        placeholder = { Text("Tusaale: Till 39401") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-
-                    // Description
-                    OutlinedTextField(
-                        value = newBizDesc,
-                        onValueChange = { newBizDesc = it },
-                        label = { Text("Faahfaahin kooban (Description)") },
-                        placeholder = { Text("Cunto, Raashin, Qalab...") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
-                    )
+                    // In Stock Toggle
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { newProductInStock = !newProductInStock }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "Waa Diyaar (In Stock)",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Switch(
+                            checked = newProductInStock,
+                            onCheckedChange = { newProductInStock = it }
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        if (newBizName.isBlank()) {
-                            Toast.makeText(context, "Fadlan geli magaca meheradda!", Toast.LENGTH_SHORT).show()
+                        if (newProductName.isBlank()) {
+                            Toast.makeText(context, "Fadlan geli magaca alaabta!", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
-                        if (newBizPhone.isBlank()) {
-                            Toast.makeText(context, "Fadlan geli telefoonka ganacsiga!", Toast.LENGTH_SHORT).show()
-                            return@Button
-                        }
-                        val matchedCategory = businessTypeOptions.find { it.first == newBizType }?.second ?: "market"
-                        businessList.add(
-                            RegisteredBusiness(
-                                name = newBizName.trim(),
-                                type = newBizType.substringBefore(" ("),
-                                category = matchedCategory,
-                                district = newBizDistrict.trim(),
-                                tillNumber = newBizTill.trim(),
-                                phone = newBizPhone.trim(),
-                                description = newBizDesc.trim()
+                        val parsedPrice = newProductPrice.toDoubleOrNull() ?: 2.00
+                        pizzaHouseProducts.add(
+                            ShiriProductItem(
+                                name = newProductName.trim(),
+                                price = parsedPrice,
+                                category = newProductCategory.trim().ifBlank { "General" },
+                                imageUrl = autoImagePair.first,
+                                emoji = autoImagePair.second,
+                                inStock = newProductInStock
                             )
                         )
-                        Toast.makeText(context, "Meheradda '${newBizName.trim()}' waa la diiwaangeliyay!", Toast.LENGTH_SHORT).show()
-                        newBizName = ""
-                        newBizTill = ""
-                        newBizPhone = ""
-                        newBizDesc = ""
-                        showAddBusinessDialog = false
+                        Toast.makeText(context, "'${newProductName.trim()}' waa lagu daray liiska!", Toast.LENGTH_SHORT).show()
+                        newProductName = ""
+                        newProductPrice = ""
+                        showAddProductDialog = false
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (selectedTab == "food") Color(0xFFEA580C) else Color(0xFF16A34A)
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                     shape = RoundedCornerShape(10.dp)
                 ) {
-                    Text("Diiwaangeli Ganacsiga", fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("+ Kudar Alaabta Hadda", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showAddBusinessDialog = false }) {
-                    Text("Ka noqo", color = Color.Gray)
+                TextButton(onClick = { showAddProductDialog = false }) {
+                    Text("Ka Noqo", color = Color.Gray)
                 }
             }
         )
@@ -254,305 +488,742 @@ fun ShiriEatsMarketScreen(
     Scaffold(
         topBar = {
             Surface(
-                color = if (selectedTab == "food") Color(0xFFEA580C) else Color(0xFF16A34A),
-                shadowElevation = 2.dp,
+                color = Color(0xFF0F172A),
+                shadowElevation = 4.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Dib u noqo",
-                            tint = Color.White
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (selectedTab == "food") "SHIRI FOOD" else "SHIRI MARKET",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White,
-                            letterSpacing = 0.5.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = if (selectedTab == "food") "Maqaayadaha & Cuntada Muqdisho" else "Suuqa & Ganacsiyada Muqdisho",
-                            fontSize = 11.sp,
-                            color = Color.White.copy(alpha = 0.85f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    // Button to Add Business
-                    Surface(
-                        color = Color.White.copy(alpha = 0.22f),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.clickable { showAddBusinessDialog = true }
+                    // Top App Role Switcher Bar (Customer App vs Business App)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.AddBusiness,
-                                contentDescription = "Ku dar Ganacsi",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    if (viewingStore != null) {
+                                        viewingStore = null
+                                    } else {
+                                        onBackClick()
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Dib",
+                                    tint = Color.White
+                                )
+                            }
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Ku dar",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 1,
-                                softWrap = false
+                                text = "SHIRI",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
                             )
                         }
+
+                        // Switch Pills: Customer App vs Business App (as seen in screenshots 1 & 2)
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color(0xFF1E293B),
+                            border = BorderStroke(1.dp, Color(0xFF334155))
+                        ) {
+                            Row(modifier = Modifier.padding(3.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (currentAppMode == "customer") Color(0xFFDC2626) else Color.Transparent,
+                                    modifier = Modifier.clickable {
+                                        currentAppMode = "customer"
+                                        viewingStore = null
+                                    }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = "📱", fontSize = 11.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Customer App",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (currentAppMode == "merchant") Color(0xFFDC2626) else Color.Transparent,
+                                    modifier = Modifier.clickable { currentAppMode = "merchant" }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = "🏪", fontSize = 11.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Business App",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            // Bottom Nav Bar matching the Screenshots
+            Surface(
+                color = Color.White,
+                shadowElevation = 8.dp,
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (currentAppMode == "customer") {
+                    // Customer Bottom Navigation (Image 1): Home, Explore, Orders (badge 1), Profile
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CustomerNavTabItem(
+                            icon = Icons.Default.Home,
+                            label = "Home",
+                            isSelected = customerBottomTab == "home",
+                            badge = null,
+                            onClick = { customerBottomTab = "home" }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.Search,
+                            label = "Explore",
+                            isSelected = customerBottomTab == "explore",
+                            badge = null,
+                            onClick = { customerBottomTab = "explore" }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.ReceiptLong,
+                            label = "Orders",
+                            isSelected = customerBottomTab == "orders",
+                            badge = "1",
+                            onClick = { customerBottomTab = "orders" }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.Person,
+                            label = "Profile",
+                            isSelected = customerBottomTab == "profile",
+                            badge = null,
+                            onClick = { customerBottomTab = "profile" }
+                        )
+                    }
+                } else {
+                    // Merchant Bottom Navigation (Image 2): Dashboard, Orders, Products, Finance
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceAround,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CustomerNavTabItem(
+                            icon = Icons.Default.Storefront,
+                            label = "Dashboard",
+                            isSelected = merchantBottomTab == "dashboard",
+                            badge = null,
+                            onClick = { merchantBottomTab = "dashboard" }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.ShoppingBag,
+                            label = "Orders",
+                            isSelected = merchantBottomTab == "orders",
+                            badge = "3",
+                            onClick = { merchantBottomTab = "orders" }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.Inventory2,
+                            label = "Products",
+                            isSelected = merchantBottomTab == "products",
+                            badge = null,
+                            onClick = { merchantBottomTab = "products" }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.AttachMoney,
+                            label = "Finance",
+                            isSelected = merchantBottomTab == "finance",
+                            badge = null,
+                            onClick = { merchantBottomTab = "finance" }
+                        )
                     }
                 }
             }
         },
         containerColor = Color(0xFFF8FAFC)
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Tabs: SHIRI FOOD vs SHIRI MARKET
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = Color.White,
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
+
+        AnimatedContent(
+            targetState = currentAppMode,
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            label = "screen_mode"
+        ) { mode ->
+            if (mode == "customer") {
+                // ══════════════════════════════════════════════════════════════
+                // 1. CUSTOMER APP VIEW (IMAGE 1)
+                // ══════════════════════════════════════════════════════════════
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp)
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Tab 1: Food
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selectedTab == "food") Color(0xFFEA580C) else Color.Transparent,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { selectedTab = "food" }
+                    // Location Header Row: "GOOBTA HADDA: SHR-HO-55897 | Hodan, Mogadishu >" + QR + EN
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(
-                            modifier = Modifier.padding(vertical = 9.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    Toast.makeText(context, "Goobta: SHR-HO-55897 (Hodan)", Toast.LENGTH_SHORT).show()
+                                }
                         ) {
-                            Text(text = "🍔", fontSize = 15.sp)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "CUNTO & MAQAAYADO",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Black,
-                                color = if (selectedTab == "food") Color.White else Color(0xFF475569),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    // Tab 2: Market
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = if (selectedTab == "market") Color(0xFF16A34A) else Color.Transparent,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { selectedTab = "market" }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 9.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = "🛍️", fontSize = 15.sp)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "SUUQA & DUKAAMADA",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Black,
-                                color = if (selectedTab == "market") Color.White else Color(0xFF475569),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = {
-                    Text(
-                        if (selectedTab == "food") "Raadi maqaayad, cunto, ama meel..."
-                        else "Raadi dukaan, alaab, ama goob...",
-                        fontSize = 12.5.sp
-                    )
-                },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(20.dp))
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = if (selectedTab == "food") Color(0xFFEA580C) else Color(0xFF16A34A),
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                )
-            )
-
-            // Category Filter Chips
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                val filters = if (selectedTab == "food") {
-                    listOf("All", "Maqaayad", "Cabitaan", "Fast Food")
-                } else {
-                    listOf("All", "Dukaan", "Hilib & Khudaar", "Farmashi", "Qalab")
-                }
-
-                filters.forEach { filter ->
-                    val isSel = selectedCategoryFilter == filter
-                    val activeColor = if (selectedTab == "food") Color(0xFFEA580C) else Color(0xFF16A34A)
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = if (isSel) activeColor else Color.White,
-                        border = BorderStroke(1.dp, if (isSel) activeColor else Color(0xFFE2E8F0)),
-                        modifier = Modifier.clickable { selectedCategoryFilter = filter }
-                    ) {
-                        Text(
-                            text = filter,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSel) FontWeight.Black else FontWeight.Medium,
-                            color = if (isSel) Color.White else Color(0xFF0F172A),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
-
-            // Section Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (selectedTab == "food") "Meheradaha Cuntada ee Diiwaangashan" else "Meheradaha Suuqa ee Diiwaangashan",
-                    fontSize = 13.5.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF0F172A)
-                )
-
-                Text(
-                    text = "${filteredBusinesses.size} Meheradood",
-                    fontSize = 11.sp,
-                    color = Color(0xFF64748B),
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            // Real Businesses List OR Empty State (Zero Demo Data)
-            if (filteredBusinesses.isEmpty()) {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = (if (selectedTab == "food") Color(0xFFEA580C) else Color(0xFF16A34A)).copy(alpha = 0.1f),
-                            modifier = Modifier.size(60.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.Storefront,
-                                    contentDescription = null,
-                                    tint = if (selectedTab == "food") Color(0xFFEA580C) else Color(0xFF16A34A),
-                                    modifier = Modifier.size(32.dp)
-                                )
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFFFEE2E2),
+                                modifier = Modifier.size(34.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.LocationOn,
+                                        contentDescription = null,
+                                        tint = Color(0xFFDC2626),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "GOOBTA HADDA: ",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF64748B)
+                                    )
+                                    Text(
+                                        text = "SHR-HO-55897",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFDC2626)
+                                    )
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Hodan, Mogadishu",
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Icon(
+                                        Icons.Default.ChevronRight,
+                                        contentDescription = null,
+                                        tint = Color(0xFF64748B),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Text(
-                            text = if (selectedTab == "food") "Weli maqaayado ma diiwaangashana" else "Weli dukaamo ma diiwaangashana",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF0F172A),
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = "Admin ahaan ama Ganacsade ahaan, riix badhanka hoose si aad u diiwaangeliso meherad dhab ah.",
-                            fontSize = 12.sp,
-                            color = Color(0xFF64748B),
-                            textAlign = TextAlign.Center,
-                            lineHeight = 16.sp
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = { showAddBusinessDialog = true },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selectedTab == "food") Color(0xFFEA580C) else Color(0xFF16A34A)
-                            ),
-                            shape = RoundedCornerShape(10.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Diiwaangeli Meherad Cusub",
-                                fontSize = 12.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFF1F5F9),
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clickable {
+                                        Toast.makeText(context, "QR Scanner Diyaar", Toast.LENGTH_SHORT).show()
+                                    }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.QrCodeScanner,
+                                        contentDescription = "QR",
+                                        tint = Color(0xFF0F172A),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFF1F5F9),
+                                modifier = Modifier.clickable {
+                                    Toast.makeText(context, "Af Soomaali / English", Toast.LENGTH_SHORT).show()
+                                }
+                            ) {
+                                Text(
+                                    text = "EN",
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF0F172A),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp)
+                                )
+                            }
                         }
                     }
+
+                    // Search Bar: "Raadi cunto, dukaamo, adeegyo..."
+                    OutlinedTextField(
+                        value = customerSearchQuery,
+                        onValueChange = { customerSearchQuery = it },
+                        placeholder = {
+                            Text(
+                                "Raadi cunto, dukaamo, adeegyo...",
+                                fontSize = 12.5.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = Color(0xFF94A3B8),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFFDC2626),
+                            unfocusedBorderColor = Color(0xFFE2E8F0)
+                        )
+                    )
+
+                    // Active Order Banner (Image 1): "DALAB HADDA SOCDA #SHR-28... Raac Dalabka >"
+                    if (hasActiveOrder) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color(0xFFDC2626),
+                            shadowElevation = 3.dp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    Toast.makeText(context, "Furaya live tracking-ka dalabka...", Toast.LENGTH_SHORT).show()
+                                }
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            listOf(Color(0xFFDC2626), Color(0xFFB91C1C), Color(0xFF991B1B))
+                                        )
+                                    )
+                                    .padding(14.dp)
+                            ) {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = "DALAB HADDA SOCDA",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color.White
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Surface(
+                                                color = Color.White.copy(alpha = 0.2f),
+                                                shape = RoundedCornerShape(6.dp)
+                                            ) {
+                                                Text(
+                                                    text = "#SHR-28491",
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Surface(
+                                            color = Color.White,
+                                            shape = RoundedCornerShape(14.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Raac Dalabka",
+                                                    fontSize = 10.5.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color(0xFFDC2626)
+                                                )
+                                                Icon(
+                                                    Icons.Default.ChevronRight,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFDC2626),
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                Icons.Default.TwoWheeler,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Darawal ayaa loo qoondeeyay",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color.White
+                                            )
+                                        }
+
+                                        Surface(
+                                            color = Color.White.copy(alpha = 0.2f),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Text(
+                                                text = "~15 min",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color.White,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Hero Banner (Big Red Card with Scooter graphic - Image 1)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color(0xFFDC2626),
+                        shadowElevation = 3.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color(0xFFDC2626), Color(0xFFB91C1C), Color(0xFF991B1B))
+                                    )
+                                )
+                                .padding(18.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "KU DHOWAA, KU GAARA",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        letterSpacing = 0.5.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Dalbo Cunto Kuna\nRaaxee",
+                                        fontSize = 19.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White,
+                                        lineHeight = 22.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Gaarsiin degdeg ah 20-30 daqiiqo gudahood",
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.9f)
+                                    )
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Button(
+                                        onClick = {
+                                            selectedCategoryFilter = "cunto"
+                                            Toast.makeText(context, "Dooro maqaayad hoos ka muuqata!", Toast.LENGTH_SHORT).show()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                        shape = RoundedCornerShape(20.dp),
+                                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                                        modifier = Modifier.height(34.dp)
+                                    ) {
+                                        Text(
+                                            text = "Dalbo Hadda",
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFFDC2626)
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color.White.copy(alpha = 0.15f),
+                                    modifier = Modifier.size(70.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(text = "🛵", fontSize = 40.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // QAYBAHA ADEEGYADA (Categories) with "Arag Dhammaan" (Image 1)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "QAYBAHA ADEEGYADA",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            text = "Arag Dhammaan",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFDC2626),
+                            modifier = Modifier.clickable { selectedCategoryFilter = "all" }
+                        )
+                    }
+
+                    // 4 Categories Row: Dhammaan, Cunto, Supermarket, Daawo
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CategorySquareCard(
+                            title = "Dhammaan",
+                            emoji = "✨",
+                            isSelected = selectedCategoryFilter == "all",
+                            onClick = { selectedCategoryFilter = "all" },
+                            modifier = Modifier.weight(1f)
+                        )
+                        CategorySquareCard(
+                            title = "Cunto",
+                            emoji = "🍔",
+                            isSelected = selectedCategoryFilter == "cunto",
+                            onClick = { selectedCategoryFilter = "cunto" },
+                            modifier = Modifier.weight(1f)
+                        )
+                        CategorySquareCard(
+                            title = "Supermarket",
+                            emoji = "🛒",
+                            isSelected = selectedCategoryFilter == "supermarket",
+                            onClick = { selectedCategoryFilter = "supermarket" },
+                            modifier = Modifier.weight(1f)
+                        )
+                        CategorySquareCard(
+                            title = "Daawo",
+                            emoji = "💊",
+                            isSelected = selectedCategoryFilter == "daawo",
+                            onClick = { selectedCategoryFilter = "daawo" },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // GANACSIYO CAAN AH (4) - Mogadishu Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val filteredCount = famousStores.filter {
+                            selectedCategoryFilter == "all" || it.category == selectedCategoryFilter
+                        }.size
+                        Text(
+                            text = "GANACSIYO CAAN AH ($filteredCount)",
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            text = "Mogadishu",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+
+                    // Business Store Cards (Image 1)
+                    val storesToDisplay = famousStores.filter {
+                        (selectedCategoryFilter == "all" || it.category == selectedCategoryFilter) &&
+                        (customerSearchQuery.isBlank() || it.name.contains(customerSearchQuery, ignoreCase = true) ||
+                         it.district.contains(customerSearchQuery, ignoreCase = true))
+                    }
+
+                    storesToDisplay.forEach { store ->
+                        CustomerStoreCard(
+                            store = store,
+                            onClick = {
+                                viewingStore = store
+                            }
+                        )
+                    }
+
+                    // Viewing Store Products Modal / Section if a store is tapped!
+                    if (viewingStore != null) {
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.5.dp, Color(0xFFDC2626)),
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = "Liiska Alaabta: ${viewingStore?.name}",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFF0F172A)
+                                        )
+                                        Text(
+                                            text = "Dooro alaabta aad rabto inaad dalbato",
+                                            fontSize = 11.sp,
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+                                    IconButton(onClick = { viewingStore = null }) {
+                                        Icon(Icons.Default.Close, contentDescription = "Xir", tint = Color.Gray)
+                                    }
+                                }
+
+                                Divider(color = Color(0xFFE2E8F0))
+
+                                pizzaHouseProducts.forEach { product ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.weight(1f),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Surface(
+                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier.size(46.dp),
+                                                color = Color(0xFFF1F5F9)
+                                            ) {
+                                                AsyncImage(
+                                                    model = product.imageUrl,
+                                                    contentDescription = product.name,
+                                                    contentScale = ContentScale.Crop,
+                                                    modifier = Modifier.fillMaxSize()
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Column {
+                                                Text(
+                                                    text = product.name,
+                                                    fontSize = 12.5.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF0F172A)
+                                                )
+                                                Text(
+                                                    text = "$${String.format("%.2f", product.price)} • ${product.category}",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Black,
+                                                    color = Color(0xFFDC2626)
+                                                )
+                                            }
+                                        }
+
+                                        Button(
+                                            onClick = {
+                                                Toast.makeText(context, "${product.name} waa lagu daray gaarigaaga!", Toast.LENGTH_SHORT).show()
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                            modifier = Modifier.height(30.dp)
+                                        ) {
+                                            Text("+ Dalbo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
             } else {
-                // Display Real Registered Businesses
-                filteredBusinesses.forEach { biz ->
+                // ══════════════════════════════════════════════════════════════
+                // 2. MERCHANT / BUSINESS APP VIEW (IMAGE 2)
+                // ══════════════════════════════════════════════════════════════
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    // Merchant Profile Card (Image 2)
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(16.dp),
                         color = Color.White,
                         border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         shadowElevation = 1.dp,
@@ -562,123 +1233,408 @@ fun ShiriEatsMarketScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = (if (biz.category == "food") Color(0xFFEA580C) else Color(0xFF16A34A)).copy(alpha = 0.12f),
-                                modifier = Modifier.size(46.dp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        imageVector = if (biz.category == "food") Icons.Default.Restaurant else Icons.Default.ShoppingBag,
-                                        contentDescription = null,
-                                        tint = if (biz.category == "food") Color(0xFFEA580C) else Color(0xFF16A34A),
-                                        modifier = Modifier.size(24.dp)
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color(0xFFFEF2F2),
+                                    modifier = Modifier.size(46.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(text = "🍕", fontSize = 24.sp)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = "Pizza House Mogadishu",
+                                        fontSize = 14.5.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Text(
+                                        text = "Shiri Code: SHR-BO-1024 • Hodan",
+                                        fontSize = 10.5.sp,
+                                        color = Color(0xFF64748B)
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.width(10.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Sound Alert Button (Image 2)
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = if (isSoundEnabled) Color(0xFFFEF2F2) else Color(0xFFF1F5F9),
+                                    border = BorderStroke(1.dp, if (isSoundEnabled) Color(0xFFFCA5A5) else Color(0xFFE2E8F0)),
+                                    modifier = Modifier.clickable {
+                                        isSoundEnabled = !isSoundEnabled
+                                        if (isSoundEnabled) {
+                                            ArrivalSoundManager.playBajajHornSequence(context)
+                                            Toast.makeText(context, "Dhawaaqa dalabyada: ON", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Dhawaaqa dalabyada: OFF", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 ) {
-                                    Text(
-                                        text = biz.name,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFF0F172A),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f, fill = false)
-                                    )
-                                    Surface(
-                                        color = Color(0xFFEFF6FF),
-                                        shape = RoundedCornerShape(4.dp)
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
+                                        Icon(
+                                            Icons.Default.VolumeUp,
+                                            contentDescription = "Sound",
+                                            tint = if (isSoundEnabled) Color(0xFFDC2626) else Color.Gray,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(3.dp))
                                         Text(
-                                            text = biz.type,
-                                            fontSize = 8.5.sp,
+                                            text = "Sound",
+                                            fontSize = 10.5.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF0284C7),
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
-                                            maxLines = 1,
-                                            softWrap = false
+                                            color = if (isSoundEnabled) Color(0xFFDC2626) else Color.Gray
                                         )
                                     }
                                 }
-
-                                Text(
-                                    text = "📍 ${biz.district}",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF64748B),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-
-                                if (biz.tillNumber.isNotBlank()) {
-                                    Text(
-                                        text = "💳 Till: ${biz.tillNumber}",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF16A34A)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(6.dp))
-
-                            // Call Button
-                            IconButton(
-                                onClick = {
-                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${biz.phone}"))
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFF0FDF4))
-                            ) {
-                                Icon(
-                                    Icons.Default.Phone,
-                                    contentDescription = "Wac",
-                                    tint = Color(0xFF16A34A),
-                                    modifier = Modifier.size(18.dp)
-                                )
                             }
                         }
                     }
+
+                    // Section: "Liiska Alaabta & Qiimaha" + "+ Kudar Alaab Cusub" (Image 2)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Liiska Alaabta & Qiimaha",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = "Isbeddel kasta wuxuu isla markiiba ka muuqanayaa Customer App",
+                                fontSize = 10.5.sp,
+                                color = Color(0xFF64748B),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        // Big Red "+ Kudar Alaab Cusub" button (Image 2)
+                        Button(
+                            onClick = { showAddProductDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                            modifier = Modifier.height(36.dp)
+                        ) {
+                            Text(
+                                text = "+ Kudar Alaab Cusub",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    // Product List Items (Image 2)
+                    pizzaHouseProducts.forEach { product ->
+                        MerchantProductCard(
+                            product = product,
+                            onToggleStock = {
+                                val idx = pizzaHouseProducts.indexOf(product)
+                                if (idx != -1) {
+                                    pizzaHouseProducts[idx] = product.copy(inStock = !product.inStock)
+                                    Toast.makeText(
+                                        context,
+                                        "${product.name}: ${if (!product.inStock) "Waa diyaar (Stock)" else "Wuu go'ay"}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
             }
+        }
+    }
+}
 
-            // Informational Notice at the bottom
+// ─── Helper UI Components ────────────────────────────────────────────────────
+
+@Composable
+private fun CategorySquareCard(
+    title: String,
+    emoji: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = if (isSelected) Color(0xFFDC2626) else Color.White,
+        border = BorderStroke(1.dp, if (isSelected) Color(0xFFDC2626) else Color(0xFFE2E8F0)),
+        shadowElevation = if (isSelected) 3.dp else 1.dp,
+        modifier = modifier
+            .height(82.dp)
+            .clickable { onClick() }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(text = emoji, fontSize = 22.sp)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = title,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.White else Color(0xFF0F172A),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomerStoreCard(
+    store: ShiriMerchantStore,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 1.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Store Photo
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFF1F5F9),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.size(66.dp),
+                color = Color(0xFFF1F5F9)
             ) {
+                AsyncImage(
+                    model = store.imageUrl,
+                    contentDescription = store.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        Icons.Default.VerifiedUser,
-                        contentDescription = null,
-                        tint = Color(0xFF0284C7),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Meherad kasta waxay leedahay Till Number toos ah oo lagu bixiyo EVC Plus / Hormuud.",
+                        text = store.name,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF0F172A),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "★", fontSize = 12.sp, color = Color(0xFFF59E0B))
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "${store.rating}",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0F172A)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Text(
+                    text = "${store.category.replaceFirstChar { it.uppercase() }} & Restaurant - ${store.district}",
+                    fontSize = 11.sp,
+                    color = Color(0xFF64748B),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.AccessTime,
+                        contentDescription = null,
+                        tint = Color(0xFFDC2626),
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "${store.deliveryTimeMin} min",
                         fontSize = 11.sp,
-                        color = Color(0xFF475569),
-                        lineHeight = 15.sp
+                        color = Color(0xFF475569)
+                    )
+                    Text(text = "  •  ", fontSize = 11.sp, color = Color(0xFF94A3B8))
+                    Text(
+                        text = "Gaarsiin $${String.format("%.2f", store.deliveryFee)}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF475569)
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MerchantProductCard(
+    product: ShiriProductItem,
+    onToggleStock: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        shadowElevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Product Image (as seen in Image 2)
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.size(62.dp),
+                color = Color(0xFFF1F5F9)
+            ) {
+                AsyncImage(
+                    model = product.imageUrl,
+                    contentDescription = product.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = product.name,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFF0F172A),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "$${String.format("%.2f", product.price)}",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFFDC2626)
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = product.category,
+                    fontSize = 10.5.sp,
+                    color = Color(0xFF64748B)
+                )
+            }
+
+            // "Waa diyaar (Stock)" pill button (as seen in Image 2)
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = if (product.inStock) Color(0xFFECFDF5) else Color(0xFFFEF2F2),
+                border = BorderStroke(1.dp, if (product.inStock) Color(0xFFA7F3D0) else Color(0xFFFECACA)),
+                modifier = Modifier.clickable { onToggleStock() }
+            ) {
+                Text(
+                    text = if (product.inStock) "Waa diyaar (Stock)" else "Wuu go'ay (Out)",
+                    fontSize = 10.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (product.inStock) Color(0xFF059669) else Color(0xFFDC2626),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomerNavTabItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    isSelected: Boolean,
+    badge: String?,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box {
+            Icon(
+                icon,
+                contentDescription = label,
+                tint = if (isSelected) Color(0xFFDC2626) else Color(0xFF94A3B8),
+                modifier = Modifier.size(22.dp)
+            )
+            if (badge != null) {
+                Surface(
+                    color = Color(0xFFDC2626),
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .size(14.dp)
+                        .align(Alignment.TopEnd)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = badge,
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
+            color = if (isSelected) Color(0xFFDC2626) else Color(0xFF94A3B8)
+        )
     }
 }

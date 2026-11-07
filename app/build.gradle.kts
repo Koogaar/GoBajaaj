@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.gobajaaj.app"
     minSdk = 24
     targetSdk = 36
-    versionCode = 42
-    versionName = "3.9.4"
+    versionCode = 43
+    versionName = "3.9.5"
 
     val supabaseUrl = System.getenv("SUPABASE_URL") ?: "https://lcigjbtprkloopvzpaxy.supabase.co"
     val supabaseKey = System.getenv("SUPABASE_ANON_KEY") ?: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjaWdqYnRwcmtsb29wdnpwYXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTA5MDUsImV4cCI6MjEwNDg2NjkwNX0.5cx8A-3Hhh4Z5AuYDt0-AWdMYmAe_x3gz6DVqWY8IuM"
@@ -163,3 +163,4 @@ dependencies {
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
+
