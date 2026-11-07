@@ -134,31 +134,40 @@ fun SomaliTrafficNavHost(
         composable(NavRoutes.SIGN_UP) {
             RoleSelectionScreen(
                 onBackClick = { navController.popBackStack() },
-                onRoleSelected = { isDriver ->
-                    navController.navigate(NavRoutes.registrationForm(isDriver))
+                onRoleSelected = { role ->
+                    navController.navigate(NavRoutes.registrationForm(role))
                 }
             )
         }
 
         // Screen 4: Sign Up (Registration Form)
         composable(NavRoutes.REGISTRATION_FORM) { backStackEntry ->
-            val isDriverStr = backStackEntry.arguments?.getString("isDriver")
-            val isDriver = isDriverStr?.toBooleanStrictOrNull() ?: true
+            val roleArg = backStackEntry.arguments?.getString("role") ?: "driver"
+            val isDriver = roleArg == "driver" || roleArg == "true"
             
             SignUpScreen(
                 viewModel = viewModel,
+                initialRole = roleArg,
                 initialIsDriver = isDriver,
                 onBackClick = { navController.popBackStack() },
                 onSignUpSuccess = {
                     val user = viewModel.currentUser.value
-                    val isDriverRole = if (user != null) user.role == UserRole.DRIVER else isDriver
-                    if (isDriverRole) {
-                        navController.navigate(NavRoutes.DRIVER_PASS) {
-                            popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                    val currentRole = user?.role ?: if (isDriver) UserRole.DRIVER else UserRole.PASSENGER
+                    when (currentRole) {
+                        UserRole.DRIVER -> {
+                            navController.navigate(NavRoutes.DRIVER_PASS) {
+                                popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                            }
                         }
-                    } else {
-                        navController.navigate(NavRoutes.RIDE) {
-                            popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                        UserRole.COURIER -> {
+                            navController.navigate(NavRoutes.HOME) {
+                                popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                            }
+                        }
+                        else -> {
+                            navController.navigate(NavRoutes.RIDE) {
+                                popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                            }
                         }
                     }
                 }

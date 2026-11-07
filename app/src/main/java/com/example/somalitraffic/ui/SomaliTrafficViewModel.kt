@@ -445,11 +445,29 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         plateNumber: String? = null,
         vehicleModel: String? = null,
         referralCode: String? = null,
+        roleStr: String = if (isDriver) "driver" else "passenger",
+        licenseNumber: String? = null,
+        guarantorName: String? = null,
+        guarantorPhone: String? = null,
+        cidLetterNumber: String? = null,
         onSuccess: (UserProfile) -> Unit
     ) {
         viewModelScope.launch {
             _isLoading.value = true
-            val res = repository.registerUser(name, phone, pass, isDriver, plateNumber, vehicleModel, referralCode)
+            val res = repository.registerUser(
+                fullName = name,
+                phoneNumber = phone,
+                password = pass,
+                isDriver = isDriver,
+                plateNumber = plateNumber,
+                vehicleModel = vehicleModel,
+                referralCode = referralCode,
+                roleStr = roleStr,
+                licenseNumber = licenseNumber,
+                guarantorName = guarantorName,
+                guarantorPhone = guarantorPhone,
+                cidLetterNumber = cidLetterNumber
+            )
             _isLoading.value = false
             res.onSuccess { user ->
                 onSuccess(user)

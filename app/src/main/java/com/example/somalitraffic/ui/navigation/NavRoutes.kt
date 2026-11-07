@@ -6,8 +6,9 @@ object NavRoutes {
     const val LOGIN = "login"
     const val FORGOT_PASSWORD = "forgot_password"
     const val SIGN_UP = "sign_up" // This will be the Role Selection
-    const val REGISTRATION_FORM = "registration_form/{isDriver}"
-    fun registrationForm(isDriver: Boolean) = "registration_form/$isDriver"
+    const val REGISTRATION_FORM = "registration_form/{role}"
+    fun registrationForm(role: String) = "registration_form/$role"
+    fun registrationForm(isDriver: Boolean) = "registration_form/${if (isDriver) "driver" else "passenger"}"
     const val DRIVER_PASS = "driver_pass"
     const val HOME = "home"
     const val LIVE_TRAFFIC = "live_traffic"

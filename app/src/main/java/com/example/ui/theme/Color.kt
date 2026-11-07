@@ -2,7 +2,27 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// GoBajaaj Brand Palette (From Official Blueprint)
+// SHIRI Super App (Kinetic Horizon Brand Palette)
+val ShiriCrimson = Color(0xFFDC2626)
+val ShiriCrimsonDark = Color(0xFFB70011)
+val ShiriDarkSlate = Color(0xFF0F172A)
+val ShiriEmerald = Color(0xFF10B981)
+val ShiriEmeraldLight = Color(0xFFECFDF5)
+val ShiriCoral = Color(0xFFEA580C)
+val ShiriTeal = Color(0xFF0D9488)
+val ShiriIndigo = Color(0xFF6366F1)
+val ShiriAmber = Color(0xFFF59E0B)
+val ShiriSurface = Color(0xFFF8F9FF)
+val ShiriSurfaceLight = Color(0xFFF8F9FF)
+val ShiriCardBg = Color(0xFFFFFFFF)
+
+// Mobile Money Identifiers
+val EvcPlusGreen = Color(0xFF059669)
+val EdahabGold = Color(0xFFD97706)
+val ZaadEmerald = Color(0xFF047857)
+val SahalBlue = Color(0xFF0284C7)
+
+// GoBajaaj Brand Palette (Preserved for compatibility)
 val GoBajaajNavy = Color(0xFF0A1128)
 val GoBajaajBlue = Color(0xFF0066FF)
 val GoBajaajBlueDark = Color(0xFF0052CC)

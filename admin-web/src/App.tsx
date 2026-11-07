@@ -567,24 +567,56 @@ export default function App() {
   const role = currentAdmin.role_key;
   const roleDisplay = getRoleDisplay(role);
 
-  const registeredDriversCount = usersList.filter(u => u.role === 'driver').length;
+  const registeredDriversCount = usersList.filter(u => u.role === 'driver' || u.role === 'courier').length;
 
-  // Dynamic Allowed Navigation Tabs based on RBAC Permissions
-  const allowedTabs = [
-    { id: 'overview', label: 'Tusmada Guud', icon: Shield, perm: true },
-    { id: 'drivers', label: 'Darawallada Diiwaangashan', icon: Bike, count: registeredDriversCount, perm: hasPermission(role, 'users.view') },
-    { id: 'daily_paid', label: 'Ku Shubtay Maanta ($0.25)', icon: Wallet, count: overviewStats.todayApprovedCount, perm: hasPermission(role, 'payments.view') },
-    { id: 'ride_support', label: 'GoBajaaj & Cabashooyinka', icon: Bike, perm: hasPermission(role, 'ride.view') || hasPermission(role, 'support.view') },
-    { id: 'device_support', label: 'Taageerada & Taleefannada Lumay', icon: Headphones, perm: hasPermission(role, 'support.view') || hasPermission(role, 'protection.view') },
-    { id: 'users', label: 'Rakaabka (Macaamiisha)', icon: Users, perm: hasPermission(role, 'users.view') },
-    { id: 'payments', label: 'Lacagaha & Driver Pass', icon: CreditCard, perm: hasPermission(role, 'payments.view') },
-    { id: 'traffic', label: 'Saxmadda & Isgoysyada', icon: TrafficCone, perm: hasPermission(role, 'traffic.view') },
-    { id: 'reporters', label: 'Shaqaalaha & Wariyeyaasha', icon: UserCheck, perm: hasPermission(role, 'reporters.view') },
-    { id: 'marketing', label: 'Suuq-geynta (Marketing)', icon: Megaphone, perm: hasPermission(role, 'marketing.view') || hasPermission(role, 'marketing.manage') },
-    { id: 'analytics', label: 'Aqoonta Xogta (Analytics)', icon: BarChart3, perm: hasPermission(role, 'analytics.view') },
-    { id: 'admins', label: 'Maamulayaasha', icon: Lock, perm: hasPermission(role, 'admins.view') },
-    { id: 'audit', label: 'Audit Logs', icon: History, perm: hasPermission(role, 'audit_logs.view') },
-  ].filter(tab => tab.perm);
+  // 6 Unified Hubs of SHIRI Super App Platform
+  const hubGroups = [
+    {
+      hubTitle: '1. Command & Analytics',
+      tabs: [
+        { id: 'overview', label: 'Tusmada Guud', icon: Shield, perm: true },
+        { id: 'analytics', label: 'Aqoonta Xogta (Analytics)', icon: BarChart3, perm: hasPermission(role, 'analytics.view') },
+      ]
+    },
+    {
+      hubTitle: '2. Gaadiidka & Gaarsiinta (Fleet)',
+      tabs: [
+        { id: 'drivers', label: 'Darawallada & Mootooyinka', icon: Bike, count: registeredDriversCount, perm: hasPermission(role, 'users.view') },
+        { id: 'ride_support', label: 'Safarrada & Cabashooyinka', icon: Bike, perm: hasPermission(role, 'ride.view') || hasPermission(role, 'support.view') },
+      ]
+    },
+    {
+      hubTitle: '3. Traffic Ops & Wariyeyaasha',
+      tabs: [
+        { id: 'traffic', label: 'Saxmadda & Isgoysyada Live', icon: TrafficCone, perm: hasPermission(role, 'traffic.view') },
+        { id: 'reporters', label: 'Wariyeyaasha Isgoysyada', icon: UserCheck, perm: hasPermission(role, 'reporters.view') },
+      ]
+    },
+    {
+      hubTitle: '4. Maaliyadda & Driver Pass',
+      tabs: [
+        { id: 'daily_paid', label: 'Ku Shubtay Maanta ($0.25)', icon: Wallet, count: overviewStats.todayApprovedCount, perm: hasPermission(role, 'payments.view') },
+        { id: 'payments', label: 'Lacagaha & Driver Pass', icon: CreditCard, perm: hasPermission(role, 'payments.view') },
+      ]
+    },
+    {
+      hubTitle: '5. Taageerada & Suuq-geynta',
+      tabs: [
+        { id: 'device_support', label: 'Taleefannada & Taageerada', icon: Headphones, perm: hasPermission(role, 'support.view') || hasPermission(role, 'protection.view') },
+        { id: 'marketing', label: 'Suuq-geynta (Marketing)', icon: Megaphone, perm: hasPermission(role, 'marketing.view') || hasPermission(role, 'marketing.manage') },
+      ]
+    },
+    {
+      hubTitle: '6. Nidaamka & Amniga',
+      tabs: [
+        { id: 'users', label: 'Rakaabka & Macaamiisha', icon: Users, perm: hasPermission(role, 'users.view') },
+        { id: 'admins', label: 'Maamulayaasha Nidaamka', icon: Lock, perm: hasPermission(role, 'admins.view') },
+        { id: 'audit', label: 'Audit Logs & Amniga', icon: History, perm: hasPermission(role, 'audit_logs.view') },
+      ]
+    }
+  ];
+
+  const allowedTabs = hubGroups.flatMap(group => group.tabs).filter(tab => tab.perm);
 
   const recentUsersCount = usersList.filter(u => isWithinMinutes(u.created_at, 10)).length;
 
@@ -670,8 +702,8 @@ export default function App() {
               />
               {!isSidebarCollapsed && (
                 <div className="overflow-hidden">
-                  <h1 className="font-black text-sm tracking-wider text-white truncate">GOBAJAAJ</h1>
-                  <p className="text-[9px] text-[#E50914] font-bold uppercase tracking-widest truncate">Maamulka Guud</p>
+                  <h1 className="font-black text-sm tracking-wider text-white truncate">SHIRI SUPER APP</h1>
+                  <p className="text-[9px] text-[#DC2626] font-bold uppercase tracking-widest truncate">Command Center HQ</p>
                 </div>
               )}
             </div>
@@ -731,64 +763,78 @@ export default function App() {
             )}
           </div>
 
-          {/* Nav List */}
-          <nav className="space-y-1.5 pt-1">
-            {allowedTabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              const hasPending = tab.id === 'payments' && overviewStats.pendingPaymentsCount > 0;
+          {/* Nav List Grouped by 6 Hubs */}
+          <nav className="space-y-3 pt-1">
+            {hubGroups.map((group) => {
+              const activeGroupTabs = group.tabs.filter(t => t.perm);
+              if (activeGroupTabs.length === 0) return null;
 
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  title={tab.label}
-                  className={`
-                    w-full flex items-center rounded-xl text-xs font-bold transition cursor-pointer
-                    ${isSidebarCollapsed
-                      ? 'justify-center p-3 relative'
-                      : 'justify-between px-3.5 py-3'
-                    }
-                    ${isActive
-                      ? 'bg-[#E50914] text-white shadow-md'
-                      : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
-                    }
-                  `}
-                >
-                  <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
-                    <Icon className="w-4 h-4 shrink-0" />
-                    {!isSidebarCollapsed && <span>{tab.label}</span>}
-                  </div>
-
-                  {/* Badges / Indicators */}
-                  {!isSidebarCollapsed ? (
-                    <div className="flex items-center space-x-1.5">
-                      {hasPending && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#E50914] text-white animate-pulse border border-white/20">
-                          {overviewStats.pendingPaymentsCount} cusub
-                        </span>
-                      )}
-                      {tab.id === 'daily_paid' && overviewStats.todayApprovedCount > 0 && !hasPending && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white border border-emerald-400">
-                          {overviewStats.todayApprovedCount} maanta
-                        </span>
-                      )}
-                      {tab.id === 'drivers' && registeredDriversCount > 0 && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-neutral-800 text-neutral-300 border border-neutral-700">
-                          {registeredDriversCount}
-                        </span>
-                      )}
-                      {isActive && <ChevronRight className="w-4 h-4" />}
-                    </div>
-                  ) : (
-                    (hasPending || (tab.id === 'daily_paid' && overviewStats.todayApprovedCount > 0)) && (
-                      <span className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full border-2 border-black ${hasPending ? 'bg-[#E50914] animate-pulse' : 'bg-emerald-500'}`} />
-                    )
+                <div key={group.hubTitle} className="space-y-1">
+                  {!isSidebarCollapsed && (
+                    <p className="text-[10px] font-black uppercase text-neutral-500 px-3 pt-2 pb-0.5 tracking-wider">
+                      {group.hubTitle}
+                    </p>
                   )}
-                </button>
+                  {activeGroupTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    const hasPending = tab.id === 'payments' && overviewStats.pendingPaymentsCount > 0;
+
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          setIsMobileMenuOpen(false);
+                        }}
+                        title={tab.label}
+                        className={`
+                          w-full flex items-center rounded-xl text-xs font-bold transition cursor-pointer
+                          ${isSidebarCollapsed
+                            ? 'justify-center p-3 relative'
+                            : 'justify-between px-3.5 py-2.5'
+                          }
+                          ${isActive
+                            ? 'bg-[#DC2626] text-white shadow-md'
+                            : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                          }
+                        `}
+                      >
+                        <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
+                          <Icon className="w-4 h-4 shrink-0" />
+                          {!isSidebarCollapsed && <span>{tab.label}</span>}
+                        </div>
+
+                        {/* Badges / Indicators */}
+                        {!isSidebarCollapsed ? (
+                          <div className="flex items-center space-x-1.5">
+                            {hasPending && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#DC2626] text-white animate-pulse border border-white/20">
+                                {overviewStats.pendingPaymentsCount} cusub
+                              </span>
+                            )}
+                            {tab.id === 'daily_paid' && overviewStats.todayApprovedCount > 0 && !hasPending && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-600 text-white border border-emerald-400">
+                                {overviewStats.todayApprovedCount} maanta
+                              </span>
+                            )}
+                            {tab.id === 'drivers' && registeredDriversCount > 0 && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-neutral-800 text-neutral-300 border border-neutral-700">
+                                {registeredDriversCount}
+                              </span>
+                            )}
+                            {isActive && <ChevronRight className="w-4 h-4" />}
+                          </div>
+                        ) : (
+                          (hasPending || (tab.id === 'daily_paid' && overviewStats.todayApprovedCount > 0)) && (
+                            <span className={`absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full border-2 border-black ${hasPending ? 'bg-[#DC2626] animate-pulse' : 'bg-emerald-500'}`} />
+                          )
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               );
             })}
           </nav>
@@ -839,7 +885,7 @@ export default function App() {
                 {allowedTabs.find(t => t.id === activeTab)?.label || 'Dashboard'}
               </h1>
               <p className="text-xs text-neutral-500 mt-0.5">
-                GoBajaaj • Nidaamka Saxmadda & Gaadiidka Muqdisho
+                SHIRI Super App • Nidaamka Mideysan ee Gaadiidka, Gaarsiinta & Saxmadda Muqdisho
               </p>
             </div>
           </div>

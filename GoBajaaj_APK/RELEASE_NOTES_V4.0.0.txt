@@ -1,0 +1,64 @@
+========================================================================
+SHIRI SUPER APP - VERSION 4.0.0 (MAJOR RELEASE)
+========================================================================
+Nooca: Version 4.0.0 (versionCode = 43)
+Taariikhda: 2026-11-07
+Aqoonsiga Play Store: com.aistudio.gobajaaj.app
+
+FAYLALKA DIYAARKA AH:
+1. SHIRI_v4.0.0_release.apk  -> Direct Phone Install (70.5 MB)
+2. SHIRI_v4.0.0_release.aab  -> Google Play Console Upload (40.1 MB)
+3. admin-web/dist            -> Web Admin Production Build (Vite + React)
+
+========================================================================
+WIXII CUSUB EE V4.0.0 (SHIRI SUPER APP RESTOCK & EVOLUTION):
+========================================================================
+
+1. MAGACA & ASTAANTA CUSUB (BRANDING):
+   - Magaca rasmiga ah: "SHIRI"
+   - Astaanta cusub (Icon & Launcher): Logo-da casriga ah ee SHIRI (Kinetic Horizon)
+   - Palette-ka midabada: Shiri Crimson (#DC2626), Dark Slate (#0F172A), Emerald (#10B981)
+
+2. DASHBOARD-KA WEECINTA GUUD (4-HUB SUPER APP 2x2 GRID):
+   - SHIRI RIDE: Bajaaj, Taxi & Live Radar
+   - SHIRI FOOD: Maqaayadaha, Cuntada Soomaalida & Cafes
+   - SHIRI DELIVERY: Mooto Gaarsiinta Baakadaha & Ganacsiyada
+   - SHIRI MARKET: Dukamada, Qalabka & Dharka
+   - Khad Yar (Low-Data Mode) Toggle Pill
+   - Mogadishu Grid Live Mesh & Fast Pay (EVC+, eDahab, Sahal)
+   - Universal Landmark Search & Voice Mic
+
+3. SHIRI RIDE & TRAFFIC INTELLIGENCE OO LA MIDEECEY (UNIFIED):
+   - Adeeg gaar ah oo la dhoho "Traffic" MA JIRO Home Screen-ka!
+   - Dhammaan xogta saxmadda waxaa loo raray gudaha SHIRI RIDE:
+     * Tab 1: 🛺 Dalbo Safar (Book Ride) - 13 feature oo buuxa (Matching, Live GPS, Driver Info, Faraha Cad, Cash/EVC)
+     * Tab 2: 🚦 Isgoysyada Live (18 Isgoys oo toos ah: KM4, Zoobe, Dabka, Tarabuunka, Sayidka, iwm + badhanka "Dalbo Safar Meeshan")
+     * Tab 3: 🛣️ Waddooyinka (Wadada Makka Al-Mukarama, Wadada Wadnaha, Wadada Soddonka, Wadada Garoonka, Taleex Alternate)
+     * Tab 4: ⚠️ Digniinaha (Alerts & Somali Voice Horn/Speech alert button)
+
+4. KALA REEBIDDA BAJAAJLE (RIDE) & GAARSIIYE MOOTO (COURIER):
+   - RIDE: Waa Bajaaj 3-lugood ah oo rakaabka qaada (Core GoBajaaj oo la xafiday).
+   - COURIER: Waa Mooto 2-lugood ah oo si gaar ah loogu talagalay gaarsiinta xamuulka, cuntada & baakadaha.
+   - Diiwaangelinta Gaarsiiyaha Mootada waxaa lagu daray xogta khasabka ah:
+     * Nambarka Shatiga Wadista (Driving License)
+     * Magaca Damiinka (Guarantor Full Name)
+     * Telefoonka Damiinka (Guarantor Phone Number)
+     * Nambarka Warqadda CID (Police Criminal Clearance)
+
+5. WEB ADMIN-KA OO LA MIDEECEY (6 UNIFIED HUBS):
+   - 1. Command & Analytics: Tusmada Guud & Aqoonta Xogta
+   - 2. Gaadiidka & Gaarsiinta: Darawallada Bajaajta, Mootooyinka & Safarrada
+   - 3. Traffic Ops & Wariyeyaasha: Saxmadda, Isgoysyada Live & Wariyeyaasha
+   - 4. Maaliyadda & Driver Pass: Ku shubtay Maanta ($0.25) & EVC/eDahab/Sahal
+   - 5. Taageerada & Suuq-geynta: Taleefannada Lumay & Suuq-geynta Wakiillada
+   - 6. Nidaamka & Amniga: Macaamiisha, Maamulayaasha & Audit Logs
+   - Dhismaha Vite ee `admin-web` wuxuu u synced yahay toos `root public/`.
+
+========================================================================
+XAFIIDIDDA NIDAAMKII HORE (ZERO BREAKING CHANGES):
+========================================================================
+- Xogta database-ka Supabase & Room DB lama tirtirin.
+- Nidaamka Driver Pass ($0.25) sidoodii ayuu u shaqeynayaa.
+- Dhammaan nidaamka taleefan ku gelidda (+252 E.164) waa sidoodii.
+- ApplicationId: com.aistudio.gobajaaj.app waa sidii hore si update toos ah ugu noqdo Play Console.
+========================================================================

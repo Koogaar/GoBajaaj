@@ -1,7 +1,9 @@
 package com.example.somalitraffic.data.model
 
 enum class UserRole(val code: String, val titleSomali: String) {
-    DRIVER("driver", "Wade Gaadiid (Driver)"),
+    DRIVER("driver", "Wade Bajaaj (Driver)"),
+    COURIER("courier", "Gaarsiiye Mooto (Courier)"),
+    MERCHANT("merchant", "Ganacsade / Maqaayad"),
     PASSENGER("passenger", "Rakaab (Passenger)"),
     REPORTER("reporter", "Wariye Gaadiid (Traffic Reporter)"),
     SUPPORT_AGENT("support_agent", "Shaqaalaha Taageerada (Support Agent)"),
@@ -16,6 +18,8 @@ enum class UserRole(val code: String, val titleSomali: String) {
             if (role == null) return PASSENGER
             val clean = role.trim().lowercase()
             return when {
+                clean == "courier" || clean == "mooto" -> COURIER
+                clean == "merchant" || clean == "dukaan" || clean == "maqaayad" -> MERCHANT
                 clean == "driver" || clean == "wade" -> DRIVER
                 clean == "reporter" || clean == "wariye" -> REPORTER
                 clean == "support_agent" -> SUPPORT_AGENT
@@ -80,7 +84,12 @@ data class UserProfile(
     val avatarUrl: String? = null,
     val createdAt: String? = null,
     val plateNumber: String? = null,
-    val vehicleModel: String? = null
+    val vehicleModel: String? = null,
+    val licenseNumber: String? = null,
+    val guarantorName: String? = null,
+    val guarantorPhone: String? = null,
+    val cidLetterNumber: String? = null,
+    val verificationStatus: String = "approved"
 )
 
 data class OtpSendResult(

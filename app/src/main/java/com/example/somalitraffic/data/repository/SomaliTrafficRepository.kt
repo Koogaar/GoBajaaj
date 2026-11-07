@@ -829,7 +829,12 @@ class SomaliTrafficRepository(private val context: Context) {
         isDriver: Boolean = true,
         plateNumber: String? = null,
         vehicleModel: String? = null,
-        referralCode: String? = null
+        referralCode: String? = null,
+        roleStr: String = if (isDriver) "driver" else "passenger",
+        licenseNumber: String? = null,
+        guarantorName: String? = null,
+        guarantorPhone: String? = null,
+        cidLetterNumber: String? = null
     ): Result<UserProfile> = withContext(Dispatchers.IO) {
         try {
             val cleanName = fullName.trim()
@@ -853,11 +858,20 @@ class SomaliTrafficRepository(private val context: Context) {
             val apiKey = getSafeApiKey()
             val service = NetworkClient.createService(prefs.getSupabaseUrl())
 
+            val actualRoleStr = when (roleStr.lowercase()) {
+                "courier", "mooto" -> "courier"
+                "merchant" -> "merchant"
+                "passenger" -> "passenger"
+                else -> if (isDriver) "driver" else "passenger"
+            }
+
             val metadata = mutableMapOf<String, String>(
                 "full_name" to cleanName,
                 "phone_number" to e164,
-                "role" to if (isDriver) "driver" else "passenger"
+                "role" to actualRoleStr
             )
+            if (!licenseNumber.isNullOrBlank()) metadata["license_number"] = licenseNumber
+            if (!cidLetterNumber.isNullOrBlank()) metadata["cid_letter_number"] = cidLetterNumber
 
             var accessToken: String? = null
             var refreshToken: String? = null
@@ -930,19 +944,26 @@ class SomaliTrafficRepository(private val context: Context) {
                 "id" to finalUserId,
                 "full_name" to cleanName,
                 "phone_number" to e164,
-                "role" to if (isDriver) "driver" else "passenger",
+                "role" to actualRoleStr,
                 "status" to "active",
-                "subscription_status" to if (isDriver) "inactive" else "active"
+                "subscription_status" to if (actualRoleStr == "driver") "inactive" else "active"
             )
             if (!plateNumber.isNullOrBlank()) profilePayload["plate_number"] = plateNumber
             if (!vehicleModel.isNullOrBlank()) profilePayload["bajaaj_model"] = vehicleModel
+            if (!licenseNumber.isNullOrBlank()) profilePayload["license_number"] = licenseNumber
+            if (!guarantorName.isNullOrBlank()) profilePayload["guarantor_name"] = guarantorName
+            if (!guarantorPhone.isNullOrBlank()) profilePayload["guarantor_phone"] = guarantorPhone
+            if (!cidLetterNumber.isNullOrBlank()) profilePayload["cid_letter_number"] = cidLetterNumber
+            if (actualRoleStr == "courier") {
+                profilePayload["verification_status"] = "pending_verification"
+            }
             if (!referralCode.isNullOrBlank()) {
                 profilePayload["referred_by"] = referralCode.trim().uppercase()
             }
 
             var profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
             if (profileResult.isFailure && profileResult.exceptionOrNull()?.message?.contains("profiles_role_check", ignoreCase = true) == true) {
-                // If the remote DB check constraint doesn't have 'passenger' yet, retry with 'driver'
+                // If the remote DB check constraint doesn't have the new role yet, retry with 'driver'
                 profilePayload["role"] = "driver"
                 profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
             }
@@ -957,10 +978,20 @@ class SomaliTrafficRepository(private val context: Context) {
                 id = finalUserId,
                 fullName = cleanName,
                 phoneNumber = e164,
-                role = if (isDriver) UserRole.DRIVER else UserRole.PASSENGER,
+                role = when (actualRoleStr) {
+                    "courier" -> UserRole.COURIER
+                    "merchant" -> UserRole.MERCHANT
+                    "passenger" -> UserRole.PASSENGER
+                    else -> UserRole.DRIVER
+                },
                 status = "active",
                 plateNumber = plateNumber,
-                vehicleModel = vehicleModel
+                vehicleModel = vehicleModel,
+                licenseNumber = licenseNumber,
+                guarantorName = guarantorName,
+                guarantorPhone = guarantorPhone,
+                cidLetterNumber = cidLetterNumber,
+                verificationStatus = if (actualRoleStr == "courier") "pending_verification" else "approved"
             )
 
             if (isDriver && !plateNumber.isNullOrBlank()) prefs.registerPlate(plateNumber)

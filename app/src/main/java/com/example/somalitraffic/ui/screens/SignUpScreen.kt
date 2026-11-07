@@ -37,10 +37,12 @@ import com.example.somalitraffic.ui.components.SomaliSkylineBottom
 @Composable
 fun SignUpScreen(
     viewModel: SomaliTrafficViewModel,
-    initialIsDriver: Boolean,
+    initialIsDriver: Boolean = true,
+    initialRole: String = if (initialIsDriver) "driver" else "passenger",
     onBackClick: () -> Unit,
     onSignUpSuccess: () -> Unit
 ) {
+    val isCourier = initialRole == "courier"
     var fullName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -48,8 +50,15 @@ fun SignUpScreen(
     var referralCode by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var isDriverMode by remember { mutableStateOf(initialIsDriver) }
-    var vehicleType by remember { mutableStateOf("Bajaaj") }
+    var isDriverMode by remember { mutableStateOf(initialRole == "driver" || (!isCourier && initialIsDriver)) }
+    var vehicleType by remember { mutableStateOf(if (isCourier) "Mooto (Courier)" else "Bajaaj") }
+    
+    // Courier Specific Fields
+    var licenseNumber by remember { mutableStateOf("") }
+    var guarantorName by remember { mutableStateOf("") }
+    var guarantorPhone by remember { mutableStateOf("") }
+    var cidLetterNumber by remember { mutableStateOf("") }
+    
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val isLoading by viewModel.isLoading.collectAsState()
@@ -109,11 +118,11 @@ fun SignUpScreen(
 
                 // App Logo Badge
                 Image(
-                    painter = painterResource(id = com.example.R.drawable.ic_gobajaaj_logo),
-                    contentDescription = "GoBajaaj Logo",
+                    painter = painterResource(id = com.example.R.drawable.shiri_logo),
+                    contentDescription = "SHIRI Logo",
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(16.dp))
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -124,26 +133,23 @@ fun SignUpScreen(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "Go",
+                        text = "SHIRI",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFF44349A),
-                        letterSpacing = 0.5.sp
-                    )
-                    Text(
-                        text = "Bajaaj",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFFE50914),
-                        letterSpacing = 0.5.sp
+                        color = Color(0xFFDC2626),
+                        letterSpacing = 1.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Title & Subtitle
                 Text(
-                    text = if (isDriverMode) "Diiwaangelinta Darawalka" else "Diiwaangelinta Rakaabka",
+                    text = when {
+                        isCourier -> "Diiwaangelinta Gaarsiiye Mooto"
+                        isDriverMode -> "Diiwaangelinta Darawalka"
+                        else -> "Diiwaangelinta Rakaabka"
+                    },
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A),
@@ -151,7 +157,11 @@ fun SignUpScreen(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Geli magacaaga, nambarkaaga iyo furaha sirta",
+                    text = if (isCourier) {
+                        "Geli xogtaada, shatiga wadista, damiinka iyo warqadda CID-da"
+                    } else {
+                        "Geli magacaaga, nambarkaaga iyo furaha sirta"
+                    },
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color(0xFF64748B),
@@ -280,6 +290,65 @@ fun SignUpScreen(
                     singleLine = true
                 )
 
+                if (isCourier) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Shatiga Wadista (Driving License)
+                    OutlinedTextField(
+                        value = licenseNumber,
+                        onValueChange = { licenseNumber = it; errorMessage = null },
+                        placeholder = { Text("Nambarka Shatiga Wadista (License No.)", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                        leadingIcon = { Text("🪪", fontSize = 16.sp, modifier = Modifier.padding(start = 12.dp, end = 4.dp)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Magaca Damiinka (Guarantor Name)
+                    OutlinedTextField(
+                        value = guarantorName,
+                        onValueChange = { guarantorName = it; errorMessage = null },
+                        placeholder = { Text("Magaca Damiinka (Guarantor Full Name)", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                        leadingIcon = { Text("🤝", fontSize = 16.sp, modifier = Modifier.padding(start = 12.dp, end = 4.dp)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Telefoonka Damiinka (Guarantor Phone)
+                    OutlinedTextField(
+                        value = guarantorPhone,
+                        onValueChange = { guarantorPhone = it; errorMessage = null },
+                        placeholder = { Text("Telefoonka Damiinka (61XXXXXXX)", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                        leadingIcon = { Text("📞", fontSize = 16.sp, modifier = Modifier.padding(start = 12.dp, end = 4.dp)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Nambarka Warqadda CID (Police Criminal Clearance)
+                    OutlinedTextField(
+                        value = cidLetterNumber,
+                        onValueChange = { cidLetterNumber = it; errorMessage = null },
+                        placeholder = { Text("Nambarka Warqadda CID (CID Clearance)", fontSize = 13.sp, color = Color(0xFF94A3B8)) },
+                        leadingIcon = { Text("📜", fontSize = 16.sp, modifier = Modifier.padding(start = 12.dp, end = 4.dp)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                        singleLine = true
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // 3. Password
@@ -379,12 +448,18 @@ fun SignUpScreen(
                             errorMessage = "Fadlan buuxi dhammaan xogta."
                             return@Button
                         }
+                        if (isCourier) {
+                            if (licenseNumber.isBlank() || guarantorName.isBlank() || guarantorPhone.isBlank() || cidLetterNumber.isBlank()) {
+                                errorMessage = "Gaarsiiyaha waxaa khasab ku ah: Shatiga, Damiinka & CID-da."
+                                return@Button
+                            }
+                        }
                         if (password != confirmPassword) {
                             errorMessage = "Furaha sirta isma le'eka."
                             return@Button
                         }
-                        if (password.length < 4) {
-                            errorMessage = "Furaha sirta waa inuu ugu yaraan 4 xaraf yahay."
+                        if (password.length < 6) {
+                            errorMessage = "Furaha sirta waa inuu ugu yaraan 6 xaraf yahay."
                             return@Button
                         }
                         viewModel.register(
@@ -392,8 +467,13 @@ fun SignUpScreen(
                             phone = cleanPhone,
                             pass = password,
                             isDriver = isDriverMode,
-                            vehicleModel = vehicleType,
-                            referralCode = if (isDriverMode) referralCode.trim().ifBlank { null } else null
+                            vehicleModel = if (isCourier) "Mooto (Courier)" else vehicleType,
+                            referralCode = if (isDriverMode) referralCode.trim().ifBlank { null } else null,
+                            roleStr = initialRole,
+                            licenseNumber = if (isCourier) licenseNumber.trim() else null,
+                            guarantorName = if (isCourier) guarantorName.trim() else null,
+                            guarantorPhone = if (isCourier) guarantorPhone.trim() else null,
+                            cidLetterNumber = if (isCourier) cidLetterNumber.trim() else null
                         ) { user ->
                             onSignUpSuccess()
                         }
@@ -402,7 +482,7 @@ fun SignUpScreen(
                         .fillMaxWidth()
                         .height(52.dp)
                         .testTag("btn_register_submit"),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                     shape = RoundedCornerShape(26.dp),
                     enabled = !isLoading
                 ) {

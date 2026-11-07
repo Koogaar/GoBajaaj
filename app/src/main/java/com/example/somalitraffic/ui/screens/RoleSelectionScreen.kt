@@ -26,9 +26,9 @@ import com.example.somalitraffic.ui.components.SomaliSkylineBottom
 @Composable
 fun RoleSelectionScreen(
     onBackClick: () -> Unit,
-    onRoleSelected: (Boolean) -> Unit // true for driver, false for passenger
+    onRoleSelected: (String) -> Unit
 ) {
-    var selectedRole by remember { mutableStateOf<Boolean?>(false) }
+    var selectedRole by remember { mutableStateOf<String?>("passenger") }
     var showErrorMessage by remember { mutableStateOf(false) }
 
     Box(
@@ -70,73 +70,87 @@ fun RoleSelectionScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // App Logo Badge
                 Image(
-                    painter = painterResource(id = com.example.R.drawable.ic_gobajaaj_logo),
-                    contentDescription = "GoBajaaj Logo",
+                    painter = painterResource(id = com.example.R.drawable.shiri_logo),
+                    contentDescription = "SHIRI Logo",
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(18.dp))
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(16.dp))
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Dooro nooca akoonka",
+                    text = "Dooro Nooca Akoonka",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Fadlan dooro nooca adeeg ee aad u baahan tahay",
+                    text = "SHIRI Super App • Rakaab, Bajaajle ama Mooto Gaarsiin",
                     fontSize = 13.sp,
                     color = Color(0xFF64748B),
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-                // Macmiil / Rakaab Card
+                // 1. Macmiil / Rakaab Card
                 RoleCard(
                     title = "MACMIIL / RAKAAB",
-                    subtitle = "Dalbo Bajaaj • Guri Number Digital ah • 1 KM Radar • Qiimo Jaban",
+                    subtitle = "Dalbo Bajaaj • Guri Number Digital ah • Ammaan & Qiimo Jaban",
                     iconEmoji = "👤",
-                    isSelected = selectedRole == false,
+                    isSelected = selectedRole == "passenger",
                     onClick = {
-                        selectedRole = false
+                        selectedRole = "passenger"
                         showErrorMessage = false
                     }
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Darawal / Bajaajle Card
+                // 2. Darawal / Bajaajle Card
                 RoleCard(
                     title = "DARAWAL (BAJAAJLE)",
-                    subtitle = "Shaqo & Dakhli • Dalabaadka Rakaabka • Buugga Dhaqaalaha & Xogta Saxmadda",
-                    iconEmoji = "🚖",
-                    isSelected = selectedRole == true,
+                    subtitle = "Qaadista Rakaabka Bajaajta • Shaqo & Dakhli • Pass $0.25 • 18 Isgoys Live",
+                    iconEmoji = "🛺",
+                    isSelected = selectedRole == "driver",
                     onClick = {
-                        selectedRole = true
+                        selectedRole = "driver"
+                        showErrorMessage = false
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 3. Gaarsiiye Mooto / Courier Card
+                RoleCard(
+                    title = "GAARSIIYE MOOTO (COURIER)",
+                    subtitle = "Gaarsiinta Cuntada & Baakadaha • Shatiga Wadista, Damiin & Warqadda CID",
+                    iconEmoji = "🏍️",
+                    isSelected = selectedRole == "courier",
+                    onClick = {
+                        selectedRole = "courier"
                         showErrorMessage = false
                     }
                 )
 
                 if (showErrorMessage) {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = "Fadlan dooro nooca akoonka",
-                        color = Color(0xFFE50914),
+                        color = Color(0xFFDC2626),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
@@ -149,7 +163,7 @@ fun RoleSelectionScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE50914)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                     shape = RoundedCornerShape(26.dp)
                 ) {
                     Text(
