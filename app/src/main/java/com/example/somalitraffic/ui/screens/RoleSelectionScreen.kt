@@ -124,14 +124,14 @@ fun RoleSelectionScreen(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // 1. Dalbo Bajaaj (Rakaab / Passenger)
+                // 1. Customers / Macmiilka (Super App - All Services)
                 RoleCard(
-                    title = "DALBO BAJAAJ",
-                    subtitle = "Rakaab • Dalbo Bajaaj & Safar degdeg ah • Bilaash ($0)",
-                    tagText = "SHIRI RIDE",
+                    title = "CUSTOMERS / MACMIILKA",
+                    subtitle = "Dhammaan Adeegyada (Super App) • Dalbo Bajaaj, Cunto, Dukaamada & Dir Baakado",
+                    tagText = "ALL SERVICES",
                     tagColor = Color(0xFFE50914),
                     tagBg = Color(0xFFFEF2F2),
-                    iconEmoji = "🛺",
+                    iconEmoji = "👤",
                     isSelected = selectedRole == "passenger",
                     onClick = {
                         selectedRole = "passenger"
@@ -158,34 +158,34 @@ fun RoleSelectionScreen(
 
                 Spacer(modifier = Modifier.height(11.dp))
 
-                // 3. SHIRI Delivery (Gaarsiiye Mooto / Courier)
+                // 3. Business Owner (Ganacsade / Meherad)
                 RoleCard(
-                    title = "SHIRI DELIVERY",
-                    subtitle = "Dirso Alaab • Baakado, Cunto & Gaarsiin Mooto • $5/Bishii",
-                    tagText = "MOOTO COURIER",
-                    tagColor = Color(0xFF0284C7),
-                    tagBg = Color(0xFFF0F9FF),
-                    iconEmoji = "🏍️",
-                    isSelected = selectedRole == "courier",
+                    title = "BUSINESS OWNER (GANACSADE)",
+                    subtitle = "Maamul Meheraddaada, Kudar Alaab & Hel Dalabyo Toos ah",
+                    tagText = "BUSINESS",
+                    tagColor = Color(0xFF16A34A),
+                    tagBg = Color(0xFFF0FDF4),
+                    iconEmoji = "🏪",
+                    isSelected = selectedRole == "merchant",
                     onClick = {
-                        selectedRole = "courier"
+                        selectedRole = "merchant"
                         showErrorMessage = false
                     }
                 )
 
                 Spacer(modifier = Modifier.height(11.dp))
 
-                // 4. SHIRI Eats & Market (Ganacsade / Maqaayad)
+                // 4. Delivery (Mooto Courier / Gaarsiiye)
                 RoleCard(
-                    title = "SHIRI EATS & MARKET",
-                    subtitle = "Dalbo Cunto, Dukaamada & Ganacsiga • Qoro Till-kaaga • $5/Bishii",
-                    tagText = "GANACSADE",
-                    tagColor = Color(0xFF16A34A),
-                    tagBg = Color(0xFFF0FDF4),
-                    iconEmoji = "🍔",
-                    isSelected = selectedRole == "merchant",
+                    title = "DELIVERY (MOOTO COURIER)",
+                    subtitle = "Gaarsiinta Cuntada & Baakadaha • Mooto Driver Express",
+                    tagText = "COURIER",
+                    tagColor = Color(0xFF0284C7),
+                    tagBg = Color(0xFFF0F9FF),
+                    iconEmoji = "🏍️",
+                    isSelected = selectedRole == "courier",
                     onClick = {
-                        selectedRole = "merchant"
+                        selectedRole = "courier"
                         showErrorMessage = false
                     }
                 )

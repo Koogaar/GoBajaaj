@@ -1,0 +1,78 @@
+================================================================================
+🏪 SHIRI — GOOGLE PLAY STORE LISTING (COPY & PASTE READY)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. APP NAME (Max 30 characters):
+--------------------------------------------------------------------------------
+SHIRI: Bajaaj, Food & Delivery
+
+(Xisaabinta xarfaha: 29 / 30 xaraf)
+
+
+--------------------------------------------------------------------------------
+2. SHORT DESCRIPTION (Max 80 characters):
+--------------------------------------------------------------------------------
+SHIRI: Dalbo Bajaaj, Mooto Delivery & Cunto — Mogadishu Super App.
+
+(Xisaabinta xarfaha: 65 / 80 xaraf)
+
+
+--------------------------------------------------------------------------------
+3. FULL DESCRIPTION (Max 4,000 characters):
+--------------------------------------------------------------------------------
+🚀 Ku Soo Dhowow SHIRI — Everything, One Journey!
+
+SHIRI waa Super App-ka ugu casrisan ee magaalada Muqdisho oo isku keenaya dhammaan adeegyada aad maalin kasta u baahan tahay hal meel: Gaadiidka Bajaajta, Mooto Delivery-ga degdegga ah, Cunto dalbashada maqaayadaha caanka ah, iyo Suuqa Bakaaraha.
+
+🌟 ADEEGYADA WAAWEYN EE SHIRI:
+
+🚖 1. SHIRI RIDE (Dalbo Bajaaj Degdeg ah)
+• Hal gujin ku dalbo Bajaajta kuugu dhow Muqdisho.
+• Rakaabku waxay ku dalban karaan lacag la'aan ($0).
+• Raadinta GPS-ka oo toos ah (Live Driver Tracking).
+• Ogoow dariiqa ugu fiican ee aan jaamka lahayn.
+
+🍔 2. SHIRI EATS (Dalbo Cunto Maqaayadaha Caanka ah)
+• Soo dhex baar menu-yada maqaayadaha ugu caansan Muqdisho (Pizza House, Sahra Restaurant, iwm).
+• Cuntooyinka oo leh sawirro tayo sare leh iyo faahfaahin buuxda.
+• Gaarsiin degdeg ah 20-30 daqiiqo gudahood albaabkaaga kuugu imaaneysa.
+
+📦 3. SHIRI DELIVERY (Mooto Express Delivery)
+• Dirso baakado, waraaqo, iyo alaab ganacsi.
+• Nidaamka 5-ta Tallaabo ee casriga ah: Browse ➔ Checkout ➔ Merchant ➔ Live Tracking ➔ Handover PIN.
+• Ammaan buuxa oo leh koodhka sirta ah ee Handover PIN oo darawalka la siiyo marka xirmada la keeno.
+
+🏪 4. SHIRI MARKET (Suuqa & Ganacsiyada)
+• Wax ka iibso dukaamada waaweyn, supermarket-yada, iyo farmashiyeyaasha.
+• Ganacsatadu waxay si fudud ugu dari karaan alaabtooda cusub (+ Kudar Alaab Cusub) oo sawirka toos u soo baxayo.
+
+💳 HABKA LACAG-BIXINTA EE SOMALIA:
+• Hormuud EVC Plus (*712*...)
+• Somtel eDahab (*789*...)
+• Telesom ZAAD (*920*...)
+• Golis Sahal (*889*...)
+• Lacagta Gacanta (Cash on Delivery)
+
+📍 SHIRI ADDRESS (Guri Number Digital Ah):
+• Hel ciwaankaaga rasmiga ah sida SHR-MG-48291 oo wata GPS coordinates sax ah, si darawalku uusan waddada ugu lumin.
+• Duub tilmaanta goobtaada cod ahaan (Voice Landmark Note).
+
+🔐 Ammaan, Degdeg, iyo Kalsooni Buuxda!
+Nagala soo xiriir: support@shiri.so | WhatsApp: +252 61 809 2060
+
+
+--------------------------------------------------------------------------------
+4. PHONE SCREENSHOTS (1080 x 1920 PNG - Ready for Upload):
+--------------------------------------------------------------------------------
+Galka: E:\go\GoBajaaj_DriverPass_Fixed_Source\GoBajaaj_APK\PlayStore_Screenshots\
+
+1. screenshot_1_home.png      (Home Dashboard — 4 Hubs)
+2. screenshot_2_ride.png      (Dalbo Bajaaj — GPS & Fare)
+3. screenshot_3_eats.png      (Customer Food & Market)
+4. screenshot_4_merchant.png  (Merchant Business App)
+5. screenshot_5_courier.png   (Courier Driver Dashboard)
+
+Dhammaan cabbirkoodu waa 1080 x 1920 (9:16 aspect ratio), waxaana ku jira cinwaanno casri ah oo kor ugu qaadaya tayada Play Store.
+================================================================================
+

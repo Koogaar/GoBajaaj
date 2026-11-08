@@ -296,6 +296,117 @@ fun HomeDashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // ==============================================================
+                // DOORO DOORKAAGA (ACTIVE ROLE BAR - CUSTOMER, DRIVER, MERCHANT, COURIER)
+                // ==============================================================
+                Surface(
+                    color = Color.White,
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    shadowElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Dooro Doorkaaga",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "• Role Selector",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF64748B)
+                                )
+                            }
+                            Surface(
+                                color = ShiriCrimson.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = "4 Adeeg",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = ShiriCrimson,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            // 1. Customer (Selected by default on Home - sees all services)
+                            FilterChip(
+                                selected = true,
+                                onClick = { /* Already on customer super app home */ },
+                                label = {
+                                    Text(
+                                        text = "👤 Macmiilka (All Services)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = ShiriCrimson,
+                                    selectedLabelColor = Color.White
+                                )
+                            )
+
+                            // 2. Darawal Bajaj
+                            FilterChip(
+                                selected = false,
+                                onClick = { onNavigate("driver_pass") },
+                                label = {
+                                    Text(
+                                        text = "🛺 Darawal Bajaj",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            )
+
+                            // 3. Ganacsade (Business Owner)
+                            FilterChip(
+                                selected = false,
+                                onClick = { onNavigate("eats_and_market") },
+                                label = {
+                                    Text(
+                                        text = "🏪 Ganacsade (Business)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            )
+
+                            // 4. Mooto Delivery (Courier)
+                            FilterChip(
+                                selected = false,
+                                onClick = { onNavigate("delivery") },
+                                label = {
+                                    Text(
+                                        text = "🏍️ Mooto Delivery",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // ==============================================================
                 // 1. HERO WELCOME BANNER (PHONE 1 MOCKUP DESIGN)
                 // ==============================================================
                 Surface(

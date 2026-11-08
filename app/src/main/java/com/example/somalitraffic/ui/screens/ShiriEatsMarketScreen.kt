@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -205,6 +206,22 @@ fun ShiriEatsMarketScreen(
             )
         )
     }
+
+    // ── Cart State: productId -> quantity ──────────────────────────────────────
+    val cartItems = remember { mutableStateMapOf<String, Int>() }
+    val cartTotal by derivedStateOf {
+        cartItems.entries.sumOf { (productId, qty) ->
+            (pizzaHouseProducts.find { it.id == productId }?.price ?: 0.0) * qty
+        }
+    }
+    val cartItemCount by derivedStateOf { cartItems.values.sum() }
+
+    // ── Checkout / Tracking State ──────────────────────────────────────────────
+    var showCheckout by remember { mutableStateOf(false) }
+    var showLiveTracking by remember { mutableStateOf(false) }
+    var trackingOrderNumber by remember { mutableStateOf("") }
+    var trackingHandoverPin by remember { mutableStateOf("") }
+    var trackingStatus by remember { mutableStateOf("preparing") } // preparing -> courier_assigned -> in_transit -> delivered
 
     // List of Famous Mogadishu Businesses (Image 1)
     val famousStores = remember {
@@ -482,6 +499,300 @@ fun ShiriEatsMarketScreen(
                     Text("Ka Noqo", color = Color.Gray)
                 }
             }
+        )
+    }
+
+    // ─── Checkout Modal (1-Step: Address, Payment, USSD, Confirm) ────────────
+    if (showCheckout && viewingStore != null) {
+        val store = viewingStore!!
+        var checkoutAddress by remember { mutableStateOf("SHR-HO-55897 • Hodan, Mogadishu") }
+        var checkoutLandmark by remember { mutableStateOf("Agta masaajidka, wac markaad soo gaarto") }
+        var checkoutPayment by remember { mutableStateOf("evc") }
+        var checkoutPayerPhone by remember { mutableStateOf("") }
+        var checkoutCopied by remember { mutableStateOf(false) }
+        var checkoutSubmitting by remember { mutableStateOf(false) }
+
+        val deliveryFee = store.deliveryFee
+        val serviceFee = 0.50
+        val checkoutTotal = cartTotal + deliveryFee + serviceFee
+
+        val ussdCode = when (checkoutPayment) {
+            "evc"    -> "*712*${store.phone.replace(Regex("\\D"), "")}*${String.format("%.2f", checkoutTotal)}#"
+            "edahab" -> "*789*${store.phone.replace(Regex("\\D"), "")}*${String.format("%.2f", checkoutTotal)}#"
+            "zaad"   -> "*880*${store.phone.replace(Regex("\\D"), "")}*${String.format("%.2f", checkoutTotal)}#"
+            "sahal"  -> "*550*${store.phone.replace(Regex("\\D"), "")}*${String.format("%.2f", checkoutTotal)}#"
+            else     -> ""
+        }
+
+        AlertDialog(
+            onDismissRequest = { showCheckout = false },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(color = Color(0xFFFEF2F2), shape = RoundedCornerShape(10.dp), modifier = Modifier.size(38.dp)) {
+                            Box(contentAlignment = Alignment.Center) { Text("🛒", fontSize = 20.sp) }
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Text("Checkout & Dalbo (1-Step)", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                            Text("${store.name} · ${cartItemCount} alaab", fontSize = 11.sp, color = Color(0xFF64748B))
+                        }
+                    }
+                }
+            },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+
+                    // 1. Delivery Address
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("CINWAANKA GAARSIINTA", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                        }
+                        OutlinedTextField(
+                            value = checkoutAddress,
+                            onValueChange = { checkoutAddress = it },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFDC2626))
+                        )
+                        OutlinedTextField(
+                            value = checkoutLandmark,
+                            onValueChange = { checkoutLandmark = it },
+                            label = { Text("Calaamad / Tilmaan") },
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFDC2626))
+                        )
+                    }
+
+                    // 2. Payment Methods
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("LACAG-BIXINTA", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                        val paymentOptions = listOf(
+                            Triple("evc",    "EVC Plus",   "Hormuud • 📱"),
+                            Triple("edahab", "eDahab",     "Somtel • 💳"),
+                            Triple("zaad",   "ZAAD",       "Telesom • 📶"),
+                            Triple("sahal",  "Sahal",      "Golis • 📲"),
+                            Triple("cash",   "Cash",       "Lacag Caddaan • 💵")
+                        )
+                        paymentOptions.chunked(2).forEach { pair ->
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                pair.forEach { (id, name, provider) ->
+                                    val selected = checkoutPayment == id
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (selected) Color(0xFFFEF2F2) else Color(0xFFF8FAFC),
+                                        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) Color(0xFFDC2626) else Color(0xFFE2E8F0)),
+                                        modifier = Modifier.weight(1f).clickable { checkoutPayment = id }
+                                    ) {
+                                        Column(modifier = Modifier.padding(8.dp)) {
+                                            Text(name, fontSize = 12.sp, fontWeight = FontWeight.Black, color = if (selected) Color(0xFFDC2626) else Color(0xFF0F172A))
+                                            Text(provider, fontSize = 10.sp, color = Color(0xFF64748B))
+                                        }
+                                    }
+                                }
+                                if (pair.size == 1) Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
+
+                    // 3. USSD + Payer Phone
+                    if (checkoutPayment != "cash") {
+                        Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFFFFBEB), border = BorderStroke(1.dp, Color(0xFFFDE68A)), modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("Xaqiijinta Lacag-Bixinta", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF92400E))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFFEF3C7)) {
+                                        Text(ussdCode, fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color(0xFF92400E), modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
+                                    }
+                                    Button(
+                                        onClick = { checkoutCopied = true },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(32.dp)
+                                    ) {
+                                        Text(if (checkoutCopied) "✓ La Qaaday" else "Koobiye", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+                                OutlinedTextField(
+                                    value = checkoutPayerPhone,
+                                    onValueChange = { checkoutPayerPhone = it },
+                                    label = { Text("Numberkaaga Lacagta (Payer Phone)") },
+                                    placeholder = { Text("0618xxxxxx") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(10.dp),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFFD97706))
+                                )
+                            }
+                        }
+                    }
+
+                    // 4. Bill Breakdown
+                    Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFFF8FAFC), border = BorderStroke(1.dp, Color(0xFFE2E8F0)), modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text("XISAABTA", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF64748B))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Alaabta Wadarta", fontSize = 12.sp, color = Color(0xFF475569))
+                                Text("$${String.format("%.2f", cartTotal)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Lacagta Gaarsiinta", fontSize = 12.sp, color = Color(0xFF475569))
+                                Text("$${String.format("%.2f", deliveryFee)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Adeega SHIRI", fontSize = 12.sp, color = Color(0xFF475569))
+                                Text("$${String.format("%.2f", serviceFee)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                            }
+                            HorizontalDivider(color = Color(0xFFE2E8F0), modifier = Modifier.padding(vertical = 2.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("WADARTA", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                                Text("$${String.format("%.2f", checkoutTotal)}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFFDC2626))
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (!checkoutSubmitting) {
+                            checkoutSubmitting = true
+                            val pin = (1000..9999).random().toString()
+                            val orderId = "SHR-${System.currentTimeMillis() % 100000}"
+                            trackingHandoverPin = pin
+                            trackingOrderNumber = orderId
+                            trackingStatus = "preparing"
+                            showCheckout = false
+                            showLiveTracking = true
+                            hasActiveOrder = true
+                            cartItems.clear()
+                            viewingStore = null
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Xaqiiji & Dalbo Hadda →", fontWeight = FontWeight.Black, color = Color.White, fontSize = 14.sp)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCheckout = false }) {
+                    Text("Ka Noqo", color = Color(0xFF64748B))
+                }
+            }
+        )
+    }
+
+    // ─── Live Tracking Full-Screen Modal ─────────────────────────────────────
+    if (showLiveTracking) {
+        AlertDialog(
+            onDismissRequest = { showLiveTracking = false },
+            containerColor = Color(0xFF0F172A),
+            shape = RoundedCornerShape(24.dp),
+            title = {
+                Column {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Text("🗺️  Live Tracking", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color.White)
+                            Text(trackingOrderNumber, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
+                        }
+                        Surface(color = Color(0xFF16A34A), shape = RoundedCornerShape(10.dp)) {
+                            Text("● SOCDA", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.White, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+                        }
+                    }
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    // Status Stepper
+                    val stages = listOf(
+                        "pending"          to "La Diray ✓",
+                        "preparing"        to "Diyaarinta Cuntada",
+                        "courier_assigned" to "Darawal loo Qoondeeyay",
+                        "in_transit"       to "Waddada Kusoo Jira 🛵",
+                        "delivered"        to "Gacanta Loo Geliyay ✓"
+                    )
+                    val activeIdx = stages.indexOfFirst { it.first == trackingStatus }.coerceAtLeast(0)
+                    stages.forEachIndexed { idx, (_, label) ->
+                        val done = idx < activeIdx
+                        val active = idx == activeIdx
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = CircleShape,
+                                color = when { done -> Color(0xFF16A34A); active -> Color(0xFFDC2626); else -> Color(0xFF334155) },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(if (done) "✓" else "${idx + 1}", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color.White)
+                                }
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Text(label, fontSize = 12.sp, fontWeight = if (active) FontWeight.Black else FontWeight.Normal, color = if (active) Color.White else Color(0xFF94A3B8))
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFF1E293B))
+
+                    // Handover PIN
+                    Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFF1E293B), border = BorderStroke(1.dp, Color(0xFFDC2626)), modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("HANDOVER PIN — Darawalka Siiso", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Text(trackingHandoverPin, fontSize = 42.sp, fontWeight = FontWeight.Black, color = Color(0xFFDC2626), letterSpacing = 10.sp)
+                            Text("Kaliya darawalka la siiso markuu yimaado", fontSize = 10.sp, color = Color(0xFF64748B))
+                        }
+                    }
+
+                    // Contact Courier Buttons
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        val phoneIntent = android.content.Intent(android.content.Intent.ACTION_DIAL, android.net.Uri.parse("tel:+252613456789"))
+                        val waUrl = "https://wa.me/252613456789?text=Salaan! Dalabaygii SHIRI $trackingOrderNumber"
+                        Button(
+                            onClick = { },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Phone, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(5.dp))
+                            Text("Wac Darawal", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                        Button(
+                            onClick = { },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D9488)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("💬 WhatsApp", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showLiveTracking = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Dib u Noqo Home", fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            },
+            dismissButton = {}
         )
     }
 
@@ -1144,6 +1455,7 @@ fun ShiriEatsMarketScreen(
                                 Divider(color = Color(0xFFE2E8F0))
 
                                 pizzaHouseProducts.forEach { product ->
+                                    val qty = cartItems[product.id] ?: 0
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -1184,17 +1496,47 @@ fun ShiriEatsMarketScreen(
                                             }
                                         }
 
-                                        Button(
-                                            onClick = {
-                                                Toast.makeText(context, "${product.name} waa lagu daray gaarigaaga!", Toast.LENGTH_SHORT).show()
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
-                                            shape = RoundedCornerShape(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                                            modifier = Modifier.height(30.dp)
-                                        ) {
-                                            Text("+ Dalbo", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            if (qty > 0) {
+                                                Surface(
+                                                    shape = CircleShape,
+                                                    color = Color(0xFFFEF2F2),
+                                                    border = BorderStroke(1.dp, Color(0xFFDC2626)),
+                                                    modifier = Modifier.size(28.dp).clickable {
+                                                        if (qty == 1) cartItems.remove(product.id)
+                                                        else cartItems[product.id] = qty - 1
+                                                    }
+                                                ) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Text("-", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFFDC2626))
+                                                    }
+                                                }
+                                                Text("$qty", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                                            }
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = Color(0xFFDC2626),
+                                                modifier = Modifier.size(28.dp).clickable {
+                                                    cartItems[product.id] = qty + 1
+                                                }
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Text("+", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color.White)
+                                                }
+                                            }
                                         }
+                                    }
+                                }
+
+                                if (cartItemCount > 0) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Button(
+                                        onClick = { showCheckout = true },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                        shape = RoundedCornerShape(14.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Checkout - $cartItemCount alaab", fontWeight = FontWeight.Black, color = Color.White, fontSize = 13.sp)
                                     }
                                 }
                             }
