@@ -130,13 +130,54 @@ fun SomaliTrafficNavHost(
             )
         }
 
-        // Screen 3b: Role Selection
+        // Screen 3b: Entry Role Selection (Marka kow app-ka la soo galo)
+        val handleRoleNavigation: (String) -> Unit = { role ->
+            when (role) {
+                "passenger" -> {
+                    navController.navigate(NavRoutes.HOME) {
+                        popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                    }
+                }
+                "merchant" -> {
+                    navController.navigate(NavRoutes.MERCHANT_APP) {
+                        popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                    }
+                }
+                "driver" -> {
+                    navController.navigate(NavRoutes.DRIVER_PASS) {
+                        popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                    }
+                }
+                "courier" -> {
+                    navController.navigate(NavRoutes.DELIVERY) {
+                        popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                    }
+                }
+                else -> navController.navigate(NavRoutes.HOME)
+            }
+        }
+
+        composable(NavRoutes.ROLE_SELECTION) {
+            RoleSelectionScreen(
+                onBackClick = { navController.popBackStack() },
+                onRoleSelected = handleRoleNavigation
+            )
+        }
+
         composable(NavRoutes.SIGN_UP) {
             RoleSelectionScreen(
                 onBackClick = { navController.popBackStack() },
-                onRoleSelected = { role ->
-                    navController.navigate(NavRoutes.registrationForm(role))
-                }
+                onRoleSelected = handleRoleNavigation
+            )
+        }
+
+        // Dedicated Merchant App Route (Business Owner)
+        composable(NavRoutes.MERCHANT_APP) {
+            ShiriEatsMarketScreen(
+                viewModel = viewModel,
+                initialMode = "merchant",
+                onBackClick = { navController.popBackStack() },
+                onNavigate = { route -> safeNavigate(route) }
             )
         }
 

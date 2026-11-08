@@ -141,12 +141,13 @@ fun getAutoImageForProduct(name: String): Pair<String, String> {
 fun ShiriEatsMarketScreen(
     viewModel: SomaliTrafficViewModel,
     onBackClick: () -> Unit,
-    onNavigate: (String) -> Unit = {}
+    onNavigate: (String) -> Unit = {},
+    initialMode: String = "customer"
 ) {
     val context = LocalContext.current
 
     // App Mode: "customer" (Image 1) or "merchant" (Image 2)
-    var currentAppMode by remember { mutableStateOf("customer") }
+    var currentAppMode by remember(initialMode) { mutableStateOf(initialMode) }
 
     // Bottom tab inside Customer App: "home", "explore", "orders", "profile"
     var customerBottomTab by remember { mutableStateOf("home") }
@@ -278,8 +279,30 @@ fun ShiriEatsMarketScreen(
     var showAddProductDialog by remember { mutableStateOf(false) }
     var newProductName by remember { mutableStateOf("") }
     var newProductPrice by remember { mutableStateOf("") }
-    var newProductCategory by remember { mutableStateOf("Main Dish") }
+    var newProductCategory by remember { mutableStateOf("Cunto & Pizza 🍕") }
     var newProductInStock by remember { mutableStateOf(true) }
+
+    // Master list of Somali business categories (Admin & Merchant extensible)
+    val businessCategories = remember {
+        mutableStateListOf(
+            "Cunto & Pizza 🍕",
+            "Cuntada Dhaqanka (Bariis, Baasto, Suqaar) 🍛",
+            "Burgers & Sanwiijyo 🍔",
+            "Shuwarma & Sambusa 🌯",
+            "Qaxwo, Shaah & Cabitaanno ☕",
+            "Macmacaan & Keeg 🍰",
+            "Raashin & Supermarket 🛒",
+            "Hilib & Digaag Cusub 🥩",
+            "Caano & Subag 🥛",
+            "Daawo & Caafimaad 💊",
+            "Taleefanno & Qalab 📱",
+            "Dhar & Fashion 👕",
+            "Barafuun, Uunsi & Qurxin 💄",
+            "Alaabta Guryaha 🏠"
+        )
+    }
+    var showAddCategoryField by remember { mutableStateOf(false) }
+    var customCategoryName by remember { mutableStateOf("") }
 
     // Auto-detected image for newly typed product
     val autoImagePair = remember(newProductName) {
@@ -433,16 +456,113 @@ fun ShiriEatsMarketScreen(
                         shape = RoundedCornerShape(10.dp)
                     )
 
-                    // Category
-                    OutlinedTextField(
-                        value = newProductCategory,
-                        onValueChange = { newProductCategory = it },
-                        label = { Text("Qeybta (Category)") },
-                        placeholder = { Text("Main Dish, Pizza, Burgers, Drinks...") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
-                    )
+                    // Category Selection with Somali Business Categories + Admin / Merchant Add New Category
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Dooro Qeybta (Category):",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = if (showAddCategoryField) "Xir [-]" else "+ Qeyb Cusub (Admin)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFDC2626),
+                                modifier = Modifier.clickable { showAddCategoryField = !showAddCategoryField }
+                            )
+                        }
+
+                        // Input field to add a brand new category (Admin / Ganacsade)
+                        if (showAddCategoryField) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFFFEF2F2),
+                                border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = customCategoryName,
+                                        onValueChange = { customCategoryName = it },
+                                        placeholder = { Text("Qor qeyb cusub, tusaale: Kalluun 🐟", fontSize = 11.sp) },
+                                        singleLine = true,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedContainerColor = Color.White,
+                                            unfocusedContainerColor = Color.White,
+                                            focusedBorderColor = Color(0xFFDC2626)
+                                        )
+                                    )
+                                    Button(
+                                        onClick = {
+                                            if (customCategoryName.isNotBlank()) {
+                                                val cat = customCategoryName.trim()
+                                                if (!businessCategories.contains(cat)) {
+                                                    businessCategories.add(0, cat)
+                                                }
+                                                newProductCategory = cat
+                                                customCategoryName = ""
+                                                showAddCategoryField = false
+                                                Toast.makeText(context, "Qeyb cusub '$cat' waa lagu daray!", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        Text("+ Ku Dar", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Category Chips Row (Horizontal Scroll)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            businessCategories.forEach { cat ->
+                                FilterChip(
+                                    selected = newProductCategory == cat,
+                                    onClick = { newProductCategory = cat },
+                                    label = { Text(cat, fontSize = 10.5.sp, fontWeight = if (newProductCategory == cat) FontWeight.Black else FontWeight.Normal) },
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = Color(0xFFDC2626),
+                                        selectedLabelColor = Color.White
+                                    )
+                                )
+                            }
+                        }
+
+                        // Selected Category indicator
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFF1F5F9),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Qeybta la doortay: $newProductCategory",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A),
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
 
                     // In Stock Toggle
                     Row(

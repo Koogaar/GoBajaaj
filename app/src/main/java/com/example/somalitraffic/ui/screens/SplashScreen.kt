@@ -73,8 +73,8 @@ fun SplashScreen(
                 else -> onNavigateNext("home")
             }
         } else {
-            // Marka app-ka la furo toos u gee Home (Super App Home Dashboard)
-            onNavigateNext("home")
+            // Marka app-ka la furo toos u gee Role Selection (Dooro Doorkaaga: Macmiil, Ganacsade, Darawal, Delivery)
+            onNavigateNext("role_selection")
         }
     }
 

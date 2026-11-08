@@ -2,6 +2,8 @@ package com.example.somalitraffic.ui.navigation
 
 object NavRoutes {
     const val SPLASH = "splash"
+    const val ROLE_SELECTION = "role_selection"
+    const val MERCHANT_APP = "merchant_app"
     const val ONBOARDING = "onboarding"
     const val LOGIN = "login"
     const val FORGOT_PASSWORD = "forgot_password"
