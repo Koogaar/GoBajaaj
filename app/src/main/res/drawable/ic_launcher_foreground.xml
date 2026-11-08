@@ -3,6 +3,6 @@
     <item
         android:width="76dp"
         android:height="76dp"
-        android:drawable="@drawable/shiri_logo"
+        android:drawable="@drawable/shiri_logo_white_fg"
         android:gravity="center" />
 </layer-list>
