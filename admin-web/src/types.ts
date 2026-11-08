@@ -32,7 +32,10 @@ export type PermissionKey =
   | 'audit_logs.view'
   | 'settings.view' | 'settings.update'
   | 'ride.view' | 'ride.manage'
-  | 'marketing.view' | 'marketing.manage';
+  | 'marketing.view' | 'marketing.manage'
+  | 'pricing.view' | 'pricing.update'
+  | 'merchants.view' | 'merchants.manage'
+  | 'orders.view' | 'orders.manage';
 
 export interface Profile {
   id: string;
@@ -69,6 +72,75 @@ export interface AdminUser {
   last_login?: string;
   created_at: string;
   updated_at?: string;
+}
+
+export interface PlatformPricingSettings {
+  id: string;
+  driver_daily_pass_usd: number;
+  driver_weekly_pass_usd: number;
+  driver_monthly_pass_usd: number;
+  driver_grace_period_hours: number;
+  courier_base_delivery_fee_usd: number;
+  courier_per_km_fee_usd: number;
+  courier_share_percentage: number;
+  service_fee_usd: number;
+  night_surge_multiplier: number;
+  merchant_default_commission_rate: number;
+  merchant_min_order_usd: number;
+  updated_at?: string;
+  updated_by?: string;
+}
+
+export interface DynamicCategory {
+  id: string;
+  name_so: string;
+  name_en: string;
+  emoji: string;
+  banner_image_url?: string;
+  is_active: boolean;
+  sort_order: number;
+  subcategories: Array<{ id: string; nameSo: string; nameEn: string; emoji: string }>;
+}
+
+export interface ShiriMerchant {
+  id: string;
+  name: string;
+  slogan?: string;
+  category: string;
+  logo_url?: string;
+  banner_url?: string;
+  phone: string;
+  email?: string;
+  rating: number;
+  review_count: number;
+  delivery_time_minutes: number;
+  min_order: number;
+  delivery_fee: number;
+  is_open: boolean;
+  shiri_address_code?: string;
+  district: string;
+  verification_status: string;
+  commission_rate: number;
+  created_at?: string;
+}
+
+export interface ShiriOrder {
+  id: string;
+  order_number: string;
+  customer_name?: string;
+  customer_phone?: string;
+  merchant_name?: string;
+  courier_name?: string;
+  subtotal: number;
+  delivery_fee: number;
+  service_fee: number;
+  total: number;
+  status: 'pending' | 'accepted' | 'preparing' | 'ready_for_pickup' | 'courier_assigned' | 'picked_up' | 'in_transit' | 'delivered' | 'cancelled';
+  payment_method: string;
+  payment_status: string;
+  handover_pin: string;
+  district?: string;
+  created_at: string;
 }
 
 export interface Intersection {
@@ -187,4 +259,3 @@ export interface AuditLog {
   metadata?: any;
   created_at: string;
 }
-

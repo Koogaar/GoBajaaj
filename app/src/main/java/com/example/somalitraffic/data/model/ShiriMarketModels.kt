@@ -32,6 +32,18 @@ data class ShiriProductItem(
     val description: String = ""
 )
 
+data class ShiriPricingConfig(
+    var driverDailyPassUsd: Double = 0.25,
+    var driverWeeklyPassUsd: Double = 1.50,
+    var driverMonthlyPassUsd: Double = 5.00,
+    var courierBaseDeliveryFeeUsd: Double = 2.00,
+    var courierPerKmFeeUsd: Double = 0.30,
+    var courierSharePercentage: Double = 80.0,
+    var serviceFeeUsd: Double = 0.50,
+    var merchantDefaultCommissionRate: Double = 15.0,
+    var merchantMinOrderUsd: Double = 3.00
+)
+
 data class ShiriMerchantStore(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
@@ -51,6 +63,7 @@ data class ShiriMerchantStore(
 )
 
 object ShiriMarketRepository {
+    var currentPricing: ShiriPricingConfig = ShiriPricingConfig()
 
     fun getDefaultCategories(): List<ShiriBusinessCategory> {
         return listOf(

@@ -404,7 +404,7 @@ fun ShiriEatsMarketScreen(
     if (showCheckout && viewingStore != null) {
         val currentStore = viewingStore!!
         val deliveryFee = currentStore.deliveryFee
-        val serviceFee = 0.50
+        val serviceFee = ShiriMarketRepository.currentPricing.serviceFeeUsd
         val checkoutTotal = cartTotal + deliveryFee + serviceFee
         var checkoutPayment by remember { mutableStateOf("evc") }
         var checkoutPayerPhone by remember { mutableStateOf("") }

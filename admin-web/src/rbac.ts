@@ -15,7 +15,7 @@ export const ADMIN_ROLES: Record<AdminRole, RoleInfo> = {
     key: 'super_admin',
     name: 'SUPER ADMIN',
     nameSomali: 'Maamulaha Guud',
-    description: 'Fasax buuxa oo habka oo dhan ah. Wuxuu maamuli karaa admin-yada kale.',
+    description: 'Fasax buuxa oo habka oo dhan ah. Wuxuu maamuli karaa qiimaha, ganacsiyada, iyo admin-yada kale.',
     badgeBg: 'bg-red-100',
     badgeText: 'text-red-800',
     permissions: [
@@ -33,20 +33,24 @@ export const ADMIN_ROLES: Record<AdminRole, RoleInfo> = {
       'roles.view', 'roles.create', 'roles.update',
       'audit_logs.view',
       'settings.view', 'settings.update',
-      'marketing.view', 'marketing.manage'
+      'marketing.view', 'marketing.manage',
+      'pricing.view', 'pricing.update',
+      'merchants.view', 'merchants.manage',
+      'orders.view', 'orders.manage'
     ]
   },
   payment_admin: {
     key: 'payment_admin',
-    name: 'PAYMENT ADMIN',
-    nameSomali: 'Maamulaha Lacagaha',
-    description: 'Ansixinta iyo diidmada bixinta Driver Pass ($0.25/Shift).',
+    name: 'PAYMENT & FINANCE ADMIN',
+    nameSomali: 'Maamulaha Lacagaha & Xisaabaadka',
+    description: 'Ansixinta iyo diidmada bixinta Driver Pass, dukaamada iyo mootada.',
     badgeBg: 'bg-emerald-100',
     badgeText: 'text-emerald-800',
     permissions: [
       'users.view',
       'payments.view', 'payments.approve', 'payments.reject',
       'subscriptions.view',
+      'pricing.view',
       'notifications.view'
     ]
   },
@@ -87,7 +91,7 @@ export const ADMIN_ROLES: Record<AdminRole, RoleInfo> = {
       'support.view', 'support.reply', 'support.update',
       'payments.view',
       'subscriptions.view',
-      'protection.view'
+      'orders.view'
     ]
   },
   analyst: {
@@ -102,21 +106,21 @@ export const ADMIN_ROLES: Record<AdminRole, RoleInfo> = {
       'users.view',
       'payments.view',
       'subscriptions.view',
-      'traffic.view',
-      'reporters.view',
-      'intersections.view'
+      'merchants.view',
+      'orders.view',
+      'pricing.view'
     ]
   },
   ride_admin: {
     key: 'ride_admin',
-    name: 'RIDE & SUPPORT ADMIN',
-    nameSomali: 'Maamulaha GoBajaaj & Cabashooyinka',
-    description: 'Maamulida dalabaadka Bajajyada (GoBajaaj Ride) iyo ka jawaabista cabashooyinka/taageerada macaamiisha.',
+    name: 'DISPATCH & OPERATIONS',
+    nameSomali: 'Maamulaha Dalabyada & Gaadiidka',
+    description: 'Maamulida dalabaadka, mootooyinka, iyo Bajaajyada.',
     badgeBg: 'bg-rose-100',
     badgeText: 'text-rose-800',
     permissions: [
       'ride.view', 'ride.manage',
-      'support.view', 'support.reply', 'support.update',
+      'orders.view', 'orders.manage',
       'users.view',
       'notifications.view', 'notifications.create', 'notifications.send'
     ]
@@ -125,12 +129,13 @@ export const ADMIN_ROLES: Record<AdminRole, RoleInfo> = {
     key: 'marketer',
     name: 'MARKETER / SUUQ-GEYN',
     nameSomali: 'Shaqaalaha Suuq-geynta',
-    description: 'Diiwaangelinta darawallada cusub iyo la socodka dadka lagu soo daray koodhka gaarka ah.',
+    description: 'Diiwaangelinta darawallada cusub iyo dukaamada.',
     badgeBg: 'bg-teal-100',
     badgeText: 'text-teal-800',
     permissions: [
       'marketing.view',
-      'users.view'
+      'users.view',
+      'merchants.view'
     ]
   }
 };
@@ -149,8 +154,5 @@ export function getRoleDisplay(role: string): { name: string; nameSomali: string
     const r = ADMIN_ROLES[adminRole];
     return { name: r.name, nameSomali: r.nameSomali, bg: r.badgeBg, text: r.badgeText };
   }
-  if (role === 'reporter') {
-    return { name: 'REPORTER', nameSomali: 'Wariye Gaadiid', bg: 'bg-sky-100', text: 'text-sky-800' };
-  }
-  return { name: 'DRIVER', nameSomali: 'Wade Gaadiid', bg: 'bg-neutral-100', text: 'text-neutral-800' };
+  return { name: 'ADMIN', nameSomali: 'Maamule', bg: 'bg-neutral-100', text: 'text-neutral-800' };
 }

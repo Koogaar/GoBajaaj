@@ -35,7 +35,13 @@ import {
   Trash2,
   ShieldOff,
   ShieldCheck,
-  Wallet
+  Wallet,
+  Store,
+  Layers,
+  ShoppingBag,
+  Truck,
+  Settings,
+  DollarSign
 } from 'lucide-react';
 import { supabase } from './supabase';
 import { soundAlert } from './utils/soundAlert';
@@ -54,6 +60,11 @@ import { MarketingManagement } from './components/MarketingManagement';
 import { MarketerPortal } from './components/MarketerPortal';
 import { DriversManagement } from './components/DriversManagement';
 import { DailyRechargedManagement } from './components/DailyRechargedManagement';
+import { PricingControlCenter } from './components/PricingControlCenter';
+import { MerchantsManagement } from './components/MerchantsManagement';
+import { CategoriesManagement } from './components/CategoriesManagement';
+import { LiveOrdersManagement } from './components/LiveOrdersManagement';
+import { CouriersManagement } from './components/CouriersManagement';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -569,47 +580,48 @@ export default function App() {
 
   const registeredDriversCount = usersList.filter(u => u.role === 'driver' || u.role === 'courier').length;
 
-  // 6 Unified Hubs of SHIRI Super App Platform
+  // 6 Unified Hubs of SHIRI Super App Platform (Cleaned & Modernized)
   const hubGroups = [
     {
-      hubTitle: '1. Command & Analytics',
+      hubTitle: '1. Command & Dynamic Pricing',
       tabs: [
-        { id: 'overview', label: 'Tusmada Guud', icon: Shield, perm: true },
+        { id: 'overview', label: 'Boowdka Guud (Dashboard)', icon: Shield, perm: true },
+        { id: 'pricing', label: '⚙️ Qiimaha & Boowdka (Pricing)', icon: Settings, perm: hasPermission(role, 'pricing.view') || hasPermission(role, 'settings.view') || role === 'super_admin' },
         { id: 'analytics', label: 'Aqoonta Xogta (Analytics)', icon: BarChart3, perm: hasPermission(role, 'analytics.view') },
       ]
     },
     {
-      hubTitle: '2. Gaadiidka & Gaarsiinta (Fleet)',
+      hubTitle: '2. Ganacsiyada & Qeybaha (Eats & Market)',
       tabs: [
-        { id: 'drivers', label: 'Darawallada & Mootooyinka', icon: Bike, count: registeredDriversCount, perm: hasPermission(role, 'users.view') },
-        { id: 'ride_support', label: 'Safarrada & Cabashooyinka', icon: Bike, perm: hasPermission(role, 'ride.view') || hasPermission(role, 'support.view') },
+        { id: 'merchants', label: '🏪 Ganacsatada & Dukaamada', icon: Store, perm: true },
+        { id: 'categories', label: '📦 Qeybaha Ganacsiga (Categories)', icon: Layers, perm: true },
+        { id: 'orders', label: '🛍️ Dalabyada Tooska ah (Live Orders)', icon: ShoppingBag, perm: true },
       ]
     },
     {
-      hubTitle: '3. Traffic Ops & Wariyeyaasha',
+      hubTitle: '3. Gaadiidka & Gaarsiinta (Fleet)',
       tabs: [
-        { id: 'traffic', label: 'Saxmadda & Isgoysyada Live', icon: TrafficCone, perm: hasPermission(role, 'traffic.view') },
-        { id: 'reporters', label: 'Wariyeyaasha Isgoysyada', icon: UserCheck, perm: hasPermission(role, 'reporters.view') },
-      ]
-    },
-    {
-      hubTitle: '4. Maaliyadda & Driver Pass',
-      tabs: [
+        { id: 'drivers', label: '🛺 Darawal Bajaaj ($0.25 Pass)', icon: Bike, count: registeredDriversCount, perm: hasPermission(role, 'users.view') },
+        { id: 'couriers', label: '🏍️ Mootooyinka Delivery', icon: Truck, perm: true },
         { id: 'daily_paid', label: 'Ku Shubtay Maanta ($0.25)', icon: Wallet, count: overviewStats.todayApprovedCount, perm: hasPermission(role, 'payments.view') },
-        { id: 'payments', label: 'Lacagaha & Driver Pass', icon: CreditCard, perm: hasPermission(role, 'payments.view') },
       ]
     },
     {
-      hubTitle: '5. Taageerada & Suuq-geynta',
+      hubTitle: '4. Maaliyadda & Xisaabaadka (Finance)',
       tabs: [
-        { id: 'device_support', label: 'Taleefannada & Taageerada', icon: Headphones, perm: hasPermission(role, 'support.view') || hasPermission(role, 'protection.view') },
-        { id: 'marketing', label: 'Suuq-geynta (Marketing)', icon: Megaphone, perm: hasPermission(role, 'marketing.view') || hasPermission(role, 'marketing.manage') },
+        { id: 'payments', label: 'Lacagaha Telecom (EVC/eDahab)', icon: CreditCard, perm: hasPermission(role, 'payments.view') },
       ]
     },
     {
-      hubTitle: '6. Nidaamka & Amniga',
+      hubTitle: '5. Traffic Ops (Waddooyinka)',
       tabs: [
-        { id: 'users', label: 'Rakaabka & Macaamiisha', icon: Users, perm: hasPermission(role, 'users.view') },
+        { id: 'traffic', label: 'Saxmadda & Jidadka Live', icon: TrafficCone, perm: hasPermission(role, 'traffic.view') },
+      ]
+    },
+    {
+      hubTitle: '6. Nidaamka & Amniga (System & Security)',
+      tabs: [
+        { id: 'users', label: 'Macaamiisha & Diiwaanka', icon: Users, perm: hasPermission(role, 'users.view') },
         { id: 'admins', label: 'Maamulayaasha Nidaamka', icon: Lock, perm: hasPermission(role, 'admins.view') },
         { id: 'audit', label: 'Audit Logs & Amniga', icon: History, perm: hasPermission(role, 'audit_logs.view') },
       ]
@@ -1370,6 +1382,41 @@ export default function App() {
           </div>
         )}
 
+        {activeTab === 'pricing' && (
+          <PricingControlCenter
+            actorName={currentAdmin.full_name}
+            canManage={hasPermission(role, 'pricing.update') || role === 'super_admin'}
+          />
+        )}
+
+        {activeTab === 'merchants' && (
+          <MerchantsManagement
+            actorName={currentAdmin.full_name}
+            canManage={hasPermission(role, 'merchants.manage') || role === 'super_admin'}
+          />
+        )}
+
+        {activeTab === 'categories' && (
+          <CategoriesManagement
+            actorName={currentAdmin.full_name}
+            canManage={hasPermission(role, 'settings.update') || role === 'super_admin'}
+          />
+        )}
+
+        {activeTab === 'orders' && (
+          <LiveOrdersManagement
+            actorName={currentAdmin.full_name}
+            canManage={hasPermission(role, 'orders.manage') || role === 'super_admin'}
+          />
+        )}
+
+        {activeTab === 'couriers' && (
+          <CouriersManagement
+            actorName={currentAdmin.full_name}
+            canManage={hasPermission(role, 'users.update') || role === 'super_admin'}
+          />
+        )}
+
         {activeTab === 'drivers' && (
           <DriversManagement
             canManage={hasPermission(role, 'users.update')}
@@ -1385,31 +1432,12 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'ride_support' && (
-          <RideSupportManagement />
-        )}
-
-        {activeTab === 'device_support' && (
-          <DeviceSupportManagement />
-        )}
-
         {activeTab === 'payments' && (
           <PaymentManagement actorName={currentAdmin.full_name} canManage={hasPermission(role, 'payments.approve')} />
         )}
 
         {activeTab === 'traffic' && (
           <TrafficManagement actorName={currentAdmin.full_name} canManage={hasPermission(role, 'traffic.update')} />
-        )}
-
-        {activeTab === 'reporters' && (
-          <ReporterManagement actorName={currentAdmin.full_name} canManage={hasPermission(role, 'reporters.create')} />
-        )}
-
-        {activeTab === 'marketing' && (
-          <MarketingManagement
-            canManage={hasPermission(role, 'marketing.manage') || role === 'super_admin'}
-            actorName={currentAdmin.full_name}
-          />
         )}
 
         {activeTab === 'analytics' && (
