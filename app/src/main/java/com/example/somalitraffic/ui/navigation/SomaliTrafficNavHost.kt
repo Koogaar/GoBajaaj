@@ -196,10 +196,11 @@ fun SomaliTrafficNavHost(
             )
         }
 
-        // Screen 6: Home Dashboard
+        // Screen 6: Home Dashboard (SHIRI Super App: Delivery, Food, Bajaaj Ride & Traffic)
         composable(NavRoutes.HOME) {
-            HomeDashboardScreen(
+            ShiriEatsMarketScreen(
                 viewModel = viewModel,
+                onBackClick = { },
                 onNavigate = { route -> safeNavigate(route) }
             )
         }
@@ -235,7 +236,8 @@ fun SomaliTrafficNavHost(
         composable(NavRoutes.EATS_AND_MARKET) {
             ShiriEatsMarketScreen(
                 viewModel = viewModel,
-                onBackClick = { navController.popBackStack() }
+                onBackClick = { navController.popBackStack() },
+                onNavigate = { route -> safeNavigate(route) }
             )
         }
 

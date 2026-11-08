@@ -140,7 +140,8 @@ fun getAutoImageForProduct(name: String): Pair<String, String> {
 @Composable
 fun ShiriEatsMarketScreen(
     viewModel: SomaliTrafficViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigate: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -841,25 +842,70 @@ fun ShiriEatsMarketScreen(
                             )
                         }
 
-                        // Discrete Merchant portal button
+                        // Role Switcher buttons for quick access
                         if (currentAppMode == "customer") {
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color.White.copy(alpha = 0.12f),
-                                modifier = Modifier.clickable { currentAppMode = "merchant" }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color.White.copy(alpha = 0.12f),
+                                    modifier = Modifier.clickable { currentAppMode = "merchant" }
                                 ) {
-                                    Text(text = "🏪", fontSize = 12.sp)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Maamul Meherad",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White
-                                    )
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = "🏪", fontSize = 11.sp)
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "Business",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color(0xFFF97316).copy(alpha = 0.25f),
+                                    modifier = Modifier.clickable { onNavigate("driver_pass") }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = "🛺", fontSize = 11.sp)
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "Darawal",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFFED7AA)
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color(0xFF0284C7).copy(alpha = 0.25f),
+                                    modifier = Modifier.clickable { onNavigate("delivery") }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = "🏍️", fontSize = 11.sp)
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(
+                                            text = "Delivery",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFFBAE6FD)
+                                        )
+                                    }
                                 }
                             }
                         } else {
@@ -927,14 +973,20 @@ fun ShiriEatsMarketScreen(
                             label = "Orders",
                             isSelected = customerBottomTab == "orders",
                             badge = "1",
-                            onClick = { customerBottomTab = "orders" }
+                            onClick = { 
+                                customerBottomTab = "orders"
+                                showLiveTracking = true
+                            }
                         )
                         CustomerNavTabItem(
                             icon = Icons.Default.Person,
                             label = "Profile",
                             isSelected = customerBottomTab == "profile",
                             badge = null,
-                            onClick = { customerBottomTab = "profile" }
+                            onClick = { 
+                                customerBottomTab = "profile"
+                                onNavigate("profile_settings")
+                            }
                         )
                     }
                 } else {
@@ -1342,9 +1394,11 @@ fun ShiriEatsMarketScreen(
                         )
                     }
 
-                    // 4 Categories Row: Dhammaan, Cunto, Supermarket, Daawo
+                    // Categories Carousel (Matching CustomerApp.tsx in zip)
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         CategorySquareCard(
@@ -1352,28 +1406,49 @@ fun ShiriEatsMarketScreen(
                             emoji = "✨",
                             isSelected = selectedCategoryFilter == "all",
                             onClick = { selectedCategoryFilter = "all" },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.width(82.dp)
+                        )
+                        CategorySquareCard(
+                            title = "Dalbo Bajaaj",
+                            emoji = "🛺",
+                            isSelected = false,
+                            onClick = { onNavigate("ride") },
+                            modifier = Modifier.width(86.dp)
                         )
                         CategorySquareCard(
                             title = "Cunto",
                             emoji = "🍔",
                             isSelected = selectedCategoryFilter == "cunto",
                             onClick = { selectedCategoryFilter = "cunto" },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.width(82.dp)
                         )
                         CategorySquareCard(
                             title = "Supermarket",
                             emoji = "🛒",
                             isSelected = selectedCategoryFilter == "supermarket",
                             onClick = { selectedCategoryFilter = "supermarket" },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.width(90.dp)
                         )
                         CategorySquareCard(
                             title = "Daawo",
                             emoji = "💊",
                             isSelected = selectedCategoryFilter == "daawo",
                             onClick = { selectedCategoryFilter = "daawo" },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.width(82.dp)
+                        )
+                        CategorySquareCard(
+                            title = "Gaarsiin",
+                            emoji = "🏍️",
+                            isSelected = false,
+                            onClick = { onNavigate("delivery") },
+                            modifier = Modifier.width(84.dp)
+                        )
+                        CategorySquareCard(
+                            title = "Traffic Map",
+                            emoji = "🚦",
+                            isSelected = false,
+                            onClick = { onNavigate("live_traffic") },
+                            modifier = Modifier.width(86.dp)
                         )
                     }
 
