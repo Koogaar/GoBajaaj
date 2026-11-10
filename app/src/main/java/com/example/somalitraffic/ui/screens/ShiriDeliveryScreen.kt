@@ -49,8 +49,8 @@ fun ShiriDeliveryScreen(
 ) {
     val context = LocalContext.current
 
-    // View Mode: "customer" (5-Step Customer Flow) or "driver" (Image 3)
-    var currentDeliveryView by remember { mutableStateOf("customer") }
+    // View Mode: "driver" (Image 1 Courier App) or "customer" (5-Step Customer Flow)
+    var currentDeliveryView by remember { mutableStateOf("driver") }
 
     // Driver States (Image 3)
     var isDriverOnline by remember { mutableStateOf(true) }

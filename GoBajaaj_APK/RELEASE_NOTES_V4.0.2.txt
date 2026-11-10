@@ -1,0 +1,60 @@
+================================================================================
+🚀 SHIRI v4.0.2 — RELEASE NOTES (GOOGLE PLAY CONSOLE)
+================================================================================
+Release Date: November 2026
+Version Code: 49 | Version Name: 4.0.2
+================================================================================
+
+--------------------------------------------------------------------------------
+AF-SOOMAALI (Kooban — Copy & Paste):
+--------------------------------------------------------------------------------
+Waxyaabaha Cusub ee Nooca 4.0.2:
+
+🛵 Shaashadda Tooska ah ee Delivery-ga (Courier Driver Dashboard):
+• Marka aad gasho qaybta Delivery, waxaa si toos ah kuu furmaya Dashboard-ka Darawalka:
+  - Xogta darawalka (Ahmed Hassan • Bajaj MG-4821-B • ⭐ 4.8)
+  - Dalabyada Soo Dhacaya (Available Orders) oo wata ogeysiiska tooska ah
+  - Dakhliga Maanta ($49.00) iyo xisaabinta Cash on Delivery
+  - Xiriirka darawalka iyo safarka hadda socda (Active Delivery)
+  - 4-ta tab ee hoose: Dashboard, Dalabyada, Navigation, Dakhliga
+
+🏢 Business App (Hagaajin & Ka-saarista Demo):
+• Waxaa laga saaray digniintii demo-ga ahayd (Kitchen Alarm demo alert) ee horay shaashadda ugu xannibnayd.
+• Hadda digniinta dhawaaqa jikada waxay soo baxaysaa kaliya marka uu dalab dhab ah soo dhaco.
+• Maamulka badeecadaha (Products) iyo dalabyada (Orders) oo si buuxda u shaqeynaya.
+
+⚡ Tayada & Xasiloonida:
+• Waxaa la kordhiyay xawaaraha app-ka iyo degdegga navigation-ka.
+• Dhammaan shaashadaha waxaa laga dhigay Production Ready oo nadiif ah.
+
+================================================================================
+ENGLISH (Full — Copy & Paste):
+================================================================================
+What's New in SHIRI v4.0.2:
+
+🛵 Direct Courier Delivery Dashboard:
+• Delivery tab now opens directly to the Driver / Courier Dashboard:
+  - Driver profile info (Ahmed Hassan • Bajaj MG-4821-B • ⭐ 4.8)
+  - Available incoming order alerts with real-time sound
+  - Today's earnings metric card ($49.00) and Cash on Delivery tracker
+  - Driver contact panel & Active Delivery progress card
+  - Bottom navigation tabs: Dashboard, Orders, Navigation, Earnings
+
+🏢 Business App (Clean Production Ready):
+• Removed persistent demo Kitchen Alarm card on business launch.
+• Kitchen Alarm now triggers dynamically when a new order is received.
+• Fully interactive Products catalog and Orders management.
+
+⚡ Performance & Reliability:
+• Enhanced loading speed and smooth tab transitions.
+• Production-grade stability across all mobile modules.
+
+================================================================================
+BUILD INFO:
+  APK:  SHIRI_v4.0.2_release.apk  (69.9 MB)
+  AAB:  SHIRI_v4.0.2_release.aab  (39.5 MB)
+  Min SDK: 24 (Android 7.0+)
+  Target SDK: 36 (Android 14/15)
+  Version Code: 49
+================================================================================
+

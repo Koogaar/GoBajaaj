@@ -122,8 +122,8 @@ fun ShiriEatsMarketScreen(
     }
     val cartItemCount by derivedStateOf { cartItems.values.sum() }
 
-    // Active order banner & Checkout states
-    var hasActiveOrder by remember { mutableStateOf(true) }
+    // Active order banner & Checkout states (Production: false by default)
+    var hasActiveOrder by remember { mutableStateOf(false) }
     var showCheckout by remember { mutableStateOf(false) }
     var showLiveTracking by remember { mutableStateOf(false) }
     var trackingOrderNumber by remember { mutableStateOf("#SHR-28491") }
@@ -145,8 +145,8 @@ fun ShiriEatsMarketScreen(
     var voiceRecordDuration by remember { mutableIntStateOf(15) }
     var voiceLandmarkText by remember { mutableStateOf("Gurigu waa midab cagaar ah, albaabka birta ah ee agtiisa masaajidka") }
 
-    // Kitchen Alarm & Merchant Lifecycle State
-    var merchantKitchenAlarm by remember { mutableStateOf(true) }
+    // Kitchen Alarm & Merchant Lifecycle State (Production: false by default, activates only when real order placed)
+    var merchantKitchenAlarm by remember { mutableStateOf(false) }
     var merchantPaymentVerified by remember { mutableStateOf(false) }
     var orderReadyForCourier by remember { mutableStateOf(false) }
 
