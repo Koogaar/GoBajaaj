@@ -472,17 +472,6 @@ export const CustomerApp: React.FC = () => {
                 </div>
                 <span className="text-[10px] bg-slate-100 font-bold px-2 py-0.5 rounded">Switch</span>
               </button>
-
-              <button
-                onClick={() => platformStore.resetDemoData()}
-                className="w-full p-4 flex items-center justify-between text-slate-800 hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <Sparkles className="w-4 h-4 text-amber-600" />
-                  <span className="font-semibold">Reset Demo Seed Data</span>
-                </div>
-                <span className="text-[10px] text-slate-400">Default state</span>
-              </button>
             </div>
           </div>
         )}

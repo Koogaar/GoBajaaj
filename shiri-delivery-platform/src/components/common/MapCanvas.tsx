@@ -468,7 +468,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
           region="SO"
         >
           <Map
-            mapId="DEMO_MAP_ID"
+            mapId="SHIRI_MOGADISHU_MAP"
             defaultCenter={pinPosition || { lat: 2.0469, lng: 45.3182 }}
             defaultZoom={15}
             mapTypeId={mapType}

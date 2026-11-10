@@ -192,11 +192,11 @@ export const AdminDashboard: React.FC = () => {
             <span>Mogadishu Gateway: Online</span>
           </div>
           <button
-            onClick={() => platformStore.resetDemoData()}
+            onClick={() => window.location.reload()}
             className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-200 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5 text-red-400" />
-            <span>Reset Demo Seed</span>
+            <span>Cusbooneysii</span>
           </button>
         </div>
       </header>
@@ -550,12 +550,12 @@ export const AdminDashboard: React.FC = () => {
                     <option value="delivered">Delivered</option>
                   </select>
                   <button
-                    onClick={handleSimulateDispatchOrder}
-                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
-                    title="Abuur dalab cusub oo toos ugu dhacaya feed-ka darawallada"
+                    onClick={() => window.location.reload()}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
+                    title="Cusbooneysii dalabyada"
                   >
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>+ Tijaabi Dalab Cusub (Feed)</span>
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Cusbooneysii</span>
                   </button>
                 </div>
               </div>
