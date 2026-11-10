@@ -1,4 +1,4 @@
-package com.example.somalitraffic.ui.screens
+﻿package com.example.somalitraffic.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -234,8 +234,8 @@ fun SignUpScreen(
                     ) {
                         Text(
                             text = when {
-                                isMerchant -> "🏪 Rukhumadda Ganacsiga: $5.00 / Bishii • Xaqiijin Admin"
-                                isCourier -> "🏍️ Rukhumadda Gaarsiiyaha: $5.00 / Bishii • Xaqiijin Admin"
+                                isMerchant -> "🏪 Rukhumadda Ganacsiga: $3.00 / Bishii • Xaqiijin Admin"
+                                isCourier -> "🏍️ Rukhumadda Gaarsiiyaha: $3.00 / Bishii • Xaqiijin Admin"
                                 isDriverMode -> "🛺 Driver Pass-ka Bajaajta: $0.25 / Maalintii (24 Saac)"
                                 else -> "👤 Akoonka Rakaabka: Bilaash ($0.00)"
                             },

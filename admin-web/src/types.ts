@@ -83,8 +83,10 @@ export interface PlatformPricingSettings {
   courier_base_delivery_fee_usd: number;
   courier_per_km_fee_usd: number;
   courier_share_percentage: number;
+  courier_monthly_subscription_usd?: number;
   service_fee_usd: number;
   night_surge_multiplier: number;
+  merchant_monthly_subscription_usd?: number;
   merchant_default_commission_rate: number;
   merchant_min_order_usd: number;
   updated_at?: string;

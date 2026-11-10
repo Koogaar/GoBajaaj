@@ -1,4 +1,4 @@
-package com.example.somalitraffic.ui.screens
+﻿package com.example.somalitraffic.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -99,17 +99,6 @@ fun LoginScreen(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Brand Name
-                Text(
-                    text = "SHIRI",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Black,
-                    color = com.example.ui.theme.ShiriCrimson,
-                    letterSpacing = 1.sp
-                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 

@@ -27,4 +27,5 @@ object NavRoutes {
     const val ADMIN_DASHBOARD = "admin_dashboard"
     const val DRIVER_FINANCES = "driver_finances"
     const val SUPPORT_CENTER = "support_center"
+    const val MERCHANT_PENDING = "merchant_pending"
 }

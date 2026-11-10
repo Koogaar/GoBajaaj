@@ -1,4 +1,4 @@
-package com.example.somalitraffic.ui.navigation
+﻿package com.example.somalitraffic.ui.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +43,7 @@ fun SomaliTrafficNavHost(
     val lockExempt = topRoute == null || topRoute == NavRoutes.SPLASH || topRoute == NavRoutes.ONBOARDING ||
         topRoute == NavRoutes.LOGIN || topRoute == NavRoutes.FORGOT_PASSWORD || topRoute == NavRoutes.SIGN_UP ||
         topRoute == NavRoutes.REGISTRATION_FORM || topRoute == NavRoutes.DRIVER_PASS ||
+        topRoute == NavRoutes.MERCHANT_PENDING ||
         topRoute == NavRoutes.ADMIN_DASHBOARD || topRoute == NavRoutes.REPORTER_DASHBOARD
     val showLock = locked && !lockExempt
 
@@ -162,8 +163,9 @@ fun SomaliTrafficNavHost(
                     else -> navController.navigate(NavRoutes.HOME)
                 }
             } else {
-                // Production: Doorka la doorto ka dib gal login/sign up
-                navController.navigate(NavRoutes.LOGIN) {
+                // Production: User cusub → u dir Registration Form-ka oo role-ka la siinayo
+                val destination = NavRoutes.registrationForm(role)
+                navController.navigate(destination) {
                     popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
                 }
             }
@@ -176,6 +178,7 @@ fun SomaliTrafficNavHost(
             )
         }
 
+        // SIGN_UP now = RoleSelectionScreen so user picks role THEN goes to registration
         composable(NavRoutes.SIGN_UP) {
             RoleSelectionScreen(
                 onBackClick = { navController.popBackStack() },
@@ -212,8 +215,15 @@ fun SomaliTrafficNavHost(
                                 popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
                             }
                         }
-                        UserRole.COURIER, UserRole.MERCHANT -> {
-                            navController.navigate(NavRoutes.HOME) {
+                        UserRole.MERCHANT -> {
+                            // Merchant: admin oggolaanshiis ayaa khasab — pending approval screen
+                            navController.navigate(NavRoutes.MERCHANT_PENDING) {
+                                popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
+                            }
+                        }
+                        UserRole.COURIER -> {
+                            // Courier: admin oggolaanshiis ayaa khasab — pending approval screen
+                            navController.navigate(NavRoutes.MERCHANT_PENDING) {
                                 popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
                             }
                         }
@@ -222,6 +232,19 @@ fun SomaliTrafficNavHost(
                                 popUpTo(NavRoutes.REGISTRATION_FORM) { inclusive = true }
                             }
                         }
+                    }
+                }
+            )
+        }
+
+        // Screen 4b: Merchant/Courier Pending Approval Screen
+        composable(NavRoutes.MERCHANT_PENDING) {
+            MerchantPendingScreen(
+                viewModel = viewModel,
+                onLogout = {
+                    viewModel.logout()
+                    navController.navigate(NavRoutes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )

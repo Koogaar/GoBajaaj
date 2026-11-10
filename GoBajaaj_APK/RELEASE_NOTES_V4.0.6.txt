@@ -1,0 +1,57 @@
+====================================================================
+SHIRI Platform - Release Notes v4.0.6 (versionCode 53)
+====================================================================
+Taariikhda: 2026-11-10
+Saxiixaha: my-upload-key.jks (upload alias)
+====================================================================
+
+WAXAA LA SAXAY (BUG FIXES):
+----------------------------
+1. [CRITICAL FIX] Business Owner Registration Flow
+   - Hore: "Business Owner" dooro → "Sii wad" → Bajaaj driver form-ka
+   - Hadda: "Business Owner" dooro → Registration Form-ka ganacsiga
+   - Flow: RoleSelection → RegistrationForm(merchant) → Pending Screen
+
+2. [NEW] Merchant Pending Approval Screen
+   - Ka dib diiwaangelinta ganacsiga, screen cusub oo muujinaya
+     "Codsigaaga Waa La Helay - Admin ayaa kuu oggolaanaya"
+   - Talaabooyinka: Admin dib u eegis → SMS/Wac → $3/bishii lacag
+   - Logout button si loo baxo
+
+3. [FIX] Qiimaha Merchant/Courier
+   - Hore: $5.00/Bishii
+   - Hadda: $3.00/Bishii (xaqiijiyay owner-ku)
+
+4. [FIX] Login Screen Logo
+   - Ka saaray "SHIRI" text oo cas ah oo redundant ahaa hoos logo-da
+   - Logo icon-ka kaliya ayaa sii jira (clean look)
+
+5. [FIX] NavHost SIGN_UP Route
+   - Login screen "Is-diiwaangeli" → Role Selection → Role-based form
+   - Merchant user cusub → RegistrationForm(merchant) → Pending
+   - Driver user cusub → RegistrationForm(driver) → DriverPass
+   - Passenger user cusub → RegistrationForm(passenger) → Home
+
+QAAB SHAQAYNTA HADDA (How Registration Works):
+-----------------------------------------------
+NEW USER FLOW:
+  Onboarding → Login Screen → "Is-diiwaangeli"
+  → Role Selection (dooro nooca)
+  → Registration Form (u gaar ah nooca)
+  → Haddii Merchant/Courier: Pending Screen
+  → Haddii Driver: Driver Pass Payment
+  → Haddii Passenger: Home
+
+RETURNING USER FLOW:
+  Login → credentials → role-based app screen
+
+====================================================================
+FILES LA BEDDELAY:
+- app/src/main/java/.../navigation/NavRoutes.kt (+ MERCHANT_PENDING)
+- app/src/main/java/.../navigation/SomaliTrafficNavHost.kt
+- app/src/main/java/.../screens/MerchantPendingScreen.kt (CUSUB)
+- app/src/main/java/.../screens/SignUpScreen.kt ($3/month)
+- app/src/main/java/.../screens/LoginScreen.kt (logo fix)
+- app/build.gradle.kts (versionCode 53, versionName 4.0.6)
+====================================================================
+
