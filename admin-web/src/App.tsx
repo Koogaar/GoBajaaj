@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import logoImg from './assets/logo.png';
 import {
   Shield,
@@ -41,7 +41,8 @@ import {
   ShoppingBag,
   Truck,
   Settings,
-  DollarSign
+  DollarSign,
+  Package
 } from 'lucide-react';
 import { supabase } from './supabase';
 import { soundAlert } from './utils/soundAlert';
@@ -65,6 +66,8 @@ import { MerchantsManagement } from './components/MerchantsManagement';
 import { CategoriesManagement } from './components/CategoriesManagement';
 import { LiveOrdersManagement } from './components/LiveOrdersManagement';
 import { CouriersManagement } from './components/CouriersManagement';
+import { ShiriDeliveryManagement } from './components/ShiriDeliveryManagement';
+import { ShiriBusinessEats } from './components/ShiriBusinessEats';
 
 export default function App() {
   const [session, setSession] = useState<any>(null);
@@ -591,11 +594,18 @@ export default function App() {
       ]
     },
     {
-      hubTitle: '2. Ganacsiyada & Qeybaha (Eats & Market)',
+      hubTitle: '🏪 SHIRI Business & Eats (Maamulka)',
       tabs: [
+        { id: 'shiri_business_eats', label: '🏪 SHIRI Business & Eats (New Hub)', icon: Store, perm: true },
         { id: 'merchants', label: '🏪 Ganacsatada & Dukaamada', icon: Store, perm: true },
         { id: 'categories', label: '📦 Qeybaha Ganacsiga (Categories)', icon: Layers, perm: true },
         { id: 'orders', label: '🛍️ Dalabyada Tooska ah (Live Orders)', icon: ShoppingBag, perm: true },
+      ]
+    },
+    {
+      hubTitle: '📦 SHIRI Delivery — Gaarsiinta',
+      tabs: [
+        { id: 'shiri_delivery', label: '📦 SHIRI Delivery Orders & Couriers', icon: Package, perm: true },
       ]
     },
     {
@@ -673,7 +683,7 @@ export default function App() {
           />
           <div>
             <span className="font-black text-xs tracking-wider block">SHIRI</span>
-            <span className="text-[9px] text-[#E50914] font-bold uppercase tracking-widest block -mt-0.5">Admin Portal</span>
+            <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest block -mt-0.5">Admin Portal</span>
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -715,7 +725,7 @@ export default function App() {
               {!isSidebarCollapsed && (
                 <div className="overflow-hidden">
                   <h1 className="font-black text-sm tracking-wider text-white truncate">SHIRI</h1>
-                  <p className="text-[9px] text-[#DC2626] font-bold uppercase tracking-widest truncate">Command Center HQ</p>
+                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest truncate">Admin Portal</p>
                 </div>
               )}
             </div>
@@ -1380,6 +1390,20 @@ export default function App() {
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'shiri_business_eats' && (
+          <ShiriBusinessEats
+            actorName={currentAdmin.full_name}
+            canManage={hasPermission(role, 'merchants.manage') || role === 'super_admin'}
+          />
+        )}
+
+        {activeTab === 'shiri_delivery' && (
+          <ShiriDeliveryManagement
+            actorName={currentAdmin.full_name}
+            canManage={hasPermission(role, 'users.update') || role === 'super_admin'}
+          />
         )}
 
         {activeTab === 'pricing' && (

@@ -242,9 +242,10 @@ fun SomaliTrafficNavHost(
             MerchantPendingScreen(
                 viewModel = viewModel,
                 onLogout = {
-                    viewModel.logout()
-                    navController.navigate(NavRoutes.LOGIN) {
-                        popUpTo(0) { inclusive = true }
+                    viewModel.logout {
+                        navController.navigate(NavRoutes.LOGIN) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 }
             )

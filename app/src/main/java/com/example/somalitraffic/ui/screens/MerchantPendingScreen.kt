@@ -1,4 +1,4 @@
-package com.example.somalitraffic.ui.screens
+﻿package com.example.somalitraffic.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -27,7 +27,7 @@ fun MerchantPendingScreen(
     val currentUser by viewModel.currentUser.collectAsState()
     val businessName = currentUser?.vehicleModel
         ?.removePrefix("Ganacsi (")?.trimEnd(')')
-        ?: currentUser?.name ?: "Ganacsigu"
+        ?: currentUser?.fullName ?: "Ganacsigu"
 
     Box(
         modifier = Modifier

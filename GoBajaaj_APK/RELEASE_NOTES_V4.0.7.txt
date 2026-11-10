@@ -1,0 +1,34 @@
+====================================================================
+SHIRI Platform - Release Notes v4.0.7 (versionCode 54)
+====================================================================
+Taariikhda: 2026-11-10
+Saxiixaha: my-upload-key.jks (upload alias)
+====================================================================
+
+ISBEDELADA BUUXA EE V4.0.7 (FULL RELEASE SUMMARY):
+--------------------------------------------------
+1. [ANDROID FIX] Business Owner (Merchant) Registration Flow
+   - Hore: Role-ka Business Owner marka la doorto wuxuu geyn jiray Bajaaj Driver.
+   - Hadda: Wuxuu toos u geynayaa foomka ganacsiga (Magaca, Nooca, Degmada, Till Payment).
+   - Ka dib diiwaangelinta ganacsiga wuxuu aadayaa MerchantPendingScreen oo xaqiijinaya in Admin-ku oggolaado.
+
+2. [ANDROID FIX] Delivery Courier & Driver Lacagaha
+   - Rukhumadda Bishii ee Ganacsatada (Merchant): $3.00 / Bishii
+   - Rukhumadda Bishii ee Couriers (Mooto): $3.00 / Bishii
+   - Driver Pass-ka Bajaajta: $0.25 / Maalintii
+
+3. [ANDROID FIX] Shaashadda Gelitaanka (LoginScreen)
+   - Qoraalkii labanlaabka ahaa ee cas ee SHIRI hoos yaallay waa la saaray si naqshaddu u noqoto mid nadiif ah.
+
+4. [WEB ADMIN] SHIRI Business & Eats Tab (CUSUB)
+   - Qeyb cusub oo maamusha ganacsiyada (Merchants), menu-yada, dalabyada cuntada, iyo commission-ka.
+   - Oggolaanshaha (Approve) ama Diidmada (Reject) ganacsatada cusub ee diiwaangashan.
+   - Kordhinta iyo dhimista qiimaha maalinlaha/billeeha ah iyadoo la isticmaalayo badhamada (+) iyo (-).
+
+5. [WEB ADMIN] SHIRI Delivery Tab (CUSUB)
+   - Qeyb gooni ah oo maamusha mootooyinka (Couriers) iyo dalabyada xirmooyinka tooska ah.
+
+FILES GENERATED:
+- GoBajaaj_APK/SHIRI_v4.0.7_release.aab (39.5 MB) [Google Play Store Ready]
+- GoBajaaj_APK/SHIRI_v4.0.7_release.apk (69.9 MB) [Direct Android Install]
+====================================================================
