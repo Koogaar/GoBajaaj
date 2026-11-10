@@ -1,0 +1,72 @@
+================================================================================
+🚀 SHIRI v4.0.4 — RELEASE NOTES
+================================================================================
+Version Code: 51 | Version Name: 4.0.4
+Release Date: November 2026
+================================================================================
+
+ENGLISH (Copy & Paste into Google Play Console):
+─────────────────────────────────────────────────
+What's New in SHIRI v4.0.4:
+
+🔐 Role-Based Authentication:
+• Each app (Customer, Merchant, Courier) now has its own dedicated login screen
+• Users stay in their selected role — no cross-role switching
+• Secure logout available from every app screen
+
+📦 Delivery Handover PIN Fix:
+• Customer now clearly sees their 4-digit handover PIN during live tracking
+• Customer reads PIN aloud to courier upon delivery — simple and secure
+• Courier enters the PIN they hear from customer to confirm delivery
+
+🛵 Courier App Improvements:
+• Navigation tab now shows live map with GPS tracking
+• Orders (Dalabyada) tab displays real available orders
+• Clean dashboard without demo/test buttons
+
+🏪 Business App Improvements:
+• Products tab shows only YOUR store's products
+• Add Product button appears only in Products section
+• Orders tab shows only your store's orders
+• Finance tab shows real earnings from completed orders
+
+⚡ Performance & Reliability:
+• Removed all demo/test elements — fully production ready
+• Improved navigation speed across all screens
+• Zero mock data — all real platform data
+
+================================================================================
+AF-SOOMAALI:
+─────────────────────────────────────────────────
+Waxyaabaha Cusub ee Nooca 4.0.4:
+
+🔐 Login Role-Based ah:
+• App kasta (Macmiil, Ganacsade, Darawal) wuxuu leeyahay shaashadda login-ka u gaar ah
+• Isticmaalaha role-kiisa ayuu ku xidnaadaa — beddelka role-yada ma suurtogalana
+• Ka Bax (Logout) waxay ka heli kartaa dhammaan meelaha app-ka
+
+📦 Hagaajinta PIN-ka Gacan-gelinta:
+• Macmiilku wuxuu si cad u araa 4-ta lambar ee PIN-ka intuu darawalku keenayo
+• Macmiilku wuxuu PIN-ka siiyaa darawalka markuu xirmada keeno
+• Darawalku wuxuu PIN-ka galiyaa si uu u xaqiijiyo gaarsiinta
+
+🛵 Hagaajinta App-ka Darawalka:
+• Tab-ka Navigation wuxuu muujiyaa khariidada noolaha ah oo GPS leh
+• Tab-ka Dalabyada wuxuu muujiyaa dalabyada dhabta ah
+• Dashboard nadiif ah oo demo/test la'aan
+
+🏪 Hagaajinta App-ka Ganacsiga:
+• Tab-ka Badeecadaha wuxuu muujiyaa badeecadahaaga KALIGOOD
+• Badhanka "Kudar Alaab" wuxuu ka muuqdaa tab-ka Badeecadaha kaliya
+• Tab-ka Dalabyada wuxuu muujiyaa dalabyada dukaankaaga kaliya
+• Tab-ka Maaliyadda wuxuu muujiyaa dakhligaaga dhab ah
+
+================================================================================
+BUILD INFO:
+  AAB: SHIRI_v4.0.4_release.aab  ← UPLOAD THIS TO PLAY CONSOLE
+  APK: SHIRI_v4.0.4_release.apk
+  versionCode: 51
+  versionName: 4.0.4
+  Min SDK: 24 | Target SDK: 36
+================================================================================
+
