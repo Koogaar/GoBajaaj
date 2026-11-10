@@ -95,6 +95,8 @@ fun SomaliTrafficNavHost(
                         UserRole.REPORTER_MANAGER,
                         UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
                         UserRole.DRIVER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                        UserRole.MERCHANT -> NavRoutes.MERCHANT_APP
+                        UserRole.COURIER -> NavRoutes.DELIVERY
                         UserRole.PASSENGER -> NavRoutes.HOME
                         else -> NavRoutes.HOME
                     }
@@ -120,6 +122,8 @@ fun SomaliTrafficNavHost(
                         UserRole.REPORTER_MANAGER,
                         UserRole.SUPPORT_AGENT -> NavRoutes.ADMIN_DASHBOARD
                         UserRole.DRIVER -> if (viewModel.isSubscriptionActive()) NavRoutes.HOME else NavRoutes.DRIVER_PASS
+                        UserRole.MERCHANT -> NavRoutes.MERCHANT_APP
+                        UserRole.COURIER -> NavRoutes.DELIVERY
                         UserRole.PASSENGER -> NavRoutes.HOME
                         else -> NavRoutes.HOME
                     }
@@ -132,28 +136,36 @@ fun SomaliTrafficNavHost(
 
         // Screen 3b: Entry Role Selection (Marka kow app-ka la soo galo)
         val handleRoleNavigation: (String) -> Unit = { role ->
-            when (role) {
-                "passenger" -> {
-                    navController.navigate(NavRoutes.HOME) {
-                        popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+            val user = viewModel.currentUser.value
+            if (user != null) {
+                when (role) {
+                    "passenger" -> {
+                        navController.navigate(NavRoutes.HOME) {
+                            popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                        }
                     }
-                }
-                "merchant" -> {
-                    navController.navigate(NavRoutes.MERCHANT_APP) {
-                        popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                    "merchant" -> {
+                        navController.navigate(NavRoutes.MERCHANT_APP) {
+                            popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                        }
                     }
-                }
-                "driver" -> {
-                    navController.navigate(NavRoutes.DRIVER_PASS) {
-                        popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                    "driver" -> {
+                        navController.navigate(NavRoutes.DRIVER_PASS) {
+                            popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                        }
                     }
-                }
-                "courier" -> {
-                    navController.navigate(NavRoutes.DELIVERY) {
-                        popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                    "courier" -> {
+                        navController.navigate(NavRoutes.DELIVERY) {
+                            popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                        }
                     }
+                    else -> navController.navigate(NavRoutes.HOME)
                 }
-                else -> navController.navigate(NavRoutes.HOME)
+            } else {
+                // Production: Doorka la doorto ka dib gal login/sign up
+                navController.navigate(NavRoutes.LOGIN) {
+                    popUpTo(NavRoutes.ROLE_SELECTION) { inclusive = false }
+                }
             }
         }
 

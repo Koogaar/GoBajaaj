@@ -69,6 +69,8 @@ fun SplashScreen(
                         onNavigateNext("driver_pass")
                     }
                 }
+                "merchant" -> onNavigateNext("merchant_app")
+                "courier" -> onNavigateNext("delivery")
                 "passenger" -> onNavigateNext("home")
                 else -> onNavigateNext("home")
             }

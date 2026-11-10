@@ -1,0 +1,74 @@
+================================================================================
+🚀 SHIRI v4.0.5 — RELEASE NOTES (PRODUCTION NATIVE KOTLIN)
+================================================================================
+Version Code: 52 | Version Name: 4.0.5
+Release Date: November 2026
+================================================================================
+
+ENGLISH (Copy & Paste into Google Play Console — What's New):
+─────────────────────────────────────────────────────────────
+What's New in SHIRI v4.0.5:
+
+🔐 Production Role Authentication Flow:
+• Dedicated login & registration routing based on selected user role:
+  - Customer / Macmiilka (Super App: Food, Market, Parcels, Rides)
+  - Merchant / Business Owner (Store Management, Orders, Kitchen Alarm)
+  - Courier / Mooto Driver (Express Package & Food Delivery)
+  - Driver / Wade Bajaaj (Passenger Rides & 24h Driver Pass)
+• Seamless session restoration directly into the user's role-specific dashboard
+• No demo/test elements — 100% production-ready native Android performance
+
+🛵 Courier Delivery Dashboard:
+• Real-time incoming delivery orders
+• Turn-by-turn navigation with Google Maps
+• Handover verification with customer 4-digit PIN
+
+🏪 Business & Merchant Storefront:
+• Store Open/Close status toggle
+• Real-time order pipeline (Pending, Preparing, Ready, Delivered)
+• Payment verification and WhatsApp customer receipt confirmation
+• Clean product and catalog stock management
+
+📦 Customer Live Tracking:
+• Shiri Digital Address (e.g. SHR-MG-48291)
+• 1-step checkout with voice landmark notes & telecom USSD shortcuts
+• Clear 4-digit Handover PIN displayed to customer to read aloud to courier
+
+================================================================================
+AF-SOOMAALI (Kooban — Copy & Paste):
+─────────────────────────────────────────────────────────────
+Waxyaabaha Cusub ee Nooca 4.0.5:
+
+🔐 Nidaamka Login-ka Role-Based-ka ah ee Tooska ah:
+• Qof kasta marka uu app-ka furo wuxuu dooranayaa doorkiisa, kadibna login/sign up ayuu ku galayaa:
+  - Macmiil (Dhammaan Adeegyada Suuqa, Cuntada & Gaadiidka)
+  - Ganacsade / Meherad (Maamulka Dukaanka & Dalabyada)
+  - Gaarsiiye Mooto / Courier (Qaadista Dalabyada & Gaarsiinta)
+  - Darawal Bajaaj (Driver Pass & Qaadista Rakaabka)
+• Markuu qofku galo, wuxuu toos ugu dhacayaa dashboard-ka doorkiisa u gaarka ah.
+
+🛵 App-ka Darawalka (Courier):
+• Xaaladda Online/Offline oo leh GPS toos ah
+• Dalabyada soo dhacaya oo leh tilmaamaha meesha laga qaadayo iyo meesha la geynayo
+• Navigation toos ah oo la furaayo Google Maps
+• Gelinta Handover PIN-ka uu macmiilka ka maqlay si uu safarka u xiro
+
+🏪 App-ka Ganacsiga (Merchant):
+• Furista iyo xirista dukaanka (Open/Close)
+• Xaqiijinta lacag-bixinta macmiilka iyo risiidhka WhatsApp
+• Maamulka alaabta dukaanka
+
+📦 Qeybta Macmiilka (Customer):
+• Shiri Address (Guri Number Digital ah)
+• Checkout degdeg ah oo leh duubista codka iyo USSD-ka lacagta
+• Koodhka Handover PIN-ka oo macmiilku si cad u arko si uu darawalka ugu aqriyo
+
+================================================================================
+BUILD INFO:
+  AAB:  SHIRI_v4.0.5_release.aab  (39.5 MB)  ← UPLOAD THIS TO PLAY CONSOLE
+  APK:  SHIRI_v4.0.5_release.apk  (69.9 MB)
+  versionCode: 52
+  versionName: 4.0.5
+  Min SDK: 24 (Android 7.0+)
+  Target SDK: 36 (Android 14/15)
+================================================================================
