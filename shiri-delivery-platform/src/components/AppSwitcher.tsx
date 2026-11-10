@@ -20,7 +20,6 @@ import {
   Database,
   Copy,
   Check,
-  LogOut,
 } from 'lucide-react';
 import { soundEffects } from '../utils/soundEffects';
 import { isSupabaseConfigured, setSupabaseCredentials, supabaseUrl, supabaseAnonKey } from '../supabase/client';
@@ -93,54 +92,79 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
           </span>
         </div>
 
-        {/* Application Portal Selectors */}
+        {/* 4 Application Selectors + Multi-App Simulator Mode */}
         <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-2xl border border-slate-800 overflow-x-auto max-w-full">
           <button
-            onClick={() => onSelectRole('customer')}
+            onClick={() => {
+              if (isMultiView) onToggleMultiView();
+              onSelectRole('customer');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-              currentRole === 'customer'
+              !isMultiView && currentRole === 'customer'
                 ? 'bg-red-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
-            <span>Macmiil (Customer)</span>
+            <span>1. Customer App</span>
           </button>
 
           <button
-            onClick={() => onSelectRole('merchant')}
+            onClick={() => {
+              if (isMultiView) onToggleMultiView();
+              onSelectRole('merchant');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-              currentRole === 'merchant'
+              !isMultiView && currentRole === 'merchant'
                 ? 'bg-red-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <Store className="w-3.5 h-3.5" />
-            <span>Meherad (Merchant)</span>
+            <span>2. Business App</span>
           </button>
 
           <button
-            onClick={() => onSelectRole('courier')}
+            onClick={() => {
+              if (isMultiView) onToggleMultiView();
+              onSelectRole('courier');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-              currentRole === 'courier'
+              !isMultiView && currentRole === 'courier'
                 ? 'bg-red-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <Bike className="w-3.5 h-3.5" />
-            <span>Darawal (Courier)</span>
+            <span>3. Driver App</span>
           </button>
 
           <button
-            onClick={() => onSelectRole('admin')}
+            onClick={() => {
+              if (isMultiView) onToggleMultiView();
+              onSelectRole('admin');
+            }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
-              currentRole === 'admin'
+              !isMultiView && currentRole === 'admin'
                 ? 'bg-red-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
-            <span>Maamul (Admin)</span>
+            <span>4. Admin Web</span>
+          </button>
+
+          <button
+            onClick={onToggleMultiView}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
+              isMultiView
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-emerald-400 hover:text-emerald-300 hover:bg-slate-800'
+            }`}
+            title="Watch Customer, Business, and Driver sync in real-time"
+          >
+            <Columns className="w-3.5 h-3.5" />
+            <span>Multi-App Sync</span>
           </button>
         </div>
 
@@ -153,15 +177,19 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
             </div>
           )}
 
-          {/* Logout button if currently logged in */}
-          {platformStore.isRoleLoggedIn(currentRole) && (
+          {/* Production Mode Toggle (Clean native app view) */}
+          {onToggleProductionMode && (
             <button
-              onClick={() => platformStore.logoutRole(currentRole)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all border bg-red-950/70 text-red-300 border-red-800/80 hover:bg-red-900"
-              title="Ka bax akoonka (Log Out)"
+              onClick={onToggleProductionMode}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all border ${
+                isProductionMode
+                  ? 'bg-amber-600 text-white border-amber-500 shadow-xs'
+                  : 'bg-slate-900 text-amber-300 border-amber-900/60 hover:bg-slate-800'
+              }`}
+              title="Keliya App-ka Macmiilka (Mobile App Only)"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ka Bax</span>
+              <Smartphone className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Pure App View</span>
             </button>
           )}
 

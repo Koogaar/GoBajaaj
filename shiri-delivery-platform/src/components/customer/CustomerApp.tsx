@@ -208,12 +208,12 @@ export const CustomerApp: React.FC = () => {
                       {activeOrder.status === 'in_transit'
                         ? 'Waddada ayuu kusoo jiraa'
                         : activeOrder.status === 'preparing'
-                          ? 'Jikada ayaa diyaarinaysa'
-                          : activeOrder.status === 'ready_for_pickup'
-                            ? 'Waa diyaar, darawal sugaya'
-                            : activeOrder.status === 'courier_assigned'
-                              ? 'Darawal ayaa loo qoondeeyay'
-                              : 'Dalabka waa la aqbalay'}
+                        ? 'Jikada ayaa diyaarinaysa'
+                        : activeOrder.status === 'ready_for_pickup'
+                        ? 'Waa diyaar, darawal sugaya'
+                        : activeOrder.status === 'courier_assigned'
+                        ? 'Darawal ayaa loo qoondeeyay'
+                        : 'Dalabka waa la aqbalay'}
                     </span>
                   </div>
 
@@ -278,10 +278,11 @@ export const CustomerApp: React.FC = () => {
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex flex-col items-center justify-center min-w-[72px] p-2.5 rounded-2xl border transition-all shrink-0 ${isSelected
+                      className={`flex flex-col items-center justify-center min-w-[72px] p-2.5 rounded-2xl border transition-all shrink-0 ${
+                        isSelected
                           ? 'bg-red-600 text-white border-red-600 shadow-sm'
                           : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
-                        }`}
+                      }`}
                     >
                       <span className="text-xl mb-1">{cat.icon}</span>
                       <span className="text-[11px] font-bold whitespace-nowrap">
@@ -394,12 +395,13 @@ export const CustomerApp: React.FC = () => {
                       <div className="text-[10px] font-mono text-red-600 font-semibold truncate">{ord.orderNumber}</div>
                     </div>
                     <span
-                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 whitespace-nowrap ${ord.status === 'delivered'
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-full shrink-0 whitespace-nowrap ${
+                        ord.status === 'delivered'
                           ? 'bg-emerald-100 text-emerald-800'
                           : ord.status === 'cancelled'
-                            ? 'bg-rose-100 text-rose-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
+                          ? 'bg-rose-100 text-rose-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
                     >
                       {ord.status}
                     </span>
@@ -472,17 +474,14 @@ export const CustomerApp: React.FC = () => {
               </button>
 
               <button
-                onClick={() => {
-                  platformStore.logoutRole('customer');
-                  window.location.reload();
-                }}
-                className="w-full p-4 flex items-center justify-between text-rose-600 hover:bg-rose-50 transition-colors"
+                onClick={() => platformStore.resetDemoData()}
+                className="w-full p-4 flex items-center justify-between text-slate-800 hover:bg-slate-50 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <LogOut className="w-4 h-4 text-rose-600" />
-                  <span className="font-semibold">Ka Bax (Log Out)</span>
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span className="font-semibold">Reset Demo Seed Data</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-rose-400" />
+                <span className="text-[10px] text-slate-400">Default state</span>
               </button>
             </div>
           </div>
@@ -521,8 +520,9 @@ export const CustomerApp: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setCurrentTab(tab.id as any)}
-              className={`flex flex-col items-center justify-center h-full relative transition-colors ${isActive ? 'text-red-600' : 'text-slate-500 hover:text-slate-800'
-                }`}
+              className={`flex flex-col items-center justify-center h-full relative transition-colors ${
+                isActive ? 'text-red-600' : 'text-slate-500 hover:text-slate-800'
+              }`}
             >
               <div className="relative">
                 <IconComponent className="w-5 h-5" />

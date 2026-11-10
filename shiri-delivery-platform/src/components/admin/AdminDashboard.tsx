@@ -30,7 +30,6 @@ import {
   MessageCircle,
   Plus,
   PlusCircle,
-  LogOut,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -164,6 +163,11 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleSimulateDispatchOrder = () => {
+    platformStore.simulateIncomingOrder();
+    alert('Dalab tijaabo ah ayaa loo diray nidaamka! Darawalladu waxay hadda ka arkayaan "Dalabyada Soo Dhacaya".');
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
       {/* Top Admin Navigation Bar */}
@@ -182,28 +186,17 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-4 text-xs">
           <div className="hidden md:flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg text-slate-300">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>Mogadishu Gateway: Online</span>
           </div>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => platformStore.resetDemoData()}
             className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg text-slate-200 transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5 text-red-400" />
-            <span>Cusbooneysii</span>
-          </button>
-          <button
-            onClick={() => {
-              platformStore.logoutRole('admin');
-              window.location.reload();
-            }}
-            className="flex items-center gap-1.5 bg-red-950/70 hover:bg-red-900 border border-red-800/80 px-3 py-1.5 rounded-lg text-red-200 transition-colors font-bold"
-            title="Ka bax akoonka maamulka"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Ka Bax</span>
+            <span>Reset Demo Seed</span>
           </button>
         </div>
       </header>
@@ -557,12 +550,12 @@ export const AdminDashboard: React.FC = () => {
                     <option value="delivered">Delivered</option>
                   </select>
                   <button
-                    onClick={() => window.location.reload()}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
-                    title="Cusbooneysii dalabyada"
+                    onClick={handleSimulateDispatchOrder}
+                    className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors shrink-0"
+                    title="Abuur dalab cusub oo toos ugu dhacaya feed-ka darawallada"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Cusbooneysii</span>
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>+ Tijaabi Dalab Cusub (Feed)</span>
                   </button>
                 </div>
               </div>

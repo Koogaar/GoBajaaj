@@ -28,7 +28,6 @@ import {
   MessageCircle,
   Edit3,
   Volume2,
-  LogOut,
 } from 'lucide-react';
 import { VoiceNotePlayer } from '../common/VoiceNotePlayer';
 import { soundEffects } from '../../utils/soundEffects';
@@ -37,10 +36,8 @@ export const MerchantApp: React.FC = () => {
   const lang = platformStore.getLanguage();
   const t = translations[lang];
 
-  // Active Merchant initialized from platform auth
-  const [selectedMerchantId, setSelectedMerchantId] = useState<string>(
-    platformStore.getActiveMerchantId() || 'merch-1'
-  );
+  // Active Merchant in simulator (defaults to Pizza House Mogadishu or Sahra Restaurant)
+  const [selectedMerchantId, setSelectedMerchantId] = useState<string>('merch-1');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'finance' | 'settings'>('dashboard');
 
   // Filter tabs for orders
@@ -86,7 +83,6 @@ export const MerchantApp: React.FC = () => {
   const preparingOrders = merchantOrders.filter((o) => o.status === 'accepted' || o.status === 'preparing');
   const readyOrders = merchantOrders.filter((o) => o.status === 'ready_for_pickup' || o.status === 'courier_assigned');
   const completedOrders = merchantOrders.filter((o) => o.status === 'delivered');
-  const merchantEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0) || merchant.salesToday;
 
   const filteredOrders = merchantOrders.filter((o) => {
     if ((orderFilter as string) === 'unpaid') return o.paymentStatus !== 'paid' && o.status !== 'cancelled';
@@ -181,19 +177,28 @@ export const MerchantApp: React.FC = () => {
           </div>
         </div>
 
-        {/* Store Active Badge & Logout Action */}
+        {/* Sound Alert Test & Switch Store Simulator Selector */}
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => {
-              platformStore.logoutRole('merchant');
-              window.location.reload();
-            }}
-            className="p-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 transition-colors flex items-center gap-1 text-xs font-bold"
-            title="Ka bax akoonka meheradda"
+            onClick={() => soundEffects.playOrderAlert()}
+            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors flex items-center gap-1 text-[11px] font-bold"
+            title="Tijaabi Dhawaaqa Dalabka (Test Kitchen Alarm)"
           >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Ka Bax</span>
+            <Volume2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sound</span>
           </button>
+
+          <select
+            value={selectedMerchantId}
+            onChange={(e) => setSelectedMerchantId(e.target.value)}
+            className="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2 py-1 rounded-lg border-none outline-none"
+          >
+            {merchants.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
         </div>
       </header>
 
@@ -741,7 +746,7 @@ export const MerchantApp: React.FC = () => {
             </div>
 
             <div className="space-y-2.5">
-              {platformStore.getProducts().filter((p) => p.merchantId === merchant.id).map((prod) => (
+              {merchant.products.map((prod) => (
                 <div
                   key={prod.id}
                   className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs flex gap-3 items-center justify-between"
@@ -812,7 +817,7 @@ export const MerchantApp: React.FC = () => {
                   Dakhligaaga Saafiga ah ee Maanta (Net Sales)
                 </span>
                 <div className="text-3xl font-black font-mono text-emerald-400 mt-0.5">
-                  ${merchantEarnings.toFixed(2)}
+                  ${merchant.salesToday.toFixed(2)}
                 </div>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   100% Dakhliga iibka waa kaaga (0% Commission Model)
@@ -822,7 +827,7 @@ export const MerchantApp: React.FC = () => {
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700 text-xs">
                 <div>
                   <span className="text-slate-400">Wadarta Iibka (Gross):</span>
-                  <div className="font-mono font-bold">${merchantEarnings.toFixed(2)}</div>
+                  <div className="font-mono font-bold">${merchant.salesToday.toFixed(2)}</div>
                 </div>
                 <div>
                   <span className="text-slate-400">Commission-ka Shiri:</span>

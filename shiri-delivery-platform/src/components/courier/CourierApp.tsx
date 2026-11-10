@@ -31,8 +31,6 @@ import {
   PlusCircle,
   Edit3,
   Volume2,
-  RefreshCw,
-  LogOut,
 } from 'lucide-react';
 import { VoiceNotePlayer } from '../common/VoiceNotePlayer';
 import { soundEffects } from '../../utils/soundEffects';
@@ -42,10 +40,8 @@ export const CourierApp: React.FC = () => {
   const lang = platformStore.getLanguage();
   const t = translations[lang];
 
-  // Active driver initialized from platform auth
-  const [selectedCourierId, setSelectedCourierId] = useState<string>(
-    platformStore.getActiveCourierId() || 'cour-1'
-  );
+  // Active driver in simulator: Ahmed Hassan (Canab)
+  const [selectedCourierId, setSelectedCourierId] = useState<string>('cour-1');
   const [couriers, setCouriers] = useState<Courier[]>(platformStore.getCouriers());
   const [orders, setOrders] = useState<Order[]>(platformStore.getOrders());
 
@@ -169,6 +165,11 @@ export const CourierApp: React.FC = () => {
     setIsPaySubscriptionOpen(false);
   };
 
+  const handleSimulateNewOrder = () => {
+    platformStore.simulateIncomingOrder();
+    setActiveTab('incoming_orders');
+  };
+
   return (
     <div className="flex flex-col h-full bg-slate-50 relative">
       {/* Top Mobile App Bar */}
@@ -195,6 +196,15 @@ export const CourierApp: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => soundEffects.playDispatchAlert()}
+            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors flex items-center gap-1 text-[11px] font-bold"
+            title="Tijaabi Digniinta Darawalka (Test Dispatch Siren)"
+          >
+            <Volume2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Alert</span>
+          </button>
+
           {/* Online / Offline switch */}
           <button
             onClick={handleToggleOnline}
@@ -206,19 +216,6 @@ export const CourierApp: React.FC = () => {
           >
             <Power className="w-3.5 h-3.5" />
             <span>{courier.isOnline ? 'Online' : 'Offline'}</span>
-          </button>
-
-          {/* Logout button */}
-          <button
-            onClick={() => {
-              platformStore.logoutRole('courier');
-              window.location.reload();
-            }}
-            className="p-1.5 px-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 transition-colors flex items-center gap-1 text-xs font-bold"
-            title="Ka bax akoonka darawalka"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Ka Bax</span>
           </button>
         </div>
       </header>
@@ -319,12 +316,12 @@ export const CourierApp: React.FC = () => {
                   <span>Eeg Dalabyada Soo Dhacaya ({unassignedOrders.length})</span>
                 </button>
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={handleSimulateNewOrder}
                   className="px-3 py-2.5 bg-red-800/60 hover:bg-red-800 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1"
-                  title="Cusbooneysii dalabyada"
+                  title="Abuur dalab tijaabo ah oo cusub"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>Cusbooneysii</span>
+                  <PlusCircle className="w-3.5 h-3.5" />
+                  <span>Tijaabi Dalab</span>
                 </button>
               </div>
             </div>
@@ -493,11 +490,11 @@ export const CourierApp: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={() => window.location.reload()}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-xs transition-colors"
+                onClick={handleSimulateNewOrder}
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-xs transition-colors"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Cusbooneysii</span>
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>+ Tijaabi Dalab Cusub</span>
               </button>
             </div>
 
@@ -527,11 +524,11 @@ export const CourierApp: React.FC = () => {
                   Dalab kasta oo macmiilku ka dalbado makhaayadaha Muqdisho wuxuu si toos ah ugu soo dhacayaa halkan.
                 </p>
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={handleSimulateNewOrder}
                   className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
                 >
-                  <RefreshCw className="w-3.5 h-3.5 text-red-400" />
-                  <span>Cusbooneysii Liiska</span>
+                  <PlusCircle className="w-3.5 h-3.5 text-red-400" />
+                  <span>Tijaabi Soo Dhicidda Dalab Cusub</span>
                 </button>
               </div>
             ) : (
@@ -677,66 +674,18 @@ export const CourierApp: React.FC = () => {
         {activeTab === 'delivery' && (
           <div className="space-y-4">
             {!activeOrder ? (
-              <div className="space-y-4">
-                {/* Real Navigation Map with Live Driver Location */}
-                <div className="rounded-3xl overflow-hidden shadow-md border border-slate-200">
-                  <MapCanvas
-                    mode="fleet"
-                    height="h-64"
-                    courierCoords={courier.currentCoordinates}
-                    courierLabel={`${courier.name} (Live GPS)`}
-                  />
-                </div>
-
-                {/* Driver Live Navigation Info & Google Maps */}
-                <div className="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-2xs space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-                        <Navigation className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-900">
-                          Khariidadda Tooska ah (Live Navigation)
-                        </h4>
-                        <p className="text-[10px] text-slate-500">
-                          GPS Mogadishu: {courier.currentCoordinates.lat.toFixed(5)}, {courier.currentCoordinates.lng.toFixed(5)}
-                        </p>
-                      </div>
-                    </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      courier.isOnline ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {courier.isOnline ? 'Online & Diyaar' : 'Offline'}
-                    </span>
-                  </div>
-
-                  <a
-                    href={buildGoogleMapsViewUrl(
-                      courier.currentCoordinates,
-                      `Shiri Courier - ${courier.name}`
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-emerald-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-colors"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Ku Fur Google Maps App</span>
-                  </a>
-
-                  <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                    <div className="text-xs text-slate-600">
-                      <span className="font-semibold text-slate-800 block">Ma jiro safar socda hadda</span>
-                      <span className="text-[11px] text-slate-500">Dooro dalab banaan si aad u bilowdo navigation</span>
-                    </div>
-                    <button
-                      onClick={() => setActiveTab('incoming_orders')}
-                      className="px-3 py-1.5 bg-red-600 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-red-700 transition-colors"
-                    >
-                      Eeg Dalabyada
-                    </button>
-                  </div>
-                </div>
+              <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center space-y-2">
+                <Bike className="w-10 h-10 text-slate-300 mx-auto" />
+                <h4 className="text-sm font-bold text-slate-800">Ma jiro dalab hadda kugu xiran</h4>
+                <p className="text-xs text-slate-500">
+                  Gal Online si laguu soo gaarsiiyo codsiyada cusub ee Mogadishu.
+                </p>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className="mt-2 px-4 py-2 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl"
+                >
+                  Ku noqo Dashboard-ka
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -850,7 +799,7 @@ export const CourierApp: React.FC = () => {
                     </div>
                   </div>
 
-                {/* Handover PIN Verification Keypad (Driver enters PIN heard from customer) */}
+                {/* Handover PIN Verification Keypad (Requirement 7 & 8) */}
                 {(activeOrder.status === 'picked_up' || activeOrder.status === 'in_transit') && (
                   <div className="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
                     <div className="text-center space-y-1">
@@ -858,10 +807,10 @@ export const CourierApp: React.FC = () => {
                         <KeyRound className="w-5 h-5" />
                       </div>
                       <h4 className="text-sm font-bold text-slate-900">
-                        Geli PIN-ka Macmiilka (Customer Handover PIN)
+                        {t.enterHandoverPin}
                       </h4>
                       <p className="text-[11px] text-slate-500">
-                        Weydii macmiilka inuu kuu aqriyo PIN-ka 4-ta god ah ee shaashaddiisa kaga qoran si aad u xaqiijiso gaarsiinta.
+                        Weydii macmiilka koodhka 4-ta god ah ee app-kiisa kaga qoran.
                       </p>
                     </div>
 
