@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { ShiriOrder } from '../types';
-import { ShoppingBag, RefreshCw, Key, CheckCircle, Clock, Truck, Search, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, RefreshCw, Key, CheckCircle, Clock, Truck, Search, ShieldCheck, X, Phone, MapPin, DollarSign } from 'lucide-react';
 
 interface LiveOrdersManagementProps {
   canManage: boolean;
@@ -13,6 +13,7 @@ export const LiveOrdersManagement: React.FC<LiveOrdersManagementProps> = ({ canM
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedOrderModal, setSelectedOrderModal] = useState<ShiriOrder | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -235,18 +236,26 @@ export const LiveOrdersManagement: React.FC<LiveOrdersManagementProps> = ({ canM
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    {canManage && order.status !== 'delivered' && (
+                    <div className="flex items-center justify-end gap-1.5">
                       <button
-                        onClick={() => {
-                          const next = order.status === 'pending' ? 'preparing' :
-                                       order.status === 'preparing' ? 'in_transit' : 'delivered';
-                          handleUpdateStatus(order.id, next);
-                        }}
-                        className="px-2.5 py-1 bg-neutral-900 hover:bg-black text-white text-[10px] font-black rounded-lg transition cursor-pointer"
+                        onClick={() => setSelectedOrderModal(order)}
+                        className="px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-[10px] font-bold rounded-lg transition cursor-pointer"
                       >
-                        Gudbi →
+                        Arag →
                       </button>
-                    )}
+                      {canManage && order.status !== 'delivered' && (
+                        <button
+                          onClick={() => {
+                            const next = order.status === 'pending' ? 'preparing' :
+                                         order.status === 'preparing' ? 'in_transit' : 'delivered';
+                            handleUpdateStatus(order.id, next);
+                          }}
+                          className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white text-[10px] font-black rounded-lg transition cursor-pointer"
+                        >
+                          Gudbi →
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -254,6 +263,97 @@ export const LiveOrdersManagement: React.FC<LiveOrdersManagementProps> = ({ canM
           </table>
         </div>
       </div>
+
+      {/* Order Details Modal */}
+      {selectedOrderModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+              <div>
+                <span className="font-mono font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-md text-xs">
+                  {selectedOrderModal.order_number}
+                </span>
+                <span className="ml-2 text-xs font-bold text-neutral-500">
+                  {selectedOrderModal.merchant_name}
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedOrderModal(null)}
+                className="p-1 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-neutral-700 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-neutral-500 font-medium">Macmiilka:</span>
+                  <span className="font-bold text-neutral-900">{selectedOrderModal.customer_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500 font-medium">Taleefanka:</span>
+                  <span className="font-mono font-bold text-blue-600">{selectedOrderModal.customer_phone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500 font-medium">Degmada / Goobta:</span>
+                  <span className="font-bold text-neutral-900">{selectedOrderModal.district}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500 font-medium">Mootada (Courier):</span>
+                  <span className="font-bold text-neutral-900">{selectedOrderModal.courier_name || 'Lama xil-saarin'}</span>
+                </div>
+              </div>
+
+              <div className="bg-neutral-900 text-white p-3 rounded-xl flex items-center justify-between">
+                <span className="text-neutral-400 font-medium">Handover Security PIN:</span>
+                <span className="font-mono text-base font-black text-amber-400 tracking-widest">{selectedOrderModal.handover_pin}</span>
+              </div>
+
+              <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-200 space-y-1.5">
+                <div className="flex justify-between">
+                  <span className="text-neutral-500 font-medium">Subtotal:</span>
+                  <span className="font-bold">${selectedOrderModal.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500 font-medium">Delivery Fee:</span>
+                  <span className="font-bold">${selectedOrderModal.delivery_fee.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-neutral-500 font-medium">Service Fee:</span>
+                  <span className="font-bold">${selectedOrderModal.service_fee.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-neutral-200 pt-1.5 flex justify-between text-sm">
+                  <span className="font-black text-neutral-900">Wadarta Guud:</span>
+                  <span className="font-black text-red-600">${selectedOrderModal.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setSelectedOrderModal(null)}
+                className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold rounded-xl transition cursor-pointer"
+              >
+                Xir
+              </button>
+              {canManage && selectedOrderModal.status !== 'delivered' && (
+                <button
+                  onClick={() => {
+                    const next = selectedOrderModal.status === 'pending' ? 'preparing' :
+                                 selectedOrderModal.status === 'preparing' ? 'in_transit' : 'delivered';
+                    handleUpdateStatus(selectedOrderModal.id, next);
+                    setSelectedOrderModal({ ...selectedOrderModal, status: next });
+                  }}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  U Gudbi Xaaladda Xigta →
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

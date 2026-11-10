@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { ShiriMerchant } from '../types';
-import { Store, CheckCircle, XCircle, Search, RefreshCw, Plus, Edit2, ShieldCheck, MapPin, Phone, Star } from 'lucide-react';
+import { Store, CheckCircle, XCircle, Search, RefreshCw, Plus, Edit2, ShieldCheck, MapPin, Phone, Star, Package, X, Trash2 } from 'lucide-react';
 
 interface MerchantsManagementProps {
   canManage: boolean;
   actorName: string;
+}
+
+interface MerchantProduct {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  in_stock: boolean;
 }
 
 export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canManage, actorName }) => {
@@ -13,6 +21,17 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedMerchantForProducts, setSelectedMerchantForProducts] = useState<ShiriMerchant | null>(null);
+  const [merchantProducts, setMerchantProducts] = useState<MerchantProduct[]>([
+    { id: 'p1', name: 'Margherita Pizza', price: 8.50, category: 'Pizza', in_stock: true },
+    { id: 'p2', name: 'Chicken Burger Special', price: 5.00, category: 'Burger', in_stock: true },
+    { id: 'p3', name: 'Crispy French Fries', price: 2.50, category: 'Fast Food', in_stock: true },
+    { id: 'p4', name: 'Coca-Cola Can 330ml', price: 1.00, category: 'Drinks', in_stock: true },
+    { id: 'p5', name: 'Beef Somali Shawarma', price: 4.50, category: 'Fast Food', in_stock: true }
+  ]);
+  const [newProdName, setNewProdName] = useState<string>('');
+  const [newProdPrice, setNewProdPrice] = useState<string>('');
+  const [newProdCategory, setNewProdCategory] = useState<string>('Cunto');
 
   useEffect(() => {
     fetchMerchants();
@@ -285,9 +304,13 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
                     </button>
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <span className="text-[11px] font-bold text-neutral-400">
-                      Min: ${merchant.min_order} • Delivery: ${merchant.delivery_fee}
-                    </span>
+                    <button
+                      onClick={() => setSelectedMerchantForProducts(merchant)}
+                      className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-lg text-xs transition flex items-center gap-1 ml-auto cursor-pointer"
+                    >
+                      <Package className="w-3.5 h-3.5" />
+                      Alaabta (Products)
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -295,6 +318,128 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
           </table>
         </div>
       </div>
+
+      {/* Merchant Products Management Modal */}
+      {selectedMerchantForProducts && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
+              <div>
+                <h3 className="text-base font-black text-neutral-900 flex items-center gap-2">
+                  <Package className="w-5 h-5 text-red-600" />
+                  Maamulka Alaabta: {selectedMerchantForProducts.name}
+                </h3>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Degmada {selectedMerchantForProducts.district} • {selectedMerchantForProducts.phone}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedMerchantForProducts(null)}
+                className="p-1.5 hover:bg-neutral-100 rounded-lg text-neutral-400 hover:text-neutral-700 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Add Product Form */}
+            <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 space-y-3">
+              <h4 className="text-xs font-black text-neutral-800 uppercase tracking-wide">+ Kudar Alaab Cusub</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="Magaca Alaabta"
+                  value={newProdName}
+                  onChange={(e) => setNewProdName(e.target.value)}
+                  className="px-3 py-2 bg-white border border-neutral-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-red-600 outline-none"
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Qiimaha ($)"
+                  value={newProdPrice}
+                  onChange={(e) => setNewProdPrice(e.target.value)}
+                  className="px-3 py-2 bg-white border border-neutral-200 rounded-lg text-xs font-medium focus:ring-2 focus:ring-red-600 outline-none"
+                />
+                <button
+                  onClick={() => {
+                    const price = parseFloat(newProdPrice);
+                    if (newProdName.trim() && !isNaN(price) && price > 0) {
+                      setMerchantProducts([
+                        ...merchantProducts,
+                        {
+                          id: 'p-' + Date.now(),
+                          name: newProdName.trim(),
+                          price,
+                          category: newProdCategory,
+                          in_stock: true
+                        }
+                      ]);
+                      setNewProdName('');
+                      setNewProdPrice('');
+                      alert(`Alaab '${newProdName}' waa lagu daray!`);
+                    } else {
+                      alert('Fadlan geli magac iyo qiimo sax ah');
+                    }
+                  }}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition cursor-pointer"
+                >
+                  + Kudar Alaabta
+                </button>
+              </div>
+            </div>
+
+            {/* Products List */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-black text-neutral-800 uppercase tracking-wide">
+                Alaabta Ku Jirta Dukaanka ({merchantProducts.length})
+              </h4>
+              <div className="divide-y divide-neutral-100 border border-neutral-200 rounded-xl overflow-hidden">
+                {merchantProducts.map((p) => (
+                  <div key={p.id} className="p-3.5 flex items-center justify-between hover:bg-neutral-50/60 transition bg-white">
+                    <div>
+                      <div className="font-bold text-xs text-neutral-900">{p.name}</div>
+                      <div className="text-[11px] text-neutral-500">${p.price.toFixed(2)} • {p.category}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setMerchantProducts(merchantProducts.map(item =>
+                            item.id === p.id ? { ...item, in_stock: !item.in_stock } : item
+                          ));
+                        }}
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer transition ${
+                          p.in_stock ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {p.in_stock ? 'In Stock' : 'Out of Stock'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Ma hubtaa inaad tirtirto '${p.name}'?`)) {
+                            setMerchantProducts(merchantProducts.filter(item => item.id !== p.id));
+                          }
+                        }}
+                        className="p-1 hover:bg-red-50 text-neutral-400 hover:text-red-600 rounded transition cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setSelectedMerchantForProducts(null)}
+                className="px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-bold transition cursor-pointer"
+              >
+                Done / Xir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
