@@ -1,4 +1,4 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+﻿import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
   alias(libs.plugins.android.application)
@@ -17,8 +17,8 @@ android {
     applicationId = "com.aistudio.gobajaaj.app"
     minSdk = 24
     targetSdk = 36
-    versionCode = 49
-    versionName = "4.0.2"
+    versionCode = 50
+    versionName = "4.0.3"
 
     val supabaseUrl = System.getenv("SUPABASE_URL") ?: "https://lcigjbtprkloopvzpaxy.supabase.co"
     val supabaseKey = System.getenv("SUPABASE_ANON_KEY") ?: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjaWdqYnRwcmtsb29wdnpwYXh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTA5MDUsImV4cCI6MjEwNDg2NjkwNX0.5cx8A-3Hhh4Z5AuYDt0-AWdMYmAe_x3gz6DVqWY8IuM"
@@ -141,7 +141,7 @@ dependencies {
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
   implementation(libs.play.services.location)
-  // Spec §7: OpenStreetMap rendering for the GoBajaaj map via MapLibre (no Google Maps SDK)
+  // Spec Â§7: OpenStreetMap rendering for the GoBajaaj map via MapLibre (no Google Maps SDK)
   implementation("org.maplibre.gl:android-sdk:13.6.1")
   implementation(libs.retrofit)
   testImplementation(libs.androidx.compose.ui.test.junit4)
@@ -163,4 +163,5 @@ dependencies {
   "ksp"(libs.androidx.room.compiler)
   "ksp"(libs.moshi.kotlin.codegen)
 }
+
 

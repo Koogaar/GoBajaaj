@@ -1,0 +1,70 @@
+================================================================================
+🚀 SHIRI v4.0.3 — RELEASE NOTES (GOOGLE PLAY CONSOLE)
+================================================================================
+Release Date: November 2026
+Version Code: 50 | Version Name: 4.0.3
+================================================================================
+
+--------------------------------------------------------------------------------
+ENGLISH (Copy & Paste into Play Console — What's New):
+--------------------------------------------------------------------------------
+What's New in SHIRI v4.0.3:
+
+🔧 Policy Compliance Update:
+• Updated store listing metadata to meet Google Play requirements
+• All descriptions now in the correct declared language
+• Improved app stability and performance
+
+🛵 Courier Driver Dashboard:
+• Delivery tab opens directly to the Courier/Driver Dashboard
+• Real-time incoming order alerts with sound notification
+• Today's earnings tracker and Cash on Delivery summary
+• Active Delivery progress card with live navigation
+
+🏪 Business App — Production Ready:
+• Kitchen Alarm triggers only on real new orders (no demo alerts)
+• Full interactive Products catalog and Orders management
+• Clean, demo-free interface across all screens
+
+⚡ Performance & Reliability:
+• Faster loading across all screens
+• Smooth tab navigation transitions
+• Production-grade stability
+
+--------------------------------------------------------------------------------
+AF-SOOMAALI (Kooban — Copy & Paste):
+--------------------------------------------------------------------------------
+Waxyaabaha Cusub ee Nooca 4.0.3:
+
+🔧 Hagaajin Siyaasadda Google Play:
+• Macluumaadka dukaanka (store listing) waa loo hagaajiyay shuruudaha Google Play
+• Dhammaan sharraxaadaha waxay ku qoran yihiin luqadda saxda ah
+
+🛵 Dashboard-ka Darawalka (Courier):
+• Tab-ka Delivery waxaa si toos ah kuu furmaya Dashboard-ka Darawalka
+• Ogeysiisyada dalabyada (Real-time) oo cod leh
+• Dakhliga maanta iyo xisaabinta Cash on Delivery
+
+🏪 Abka Ganacsiga — Production Ready:
+• Digniinta Jikada (Kitchen Alarm) waxay soo baxaysaa kaliya marka dalab dhab ah yimaado
+• Maamulka badeecadaha iyo dalabyada oo si buuxda u shaqeynaya
+
+================================================================================
+✅ PLAY CONSOLE — STORE LISTING (English US — FIXED):
+================================================================================
+
+SHORT DESCRIPTION (use this exactly):
+Order food, groceries, medicine & courier delivery in Mogadishu
+
+FULL DESCRIPTION — Copy the full text from GOOGLE_PLAY_FIX_V4.0.3.txt
+
+================================================================================
+BUILD INFO:
+  APK:  SHIRI_v4.0.3_release.apk  (~69.9 MB)
+  AAB:  SHIRI_v4.0.3_release.aab  (39.5 MB)  ← UPLOAD THIS TO PLAY CONSOLE
+  Min SDK: 24 (Android 7.0+)
+  Target SDK: 36 (Android 14/15)
+  Version Code: 50
+  versionName: 4.0.3
+================================================================================
+

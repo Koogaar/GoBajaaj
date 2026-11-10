@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delete Your SHIRI Account</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8f9fa;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: #DC2626;
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(220,38,38,0.3);
+    }
+
+    .header-logo {
+      width: 42px;
+      height: 42px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      color: #DC2626;
+      letter-spacing: -1px;
+    }
+
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header p { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+
+    .container {
+      max-width: 680px;
+      margin: 32px auto;
+      padding: 0 16px 60px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .card h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card p, .card li {
+      font-size: 14.5px;
+      color: #4a5568;
+      line-height: 1.65;
+    }
+
+    .card ul {
+      padding-left: 20px;
+      margin-top: 8px;
+    }
+
+    .card li { margin-bottom: 6px; }
+
+    .warning-box {
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 16px 0;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .warning-box .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .warning-box p { font-size: 13.5px; color: #92400e; line-height: 1.55; }
+
+    .form-group { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14.5px;
+      color: #1a1a1a;
+      background: #f9fafb;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #DC2626;
+      background: white;
+    }
+
+    textarea { resize: vertical; min-height: 80px; }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      accent-color: #DC2626;
+    }
+
+    .checkbox-group label {
+      font-size: 13.5px;
+      color: #4a5568;
+      font-weight: 400;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 15px;
+      background: #DC2626;
+      color: white;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-submit:hover { background: #b91c1c; }
+    .btn-submit:active { transform: scale(0.98); }
+    .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    .steps {
+      counter-reset: step;
+      list-style: none;
+      padding: 0;
+      margin-top: 10px;
+    }
+
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .steps li::before {
+      content: counter(step);
+      background: #DC2626;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .lang-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .lang-btn {
+      padding: 7px 18px;
+      border-radius: 20px;
+      border: 1.5px solid #DC2626;
+      background: transparent;
+      color: #DC2626;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn.active { background: #DC2626; color: white; }
+
+    .success-msg {
+      display: none;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    .success-msg .check { font-size: 40px; margin-bottom: 10px; }
+    .success-msg h3 { font-size: 16px; color: #166534; font-weight: 700; }
+    .success-msg p { font-size: 13.5px; color: #166534; margin-top: 6px; }
+
+    .footer {
+      text-align: center;
+      font-size: 12.5px;
+      color: #9ca3af;
+      margin-top: 32px;
+    }
+
+    .footer a { color: #DC2626; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-logo">S</div>
+    <div>
+      <h1>SHIRI Delivery</h1>
+      <p>Account Deletion Request</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Language Toggle -->
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')">English</button>
+      <button class="lang-btn" onclick="setLang('so')">Af-Soomaali</button>
+    </div>
+
+    <!-- INFO CARD -->
+    <div class="card">
+      <h2>⚠️ <span class="t-en">Before You Delete</span><span class="t-so" style="display:none">Kahor Intaadan Tirtirin</span></h2>
+
+      <div class="warning-box">
+        <div class="icon">🗑️</div>
+        <p class="t-en">Deleting your account is <strong>permanent and cannot be undone</strong>. All your data will be permanently removed from our systems within <strong>30 days</strong> of your request.</p>
+        <p class="t-so" style="display:none">Tirtiridda account-kaaga waa <strong>waarta oo aan dib loo celin karin</strong>. Dhammaan xogahaaga si joogto ah ayaa laga saari doonaa nidaamkeenna gudihiisa <strong>30 maalmood</strong>.</p>
+      </div>
+
+      <p class="t-en" style="margin-bottom:10px"><strong>What will be deleted:</strong></p>
+      <p class="t-so" style="display:none; margin-bottom:10px"><strong>Waxa la tirti doonaa:</strong></p>
+      <ul>
+        <li class="t-en">Your profile information (name, phone number, photo)</li>
+        <li class="t-so" style="display:none">Macluumaadkaaga shakhsiga (magac, lambarka, sawirka)</li>
+
+        <li class="t-en">Your order history and delivery records</li>
+        <li class="t-so" style="display:none">Taariikhda dalabyada iyo diiwaanka gaarsiinta</li>
+
+        <li class="t-en">Your saved addresses and preferences</li>
+        <li class="t-so" style="display:none">Cinwaannada xifdinaada iyo doorashooyinkaada</li>
+
+        <li class="t-en">Your payment method records (EVC Plus / eDahab / ZAAD)</li>
+        <li class="t-so" style="display:none">Diiwaanka habka lacag bixinta (EVC Plus / eDahab / ZAAD)</li>
+
+        <li class="t-en">Any merchant store data (if you are a merchant)</li>
+        <li class="t-so" style="display:none">Xogta dukaankaaga (haddaad ganacsade tahay)</li>
+      </ul>
+
+      <div style="margin-top:16px">
+        <p class="t-en" style="margin-bottom:8px"><strong>What we retain (legally required):</strong></p>
+        <p class="t-so" style="display:none; margin-bottom:8px"><strong>Waxa aan hayno (shuruuc darteed):</strong></p>
+        <ul>
+          <li class="t-en">Transaction records for financial compliance (up to 7 years, anonymized)</li>
+          <li class="t-so" style="display:none">Diiwaannada lacag-bixinta oo loogu talagalay caafimaadka maaliyadda (ilaa 7 sano, anonymized)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ALTERNATIVE CARD -->
+    <div class="card">
+      <h2>🔄 <span class="t-en">Alternative: Delete from the App</span><span class="t-so" style="display:none">Ikhtiyaarka kale: App-ka ka tirtir</span></h2>
+      <p class="t-en" style="margin-bottom:12px">You can also delete your account directly from the SHIRI app:</p>
+      <p class="t-so" style="display:none; margin-bottom:12px">Sidoo kale waxaad account-kaaga ka tirtiri kartaa SHIRI app-ka si toos ah:</p>
+      <ol class="steps">
+        <li class="t-en">Open SHIRI app → tap <strong>Profile</strong> tab</li>
+        <li class="t-en">Scroll down → tap <strong>"Delete Account"</strong></li>
+        <li class="t-en">Enter your phone number to confirm</li>
+        <li class="t-en">Tap <strong>"Confirm Delete"</strong></li>
+
+        <li class="t-so" style="display:none">Fur SHIRI app → taabo <strong>Profile</strong></li>
+        <li class="t-so" style="display:none">Hoos u qaaxi → taabo <strong>"Tirtir Account-ka"</strong></li>
+        <li class="t-so" style="display:none">Geli lambarka taleefankaaga si aad u xaqiijiso</li>
+        <li class="t-so" style="display:none">Taabo <strong>"Xaqiiji Tirtiridda"</strong></li>
+      </ol>
+    </div>
+
+    <!-- REQUEST FORM -->
+    <div class="card">
+      <h2>📋 <span class="t-en">Submit Deletion Request</span><span class="t-so" style="display:none">Gudbi Codsiga Tirtiridda</span></h2>
+      <p class="t-en" style="margin-bottom:20px; color:#6b7280;">Fill in the form below and we will process your account deletion within <strong>30 days</strong>. You will receive a confirmation via SMS.</p>
+      <p class="t-so" style="display:none; margin-bottom:20px; color:#6b7280;">Buuxi foomka hoose waxaanana u hawlgelin doonnaa tirtiridda account-kaaga gudihiisa <strong>30 maalmood</strong>. Xaqiijin ayaad u heli doontaa SMS.</p>
+
+      <form id="deleteForm" onsubmit="submitForm(event)">
+
+        <div class="form-group">
+          <label class="t-en">Full Name *</label>
+          <label class="t-so" style="display:none">Magaca Buuxa *</label>
+          <input type="text" id="fullName" placeholder="Ahmed Hassan" required />
+        </div>
+
+        <div class="form-group">
+          <label class="t-en">Phone Number (used to register) *</label>
+          <label class="t-so" style="display:none">Lambarka Taleefanka (kan aad ku diiwaan-gashan tahay) *</label>
+          <input type="tel" id="phone" placeholder="+252 61 234 5678" required />
+        </div>
+
+        <div class="form-group">
+          <label class="t-en">Account Type *</label>
+          <label class="t-so" style="display:none">Nooca Account-ka *</label>
+          <select id="accountType" required>
+            <option value="" disabled selected>-- Select / Dooro --</option>
+            <option value="customer">Customer / Macmiil</option>
+            <option value="merchant">Merchant / Ganacsade</option>
+            <option value="courier">Courier / Darawal</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="t-en">Reason for deletion (optional)</label>
+          <label class="t-so" style="display:none">Sababta tirtiridda (ikhtiyaari)</label>
+          <select id="reason">
+            <option value="" disabled selected>-- Select / Dooro --</option>
+            <option value="not_using">Not using the app anymore / Ma isticmaalo app-ka</option>
+            <option value="privacy">Privacy concerns / Arrimaha gaarka ah</option>
+            <option value="bad_experience">Bad experience / Khibrad xumo</option>
+            <option value="switching">Switching to another service / Adeeg kale baan u gudanayaa</option>
+            <option value="other">Other / Kale</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="t-en">Additional notes (optional)</label>
+          <label class="t-so" style="display:none">Faallo dheeraad ah (ikhtiyaari)</label>
+          <textarea id="notes" placeholder="Any additional information..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="confirmCheck" required />
+            <label for="confirmCheck" class="t-en">I understand that deleting my account is permanent and cannot be reversed. All my data will be deleted.</label>
+            <label for="confirmCheck" class="t-so" style="display:none">Waxaan fahmayaa in tirtiridda account-kaygu ay tahay waarta oo aan dib loo celin karin. Dhammaan xogahayga ayaa la tirti doonaa.</label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <span class="t-en">🗑️ Submit Account Deletion Request</span>
+          <span class="t-so" style="display:none">🗑️ Gudbi Codsiga Tirtiridda Account-ka</span>
+        </button>
+      </form>
+
+      <div class="success-msg" id="successMsg">
+        <div class="check">✅</div>
+        <h3 class="t-en">Request Submitted Successfully</h3>
+        <h3 class="t-so" style="display:none">Codsigii Si Guul leh Ayaa Loo Gudbiyay</h3>
+        <p class="t-en">Your account deletion request has been received. We will process it within <strong>30 days</strong> and send you an SMS confirmation to your registered phone number.</p>
+        <p class="t-so" style="display:none">Codsigaaga tirtiridda account-kaaga waa la helay. Waxaanu u hawlgelin doonnaa gudihiisa <strong>30 maalmood</strong> waxaanana kuu diri doonnaa xaqiijin SMS ah lambarka taleefankaaga.</p>
+      </div>
+    </div>
+
+    <!-- CONTACT CARD -->
+    <div class="card">
+      <h2>📞 <span class="t-en">Need Help?</span><span class="t-so" style="display:none">Caawimo Ma u Baahantahay?</span></h2>
+      <p class="t-en">Contact our support team:</p>
+      <p class="t-so" style="display:none">La xiriir kooxda taageerada:</p>
+      <ul style="margin-top:10px; list-style:none; padding:0;">
+        <li style="margin-bottom:8px">📧 <a href="mailto:support@shiridelivery.com" style="color:#DC2626;">support@shiridelivery.com</a></li>
+        <li style="margin-bottom:8px">📱 WhatsApp: <a href="https://wa.me/252613456789" style="color:#DC2626;">+252 61 345 6789</a></li>
+        <li>⏰ <span class="t-en">Support hours: Saturday–Thursday, 8 AM – 8 PM (EAT)</span><span class="t-so" style="display:none">Wakhtiga taageerada: Sabti–Khamiis, 8 AM – 8 PM</span></li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      <p>© 2026 SHIRI Delivery · Mogadishu, Somalia</p>
+      <p style="margin-top:4px">
+        <a href="/privacy-policy.html">Privacy Policy</a> ·
+        <a href="/terms.html">Terms of Service</a> ·
+        <a href="/">Home</a>
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    function setLang(lang) {
+      document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (lang === 'en') {
+        document.querySelectorAll('.t-en').forEach(el => el.style.display = '');
+        document.querySelectorAll('.t-so').forEach(el => el.style.display = 'none');
+      } else {
+        document.querySelectorAll('.t-en').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.t-so').forEach(el => el.style.display = '');
+      }
+    }
+
+    function submitForm(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Submitting...</span>';
+
+      // Simulate submission (replace with real API call)
+      setTimeout(() => {
+        document.getElementById('deleteForm').style.display = 'none';
+        document.getElementById('successMsg').style.display = 'block';
+
+        // Log request (replace with real backend call)
+        const data = {
+          name: document.getElementById('fullName').value,
+          phone: document.getElementById('phone').value,
+          accountType: document.getElementById('accountType').value,
+          reason: document.getElementById('reason').value,
+          notes: document.getElementById('notes').value,
+          timestamp: new Date().toISOString()
+        };
+        console.log('Deletion request:', JSON.stringify(data));
+        // TODO: Send to backend: POST /api/account-deletion with data
+      }, 1500);
+    }
+  </script>
+
+</body>
+</html>

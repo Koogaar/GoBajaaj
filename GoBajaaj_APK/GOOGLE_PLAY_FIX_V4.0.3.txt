@@ -1,0 +1,185 @@
+================================================================================
+🚨 GOOGLE PLAY POLICY FIX — SHIRI v4.0.3
+================================================================================
+Version Code: 50 | Version Name: 4.0.3
+Fix Date: November 2026
+================================================================================
+
+WHY v4.0.2 WAS REJECTED:
+─────────────────────────
+1. SHORT DESCRIPTION was in Somali language inside English (US) listing
+   → Google Play requires exact language match for store listing metadata
+2. Brand name "Bajaj" in description → possible trademark flag
+3. Screenshots may have been flagged as not representing real app UI
+
+================================================================================
+✅ STORE LISTING — ENGLISH (United States) — en-US [FIXED]
+================================================================================
+
+APP TITLE (max 50 chars):
+─────────────────────────
+SHIRI – Delivery & Courier Mogadishu
+
+SHORT DESCRIPTION (max 80 chars):
+──────────────────────────────────
+Order food, groceries, medicine & courier delivery in Mogadishu
+
+FULL DESCRIPTION (max 4000 chars):
+────────────────────────────────────
+SHIRI is Mogadishu's all-in-one delivery and courier platform connecting customers, merchants, and drivers in real time.
+
+🛵 FOR CUSTOMERS:
+• Order food from local restaurants and have it delivered to your door
+• Shop groceries, medicine, and everyday items from nearby stores
+• Book a courier for fast parcel and document delivery across Mogadishu
+• Track your order live on the map — from acceptance to doorstep
+• Pay via EVC Plus, eDahab, ZAAD, or cash on delivery
+• Multilingual interface: Somali & English
+
+🏪 FOR MERCHANTS & BUSINESSES:
+• Manage your store, products, and incoming orders from one dashboard
+• Real-time kitchen alarm when new orders arrive
+• Accept or reject orders with one tap
+• View daily earnings and order history
+• Easy product catalog management with stock control
+• Request a courier to pick up and deliver your orders
+
+🚗 FOR COURIERS & DRIVERS:
+• Receive new delivery requests instantly
+• Navigate to pickup and drop-off locations
+• Track today's earnings and completed trips
+• Manage your availability (Online/Offline)
+• Communicate with customers and merchants directly
+
+📍 SERVICE AREAS:
+• Hodan, Waberi, Hamarweyne, Bondhere, Shangani, Karaan, Yaqshid (Mogadishu)
+• Expanding to more districts soon
+
+SHIRI connects Mogadishu's growing economy with modern delivery technology — fast, reliable, and built for Somalia.
+
+Download SHIRI and experience seamless delivery today.
+
+CATEGORY: Shopping / Local
+CONTENT RATING: Everyone
+PRICE: Free
+
+================================================================================
+✅ WHAT'S NEW (Release Notes for v4.0.3)
+================================================================================
+
+What's New in SHIRI v4.0.3:
+
+🔧 Policy Compliance Update:
+• Updated store listing to meet Google Play metadata requirements
+• All app descriptions now in correct declared language
+• Improved app stability and performance
+
+🛵 Courier Driver Dashboard:
+• Delivery tab opens directly to the Courier Dashboard
+• Real-time incoming order alerts with sound notification
+• Today's earnings tracker and Cash on Delivery summary
+• Active Delivery progress card with navigation link
+
+🏪 Business App:
+• Kitchen Alarm triggers only on real new orders (no demo alerts)
+• Full Products catalog and Orders management
+• Clean production-ready interface with no demo elements
+
+⚡ Performance:
+• Faster loading across all screens
+• Smooth transitions between tabs
+• Production-grade reliability
+
+================================================================================
+✅ SOMALI STORE LISTING — so (Add as separate language if needed)
+================================================================================
+
+APP TITLE:
+SHIRI – Delivery & Courier Mogadishu
+
+SHORT DESCRIPTION (Somali):
+Dalbo cunto, alaab, daawo & courier delivery Muqdisho
+
+FULL DESCRIPTION (Somali — optional):
+SHIRI waa platform-ka delivery-ga Muqdisho — ku xidha macaamiisha, ganacsatada iyo darawalada si toos ah.
+
+🛵 MACAAMIISHA:
+• Dalbo cunto, alaab, daawo oo laguu keeno gurigaaga
+• Track dalabkaaga map-ka tooska ah
+• Lacag bixin: EVC Plus, eDahab, ZAAD, ama cash
+
+🏪 GANACSATADA:
+• Maamul dukaankaaga iyo dalabyada mid meel ah
+• Dhawaaqa jikada (Kitchen Alarm) marka dalab cusub yimaado
+• Dashboard dakhliga iyo taariikhda dalabyada
+
+🚗 DARAWALADA:
+• Hel dalabyo cusub si deg-deg ah
+• Navigate-garee goobaha qaadashada & gaarsiinta
+• Track dakhligaaga maanta
+
+================================================================================
+✅ APP ICON REQUIREMENTS (Recheck)
+================================================================================
+• File: SHIRI_BRAND_ASSETS/shiri_logo_red_512x512.png
+• Size: Must be exactly 512×512 pixels
+• Format: PNG, no transparency required
+• No text overlay that resembles a badge
+• Must not imitate Google/Android brand assets
+• Rounded corners applied by Google Play automatically
+
+ACTION NEEDED: Verify icon is 512×512 exactly before re-upload.
+
+================================================================================
+✅ SCREENSHOT REQUIREMENTS
+================================================================================
+• Phone screenshots: Min 2, Max 8
+• Size: 16:9 or 9:16 ratio, min 320px on shortest side
+• Must accurately represent the actual app UI
+• No added frames/device bezels unless they represent the actual device
+• No misleading text or fake numbers
+
+RECOMMENDATION: Take real device screenshots from the actual APK running on a
+physical Android device or emulator for guaranteed compliance.
+
+================================================================================
+✅ PERMISSIONS DECLARATION (Complete in Play Console)
+================================================================================
+Go to: App Content → Sensitive Permissions
+
+Permissions used by SHIRI:
+• ACCESS_FINE_LOCATION → Required for courier navigation & order tracking
+• CAMERA → For user profile photo upload
+• READ_EXTERNAL_STORAGE → For image selection from gallery
+• INTERNET → Required for all app functionality
+• POST_NOTIFICATIONS → For order alert notifications
+
+Fill in the declaration form for each sensitive permission with the reason above.
+
+================================================================================
+✅ FINANCIAL FEATURES DECLARATION (if flagged)
+================================================================================
+Go to: App Content → Financial Features
+
+SHIRI integrates with:
+• Hormuud EVC Plus (mobile money)
+• Somtel eDahab (mobile money)
+• Telesom ZAAD (mobile money)
+
+These are payment METHOD displays only — the app does NOT:
+• Process payments directly
+• Store payment credentials
+• Handle credit/debit cards
+
+Declare: "App facilitates payment via third-party mobile money services"
+
+================================================================================
+BUILD INFO v4.0.3:
+  APK: SHIRI_v4.0.3_release.apk
+  AAB: SHIRI_v4.0.3_release.aab
+  versionCode: 50
+  versionName: 4.0.3
+  Min SDK: 24 (Android 7.0+)
+  Target SDK: 36
+================================================================================
+
