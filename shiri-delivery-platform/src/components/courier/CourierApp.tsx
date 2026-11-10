@@ -316,12 +316,12 @@ export const CourierApp: React.FC = () => {
                   <span>Eeg Dalabyada Soo Dhacaya ({unassignedOrders.length})</span>
                 </button>
                 <button
-                  onClick={handleSimulateNewOrder}
+                  onClick={() => window.location.reload()}
                   className="px-3 py-2.5 bg-red-800/60 hover:bg-red-800 text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1"
-                  title="Abuur dalab tijaabo ah oo cusub"
+                  title="Cusbooneysii dalabyada"
                 >
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span>Tijaabi Dalab</span>
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Cusbooneysii</span>
                 </button>
               </div>
             </div>
@@ -490,11 +490,11 @@ export const CourierApp: React.FC = () => {
                 </p>
               </div>
               <button
-                onClick={handleSimulateNewOrder}
-                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-xs transition-colors"
+                onClick={() => window.location.reload()}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-xs transition-colors"
               >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>+ Tijaabi Dalab Cusub</span>
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Cusbooneysii</span>
               </button>
             </div>
 
@@ -524,11 +524,11 @@ export const CourierApp: React.FC = () => {
                   Dalab kasta oo macmiilku ka dalbado makhaayadaha Muqdisho wuxuu si toos ah ugu soo dhacayaa halkan.
                 </p>
                 <button
-                  onClick={handleSimulateNewOrder}
+                  onClick={() => window.location.reload()}
                   className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5"
                 >
-                  <PlusCircle className="w-3.5 h-3.5 text-red-400" />
-                  <span>Tijaabi Soo Dhicidda Dalab Cusub</span>
+                  <RefreshCw className="w-3.5 h-3.5 text-red-400" />
+                  <span>Cusbooneysii Liiska</span>
                 </button>
               </div>
             ) : (

@@ -515,7 +515,7 @@ fun ShiriDeliveryScreen(
                                 color = Color.White.copy(alpha = 0.9f)
                             )
 
-                            // Action buttons: "Eeg Dalabyada Soo Dhacaya" & "+ Tijaabi Dalab"
+                            // Action buttons: "Eeg Dalabyada" & "Cusbooneysii"
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -524,7 +524,7 @@ fun ShiriDeliveryScreen(
                                     onClick = {
                                         Toast.makeText(
                                             context,
-                                            if (availableOrdersCount > 0) "Waxaa jira $availableOrdersCount dalab oo furan!" else "Waqtigan ma jiraan dalabyo furan. Guji 'Tijaabi Dalab'.",
+                                            if (availableOrdersCount > 0) "Waxaa jira $availableOrdersCount dalab oo furan!" else "Waqtigan ma jiraan dalabyo furan. Fadlan sug inta dalab cusub laga soo dirayo.",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
@@ -550,23 +550,21 @@ fun ShiriDeliveryScreen(
 
                                 OutlinedButton(
                                     onClick = {
-                                        availableOrdersCount += 1
-                                        ArrivalSoundManager.playBajajHornSequence(context)
-                                        Toast.makeText(context, "Dalab cusub ayaa soo dhacay! 🏍️", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Liiska dalabyada waa la cusbooneysiiyay", Toast.LENGTH_SHORT).show()
                                     },
                                     border = BorderStroke(1.dp, Color.White),
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.weight(1f).height(38.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.AddCircleOutline,
+                                        Icons.Default.Refresh,
                                         contentDescription = null,
                                         tint = Color.White,
                                         modifier = Modifier.size(15.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "Tijaabi Dalab",
+                                        text = "Cusbooneysii",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
                                         color = Color.White,
