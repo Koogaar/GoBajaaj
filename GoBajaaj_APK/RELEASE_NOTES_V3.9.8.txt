@@ -1,0 +1,27 @@
+================================================================================
+🚀 SHIRI v3.9.8 — RELEASE NOTES (GOOGLE PLAY CONSOLE)
+================================================================================
+
+--------------------------------------------------------------------------------
+AF-SOOMAALI (Kooban — Copy & Paste):
+--------------------------------------------------------------------------------
+Waxyaabaha Cusub ee Nooca 3.9.8:
+• Summad Cusub: Astaanta rasmiga ah ee SHIRI oo guduudan oo casri ah.
+• Suuqa Muqdisho: Cunto, Farmashiyo, Supermarket, Hilib & Qudaar, iyo Qalab.
+• Gaadiidka & Gaarsiinta: Dalbo Bajaaj degdeg ah ($0 Rakaabka) & Dir Baakad Mooto.
+• Ammaan & Hufnaan: Koodhka sirta ah ee Handover PIN (4792) marka xirmada la keeno.
+• Luuqadda: Af-Soomaali sugan oo loo habeeyay si casri ah.
+• Xawaaraha & Xasiloonida: App-ka oo aad loo dedejiyay lana hagaajiyay.
+
+
+--------------------------------------------------------------------------------
+ENGLISH (Short — Copy & Paste):
+--------------------------------------------------------------------------------
+What's New in v3.9.8:
+• Brand Identity: Vibrant new official red SHIRI icon and modern visual experience.
+• Super Marketplace: Food, Groceries, Pharmacy, Fresh Meat & Home Essentials in Mogadishu.
+• Mobility & Delivery: Instant Bajaj rides ($0 passenger fare) and Express Mooto courier.
+• Secure Handover: 4-digit Handover PIN verification for parcel delivery safety.
+• Language & Performance: Enhanced Somali and English localization, faster loading and bug fixes.
+================================================================================
+

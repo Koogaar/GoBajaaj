@@ -351,144 +351,142 @@ fun BajajRideScreen(
 
     Scaffold(
         topBar = {
-            Column(modifier = Modifier.fillMaxWidth().background(ShiriDarkSlate)) {
-                TopAppBar(
-                    title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth().padding(end = 8.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                androidx.compose.foundation.Image(
-                                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.shiri_logo),
-                                    contentDescription = "SHIRI Logo",
-                                    modifier = Modifier
-                                        .size(34.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text(
-                                        text = "SHIRI RIDE",
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = ShiriCrimson
-                                    )
-                                    Text(
-                                        text = if (isDriverMode) "App-ka Darawalka • Shaqee oo Dakhli Hel" else "Bajaaj • Ride Booking & Live Traffic",
-                                        fontSize = 11.sp,
-                                        color = Color.White.copy(alpha = 0.85f)
-                                    )
-                                }
-                            }
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Seamless Mode Switcher (Rider <-> Driver)
-                                FilterChip(
-                                    selected = isDriverMode,
-                                    onClick = {
-                                        isDriverMode = !isDriverMode
-                                    },
-                                    label = {
-                                        Text(
-                                            text = if (isDriverMode) "Darawal" else "Rakaab",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    },
-                                    leadingIcon = {
-                                        if (isDriverMode) {
-                                            Icon(
-                                                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_bajaaj_icon),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        } else {
-                                            Icon(
-                                                imageVector = Icons.Default.Person,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = ShiriCrimson,
-                                        selectedLabelColor = Color.White,
-                                        containerColor = Color.White.copy(alpha = 0.15f),
-                                        labelColor = Color.White
-                                    ),
-                                    border = null
-                                )
-                            }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = ShiriDarkSlate)
-                )
-
-                // ==============================================================
-                // SHIRI RIDE 4-MODE TABS (Book Ride, Live Junctions, Road Conditions, Alerts)
-                // ==============================================================
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .statusBarsPadding()
+            ) {
+                // Top Row: Back button, Logo, Mode switcher
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(ShiriDarkSlate)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFF1F5F9),
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clickable { onNavigate("shiri_eats") }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Ku Noqo Suuqa",
+                                    tint = Color(0xFF0F172A),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFDC2626),
+                            modifier = Modifier.size(34.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("S", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color.White)
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "SHIRI BAJAAJ",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = if (isDriverMode) "App-ka Darawalka • $0.25 Pass" else "Dalbo Safar • Rakaab ($0)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFDC2626)
+                            )
+                        }
+                    }
+
+                    // Mode Toggle: Rakaab vs Darawal
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (isDriverMode) Color(0xFFEA580C).copy(alpha = 0.12f) else Color(0xFFDC2626).copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, if (isDriverMode) Color(0xFFEA580C).copy(alpha = 0.3f) else Color(0xFFDC2626).copy(alpha = 0.3f)),
+                        modifier = Modifier.clickable { isDriverMode = !isDriverMode }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(if (isDriverMode) "🛺 Darawal" else "👤 Rakaab", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = if (isDriverMode) Color(0xFFC2410C) else Color(0xFFDC2626))
+                        }
+                    }
+                }
+
+                // Sub-navigation Tabs: 1. Dalbo Safar, 2. Isgoysyada Live, 3. Waddooyinka, 4. Digniinaha
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White)
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // 1. Book Ride
                     FilterChip(
                         selected = selectedRideTab == ShiriRideTab.BOOK_RIDE,
                         onClick = { selectedRideTab = ShiriRideTab.BOOK_RIDE },
-                        label = { Text("🛺 Dalbo Safar", fontSize = 11.5.sp, fontWeight = FontWeight.Bold) },
+                        label = { Text("🛺 Dalbo Safar", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = ShiriCrimson,
+                            selectedContainerColor = Color(0xFFDC2626),
                             selectedLabelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.12f),
-                            labelColor = Color.White
-                        )
+                            containerColor = Color(0xFFF1F5F9),
+                            labelColor = Color(0xFF475569)
+                        ),
+                        border = null
                     )
 
-                    // 2. Live Junctions (KM4, Dabka, Zoobe)
                     FilterChip(
                         selected = selectedRideTab == ShiriRideTab.LIVE_JUNCTIONS,
                         onClick = { selectedRideTab = ShiriRideTab.LIVE_JUNCTIONS },
-                        label = { Text("🚦 Isgoysyada Live", fontSize = 11.5.sp, fontWeight = FontWeight.Bold) },
+                        label = { Text("🚦 Isgoysyada Live", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = ShiriEmerald,
+                            selectedContainerColor = Color(0xFF16A34A),
                             selectedLabelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.12f),
-                            labelColor = Color.White
-                        )
+                            containerColor = Color(0xFFF1F5F9),
+                            labelColor = Color(0xFF475569)
+                        ),
+                        border = null
                     )
 
-                    // 3. Road Conditions
                     FilterChip(
                         selected = selectedRideTab == ShiriRideTab.ROAD_CONDITIONS,
                         onClick = { selectedRideTab = ShiriRideTab.ROAD_CONDITIONS },
-                        label = { Text("🛣️ Waddooyinka", fontSize = 11.5.sp, fontWeight = FontWeight.Bold) },
+                        label = { Text("🛣️ Waddooyinka", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Color(0xFF0284C7),
                             selectedLabelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.12f),
-                            labelColor = Color.White
-                        )
+                            containerColor = Color(0xFFF1F5F9),
+                            labelColor = Color(0xFF475569)
+                        ),
+                        border = null
                     )
 
-                    // 4. Alerts
                     FilterChip(
                         selected = selectedRideTab == ShiriRideTab.ALERTS,
                         onClick = { selectedRideTab = ShiriRideTab.ALERTS },
-                        label = { Text("⚠️ Digniinaha", fontSize = 11.5.sp, fontWeight = FontWeight.Bold) },
+                        label = { Text("⚠️ Digniinaha Jaamka", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Color(0xFFD97706),
                             selectedLabelColor = Color.White,
-                            containerColor = Color.White.copy(alpha = 0.12f),
-                            labelColor = Color.White
-                        )
+                            containerColor = Color(0xFFF1F5F9),
+                            labelColor = Color(0xFF475569)
+                        ),
+                        border = null
                     )
                 }
+                HorizontalDivider(color = Color(0xFFF1F5F9))
             }
         },
         bottomBar = {
@@ -1037,13 +1035,13 @@ private fun RiderRequestFormScreen(
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(12.dp),
                                         strokeWidth = 2.dp,
-                                        color = GoBajaajBlue
+                                        color = Color(0xFFDC2626)
                                     )
                                 } else {
                                     Icon(
                                         imageVector = Icons.Default.MyLocation,
                                         contentDescription = null,
-                                        tint = if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue,
+                                        tint = if (pickupCoordinates != null) GoBajaajGreen else Color(0xFFDC2626),
                                         modifier = Modifier.size(14.dp)
                                     )
                                 }
@@ -1052,7 +1050,7 @@ private fun RiderRequestFormScreen(
                                     text = if (pickupCoordinates != null) "📍 GPS Sax ah" else "📍 Hel Goobtayda",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue
+                                    color = if (pickupCoordinates != null) GoBajaajGreen else Color(0xFFDC2626)
                                 )
                             }
                         }
@@ -1063,14 +1061,14 @@ private fun RiderRequestFormScreen(
                             modifier = Modifier
                                 .size(24.dp)
                                 .clip(CircleShape)
-                                .background(if (pickupCoordinates != null) GoBajaajGreen.copy(alpha = 0.15f) else GoBajaajBlue.copy(alpha = 0.15f)),
+                                .background(if (pickupCoordinates != null) GoBajaajGreen.copy(alpha = 0.15f) else Color(0xFFDC2626).copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
                                     .size(10.dp)
                                     .clip(CircleShape)
-                                    .background(if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue)
+                                    .background(if (pickupCoordinates != null) GoBajaajGreen else Color(0xFFDC2626))
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
@@ -1085,7 +1083,7 @@ private fun RiderRequestFormScreen(
                                     Icon(
                                         imageVector = Icons.Default.GpsFixed,
                                         contentDescription = "GPS",
-                                        tint = if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue,
+                                        tint = if (pickupCoordinates != null) GoBajaajGreen else Color(0xFFDC2626),
                                         modifier = Modifier.size(20.dp)
                                     )
                                 }
@@ -1100,9 +1098,9 @@ private fun RiderRequestFormScreen(
                                 unfocusedTextColor = BrandBlack,
                                 focusedContainerColor = Color(0xFFF8FAFC),
                                 unfocusedContainerColor = Color(0xFFF8FAFC),
-                                focusedBorderColor = if (pickupCoordinates != null) GoBajaajGreen else GoBajaajBlue,
+                                focusedBorderColor = if (pickupCoordinates != null) GoBajaajGreen else Color(0xFFDC2626),
                                 unfocusedBorderColor = if (pickupCoordinates != null) GoBajaajGreen.copy(alpha = 0.5f) else Color(0xFFCBD5E1),
-                                cursorColor = GoBajaajBlue
+                                cursorColor = Color(0xFFDC2626)
                             )
                         )
                     }
@@ -1160,9 +1158,9 @@ private fun RiderRequestFormScreen(
                                 unfocusedTextColor = BrandBlack,
                                 focusedContainerColor = Color(0xFFF8FAFC),
                                 unfocusedContainerColor = Color(0xFFF8FAFC),
-                                focusedBorderColor = GoBajaajBlue,
+                                focusedBorderColor = Color(0xFFDC2626),
                                 unfocusedBorderColor = Color(0xFFCBD5E1),
-                                cursorColor = GoBajaajBlue
+                                cursorColor = Color(0xFFDC2626)
                             )
                         )
                     }
@@ -1170,7 +1168,7 @@ private fun RiderRequestFormScreen(
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
                         "Tilmaanta Goobta (Somali Directions) — Ikhtiyaari",
-                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = GoBajaajNavy
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandBlack
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     OutlinedTextField(
@@ -1188,7 +1186,7 @@ private fun RiderRequestFormScreen(
                             Icon(
                                 Icons.Default.EditNote,
                                 contentDescription = null,
-                                tint = GoBajaajBlue,
+                                tint = Color(0xFFDC2626),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -1199,8 +1197,8 @@ private fun RiderRequestFormScreen(
             // ── Nearby Drivers 1 KM Radar Banner ──
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFEFF6FF),
-                border = BorderStroke(1.dp, GoBajaajBlue.copy(alpha = 0.3f)),
+                color = Color(0xFFFEF2F2),
+                border = BorderStroke(1.dp, Color(0xFFDC2626).copy(alpha = 0.3f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -1210,21 +1208,21 @@ private fun RiderRequestFormScreen(
                     Icon(
                         Icons.Default.NearMe,
                         contentDescription = null,
-                        tint = GoBajaajBlue,
+                        tint = Color(0xFFDC2626),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "Bajaajyada 1 KM Kugu Dhow",
-                            fontSize = 12.sp, fontWeight = FontWeight.Bold, color = GoBajaajNavy
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandBlack
                         )
                         Text(
                             "Si toos ah loo ogaan doonaa",
                             fontSize = 10.sp, color = Color(0xFF64748B)
                         )
                     }
-                    Surface(shape = RoundedCornerShape(8.dp), color = GoBajaajBlue) {
+                    Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFDC2626)) {
                         Text(
                             "$nearbyDriversCount Bajaaj",
                             fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White,
@@ -1244,10 +1242,10 @@ private fun RiderRequestFormScreen(
                     ) {
                         Text(
                             "Cinwaannadayda",
-                            fontSize = 12.sp, fontWeight = FontWeight.Bold, color = GoBajaajNavy
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandBlack
                         )
                         TextButton(onClick = onOpenAddressDialog) {
-                            Text("+ Cusub", fontSize = 11.sp)
+                            Text("+ Cusub", fontSize = 11.sp, color = Color(0xFFDC2626))
                         }
                     }
                     Row(
@@ -1260,17 +1258,17 @@ private fun RiderRequestFormScreen(
                             Surface(
                                 onClick = { onSelectSavedAddress(addr) },
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color(0xFFEFF6FF),
-                                border = BorderStroke(1.dp, GoBajaajBlue.copy(alpha = 0.4f))
+                                color = Color(0xFFFEF2F2),
+                                border = BorderStroke(1.dp, Color(0xFFDC2626).copy(alpha = 0.4f))
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                                     Text(
                                         addr.label,
-                                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = GoBajaajNavy
+                                        fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandBlack
                                     )
                                     Text(
                                         addr.digitalCode,
-                                        fontSize = 10.sp, color = GoBajaajBlue, fontWeight = FontWeight.Bold
+                                        fontSize = 10.sp, color = Color(0xFFDC2626), fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
@@ -1293,7 +1291,7 @@ private fun RiderRequestFormScreen(
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.5.dp, GoBajaajBlue.copy(alpha = 0.4f)),
+                border = BorderStroke(1.5.dp, Color(0xFFDC2626).copy(alpha = 0.35f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -1307,17 +1305,17 @@ private fun RiderRequestFormScreen(
                             text = "Qiimaha aad bixinayso (Your Offer)",
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
-                            color = GoBajaajNavy
+                            color = BrandBlack
                         )
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = GoBajaajYellow
+                            color = Color(0xFFFEF2F2)
                         ) {
                             Text(
                                 text = "Gorgortan",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = GoBajaajNavy,
+                                color = Color(0xFFDC2626),
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -1335,24 +1333,24 @@ private fun RiderRequestFormScreen(
                             onValueChange = onOfferChange,
                             placeholder = { Text("1.50", color = Color(0xFF94A3B8), fontSize = 18.sp) },
                             leadingIcon = {
-                                Text("$", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = GoBajaajBlue)
+                                Text("$", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFFDC2626))
                             },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                             textStyle = androidx.compose.ui.text.TextStyle(
-                                color = GoBajaajNavy,
+                                color = BrandBlack,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold
                             ),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = GoBajaajNavy,
-                                unfocusedTextColor = GoBajaajNavy,
+                                focusedTextColor = BrandBlack,
+                                unfocusedTextColor = BrandBlack,
                                 focusedContainerColor = Color(0xFFF8FAFC),
                                 unfocusedContainerColor = Color(0xFFF8FAFC),
-                                focusedBorderColor = GoBajaajBlue,
+                                focusedBorderColor = Color(0xFFDC2626),
                                 unfocusedBorderColor = Color(0xFFCBD5E1),
-                                cursorColor = GoBajaajBlue
+                                cursorColor = Color(0xFFDC2626)
                             )
                         )
 
@@ -1366,7 +1364,7 @@ private fun RiderRequestFormScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF1F5F9)),
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
                         ) {
-                            Text("-0.25", color = GoBajaajNavy, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("-0.25", color = BrandBlack, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
 
                         Button(
@@ -1375,10 +1373,10 @@ private fun RiderRequestFormScreen(
                                 onOfferChange(String.format(java.util.Locale.US, "%.2f", current + 0.25))
                             },
                             shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = GoBajaajBlue.copy(alpha = 0.15f)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEF2F2)),
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
                         ) {
-                            Text("+0.25", color = GoBajaajBlue, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("+0.25", color = Color(0xFFDC2626), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                     }
 
@@ -1393,7 +1391,7 @@ private fun RiderRequestFormScreen(
                             val isSelected = offer == preset
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (isSelected) GoBajaajBlue else Color(0xFFF1F5F9),
+                                color = if (isSelected) Color(0xFFDC2626) else Color(0xFFF1F5F9),
                                 border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE2E8F0)),
                                 modifier = Modifier
                                     .weight(1f)
@@ -1468,16 +1466,16 @@ private fun RiderRequestFormScreen(
                             val current = offer.toDoubleOrNull() ?: 1.50
                             onOfferChange(String.format(java.util.Locale.US, "%.2f", current + 0.25))
                         },
-                        modifier = Modifier.size(32.dp).background(GoBajaajBlue.copy(alpha = 0.15f), CircleShape)
+                        modifier = Modifier.size(32.dp).background(Color(0xFFFEF2F2), CircleShape)
                     ) {
-                        Text("+", fontWeight = FontWeight.Black, fontSize = 16.sp, color = GoBajaajBlue)
+                        Text("+", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color(0xFFDC2626))
                     }
                 }
 
                 Button(
                     onClick = onRequestRide,
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GoBajaajBlue),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                     modifier = Modifier
                         .weight(1.3f)
                         .height(48.dp)
@@ -1519,10 +1517,10 @@ private fun VehicleOptionCard(
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFFEFF6FF) else Color.White
+            containerColor = if (isSelected) Color(0xFFFEF2F2) else Color.White
         ),
         border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(2.dp, GoBajaajBlue)
+            androidx.compose.foundation.BorderStroke(2.dp, Color(0xFFDC2626))
         } else {
             androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
         },
@@ -1536,7 +1534,7 @@ private fun VehicleOptionCard(
         Box(modifier = Modifier.fillMaxWidth()) {
             if (badge != null) {
                 Surface(
-                    color = if (isSelected) GoBajaajYellow else Color(0xFFF1F5F9),
+                    color = if (isSelected) Color(0xFFDC2626) else Color(0xFFF1F5F9),
                     shape = RoundedCornerShape(bottomStart = 8.dp),
                     modifier = Modifier.align(Alignment.TopEnd)
                 ) {
@@ -1544,7 +1542,7 @@ private fun VehicleOptionCard(
                         text = badge,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isSelected) GoBajaajNavy else Color(0xFF64748B),
+                        color = if (isSelected) Color.White else Color(0xFF64748B),
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -1560,21 +1558,21 @@ private fun VehicleOptionCard(
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(if (isSelected) GoBajaajBlue else Color(0xFFF1F5F9)),
+                        .background(if (isSelected) Color(0xFFDC2626) else Color(0xFFF1F5F9)),
                     contentAlignment = Alignment.Center
                 ) {
                     if (iconDrawableRes != null) {
                         Icon(
                             painter = androidx.compose.ui.res.painterResource(id = iconDrawableRes),
                             contentDescription = title,
-                            tint = if (isSelected) Color.White else GoBajaajNavy,
+                            tint = if (isSelected) Color.White else Color(0xFFDC2626),
                             modifier = Modifier.size(24.dp)
                         )
                     } else if (icon != null) {
                         Icon(
                             imageVector = icon,
                             contentDescription = title,
-                            tint = if (isSelected) Color.White else GoBajaajNavy,
+                            tint = if (isSelected) Color.White else Color(0xFFDC2626),
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -1586,7 +1584,7 @@ private fun VehicleOptionCard(
                     text = title,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) GoBajaajBlue else BrandBlack
+                    color = if (isSelected) Color(0xFFDC2626) else BrandBlack
                 )
 
                 Text(
@@ -1600,7 +1598,7 @@ private fun VehicleOptionCard(
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = if (isSelected) GoBajaajBlue else Color(0xFFF1F5F9)
+                    color = if (isSelected) Color(0xFFDC2626) else Color(0xFFF1F5F9)
                 ) {
                     Text(
                         text = price,
@@ -1691,7 +1689,7 @@ private fun RiderBidsScreen(
         } else {
             Card(
                 shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = GoBajaajBlueLight),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -1700,7 +1698,7 @@ private fun RiderBidsScreen(
                 ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
-                        color = GoBajaajBlue,
+                        color = Color(0xFFDC2626),
                         strokeWidth = 2.5.dp
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -1708,7 +1706,7 @@ private fun RiderBidsScreen(
                         text = "Darawallada kuugu dhow ayaa arkay dalabkaaga...",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = GoBajaajBlueDark
+                        color = Color(0xFF991B1B)
                     )
                 }
             }
@@ -2056,9 +2054,9 @@ private fun RiderLiveTrackingScreen(
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.weight(1f).height(40.dp)
                             ) {
-                                Icon(Icons.Default.VolumeUp, contentDescription = null, modifier = Modifier.size(16.dp), tint = GoBajaajBlue)
+                                Icon(Icons.Default.VolumeUp, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFFDC2626))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Codka Yeeri", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoBajaajBlue)
+                                Text("Codka Yeeri", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
                             }
 
                             Button(
@@ -2162,9 +2160,9 @@ private fun RiderLiveTrackingScreen(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(GoBajaajBlueLight)
+                                .background(Color(0xFFFEF2F2))
                         ) {
-                            Icon(Icons.Default.Share, contentDescription = "La wadaag Safarka", tint = GoBajaajBlue)
+                            Icon(Icons.Default.Share, contentDescription = "La wadaag Safarka", tint = Color(0xFFDC2626))
                         }
                     }
                 }
@@ -2314,7 +2312,7 @@ private fun RiderTripCompleteScreen(
         Button(
             onClick = onDone,
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = GoBajaajBlue),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
             modifier = Modifier.fillMaxWidth().height(52.dp)
         ) {
             Text("Done", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -2427,7 +2425,7 @@ private fun DriverHomeScreen(
                         text = "\$$todayEarnings",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = GoBajaajBlue
+                        color = Color(0xFFDC2626)
                     )
                 }
 
@@ -2653,13 +2651,13 @@ private fun DriverRideRequestAlertScreen(
                             modifier = Modifier
                                 .size(42.dp)
                                 .clip(CircleShape)
-                                .background(GoBajaajBlue.copy(alpha = 0.15f)),
+                                .background(Color(0xFFFEF2F2)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.Person,
                                 contentDescription = null,
-                                tint = GoBajaajBlue,
+                                tint = Color(0xFFDC2626),
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -2846,7 +2844,7 @@ private fun DriverTripInProgressScreen(
             color = when (tripStatus) {
                 "ARRIVED" -> GoBajaajGreen
                 "ON_TRIP" -> GoBajaajNavy
-                else -> GoBajaajBlueDark
+                else -> Color(0xFFDC2626)
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -3048,7 +3046,7 @@ private fun DriverTripInProgressScreen(
                             text = if (tripStatus == "GOING_TO_PICKUP") "📍 Ka qaad: $pickup" else "🏁 U gee: $destination",
                             fontSize = 12.5.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (tripStatus == "GOING_TO_PICKUP") GoBajaajGreen else GoBajaajBlue,
+                            color = if (tripStatus == "GOING_TO_PICKUP") GoBajaajGreen else Color(0xFFDC2626),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -3324,13 +3322,13 @@ private fun CreateAddressDialog(
                         Surface(
                             onClick = { label = lbl },
                             shape = RoundedCornerShape(8.dp),
-                            color = if (label == lbl) GoBajaajBlue else Color(0xFFF1F5F9)
+                            color = if (label == lbl) Color(0xFFDC2626) else Color(0xFFF1F5F9)
                         ) {
                             Text(
                                 "$emoji $lbl",
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = if (label == lbl) Color.White else GoBajaajNavy,
+                                color = if (label == lbl) Color.White else BrandBlack,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             )
                         }
@@ -3462,7 +3460,7 @@ private fun CreateAddressDialog(
                         )
                     )
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = GoBajaajBlue),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text("Keydi Guri Number-ka", fontWeight = FontWeight.Bold)

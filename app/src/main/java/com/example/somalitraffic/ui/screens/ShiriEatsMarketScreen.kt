@@ -118,6 +118,28 @@ fun ShiriEatsMarketScreen(
     var trackingStatus by remember { mutableStateOf("preparing") }
     var trackingStoreName by remember { mutableStateOf("Pizza House Mogadishu") }
 
+    // Shiri Address Card Dialog State
+    var showAddressCardDialog by remember { mutableStateOf(false) }
+    var selectedShiriAddressCode by remember { mutableStateOf("SHR-MG-48291") }
+    var selectedShiriDistrict by remember { mutableStateOf("Hodan, Muqdisho") }
+    var selectedShiriStreet by remember { mutableStateOf("Waddo 21, Guri 12") }
+    var selectedShiriGps by remember { mutableStateOf("2.0469° N, 45.3182° E") }
+
+    // Voice Landmark Note State
+    var hasVoiceLandmarkNote by remember { mutableStateOf(true) }
+    var isRecordingVoiceNote by remember { mutableStateOf(false) }
+    var isPlayingVoiceNote by remember { mutableStateOf(false) }
+    var voiceRecordDuration by remember { mutableIntStateOf(15) }
+    var voiceLandmarkText by remember { mutableStateOf("Gurigu waa midab cagaar ah, albaabka birta ah ee agtiisa masaajidka") }
+
+    // Kitchen Alarm & Merchant Lifecycle State
+    var merchantKitchenAlarm by remember { mutableStateOf(true) }
+    var merchantPaymentVerified by remember { mutableStateOf(false) }
+    var orderReadyForCourier by remember { mutableStateOf(false) }
+
+    // Courier PIN Keypad Input State
+    var enteredCourierPin by remember { mutableStateOf("") }
+
     // Admin Category Manager Dialog
     var showAdminCategoryDialog by remember { mutableStateOf(false) }
     var showAddCategorySheet by remember { mutableStateOf(false) }
@@ -399,6 +421,206 @@ fun ShiriEatsMarketScreen(
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
+    // 1B. SHIRI ADDRESS CARD MODAL (Guri Number Digital ah: SHR-MG-48291)
+    // ─────────────────────────────────────────────────────────────────────────────
+    if (showAddressCardDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddressCardDialog = false },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFFEF2F2),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCode2,
+                                    contentDescription = null,
+                                    tint = Color(0xFFDC2626),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = if (isSomaliLanguage) "Ciwaankaaga Digital-ka ah" else "Shiri Digital Address",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = "Guri Number Rasmi ah",
+                                fontSize = 11.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+                    }
+                    IconButton(onClick = { showAddressCardDialog = false }) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFF64748B))
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Digital Code Card & QR Code Mockup
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White,
+                        border = BorderStroke(1.5.dp, Color(0xFFDC2626)),
+                        shadowElevation = 2.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFFEF2F2),
+                                border = BorderStroke(1.dp, Color(0xFFFECACA))
+                            ) {
+                                Text(
+                                    text = selectedShiriAddressCode,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFFDC2626),
+                                    letterSpacing = 1.sp,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+
+                            // Simulated Visual QR Code Grid
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFF0F172A),
+                                modifier = Modifier.size(110.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.QrCode,
+                                            contentDescription = "QR Code",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(80.dp)
+                                        )
+                                        Text(
+                                            "SHIRI SCAN",
+                                            fontSize = 7.5.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color(0xFFDC2626)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Text(
+                                text = "Koodhka rasmiga ah ee aqoonsiga goobtaada",
+                                fontSize = 10.5.sp,
+                                color = Color(0xFF64748B),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    // Address Detail Fields
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Degmada:", fontSize = 11.sp, color = Color(0xFF64748B))
+                                Text(selectedShiriDistrict, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Waddada & Guriga:", fontSize = 11.sp, color = Color(0xFF64748B))
+                                Text(selectedShiriStreet, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("GPS Toos ah:", fontSize = 11.sp, color = Color(0xFF64748B))
+                                Text(selectedShiriGps, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF16A34A))
+                            }
+                            HorizontalDivider(color = Color(0xFFE2E8F0), modifier = Modifier.padding(vertical = 2.dp))
+                            Text(
+                                text = "📍 Tilmaan: Ka soo horjeedka Masjidka Nuur, albaabka cagaaran.",
+                                fontSize = 11.sp,
+                                color = Color(0xFF475569)
+                            )
+                        }
+                    }
+
+                    // Copy & Share buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                Toast.makeText(context, "Ciwaanka $selectedShiriAddressCode waa la koobiyeeyay!", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.weight(1f).height(40.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF0F172A))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Koobiye", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                        }
+
+                        Button(
+                            onClick = {
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, "Ciwaankeyga Shiri waa $selectedShiriAddressCode ($selectedShiriDistrict - $selectedShiriStreet). GPS: $selectedShiriGps")
+                                    type = "text/plain"
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, "La wadaag Ciwaanka"))
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A)),
+                            modifier = Modifier.weight(1f).height(40.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
+                            Spacer(Modifier.width(4.dp))
+                            Text("La Wadaag", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showAddressCardDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (isSomaliLanguage) "Xaqiiji Ciwaanka" else "Done", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
     // 2. CHECKOUT MODAL (Dynamic for ANY store & its items)
     // ─────────────────────────────────────────────────────────────────────────────
     if (showCheckout && viewingStore != null) {
@@ -452,10 +674,150 @@ fun ShiriEatsMarketScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 480.dp)
+                        .heightIn(max = 500.dp)
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    // Shiri Address Destination Selector Card
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showAddressCardDialog = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = if (isSomaliLanguage) "CIWAANKA LAGUU KEENAYO (SHIRI ADDRESS)" else "DELIVERY ADDRESS",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF64748B)
+                                    )
+                                    Text(
+                                        text = "$selectedShiriAddressCode • $selectedShiriDistrict",
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "Bedel →",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFDC2626)
+                            )
+                        }
+                    }
+
+                    // Duubista Codka Tilmaamaha (Voice Landmark Note)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFEF2F2),
+                        border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Mic, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        text = if (isSomaliLanguage) "TILMAANTA CODKA (VOICE NOTE)" else "VOICE LANDMARK NOTE",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFFDC2626)
+                                    )
+                                }
+                                Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFDC2626)) {
+                                    Text(
+                                        text = if (isRecordingVoiceNote) "Duubista... 0:${voiceRecordDuration}" else "15-Sec",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "\"$voiceLandmarkText\"",
+                                fontSize = 11.sp,
+                                color = Color(0xFF475569),
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Button(
+                                    onClick = {
+                                        isRecordingVoiceNote = !isRecordingVoiceNote
+                                        if (!isRecordingVoiceNote) {
+                                            hasVoiceLandmarkNote = true
+                                            Toast.makeText(context, "Codka tilmaanta guriga waa la duubay (15s)!", Toast.LENGTH_SHORT).show()
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isRecordingVoiceNote) Color(0xFFDC2626) else Color(0xFF0F172A)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f).height(34.dp),
+                                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (isRecordingVoiceNote) Icons.Default.Stop else Icons.Default.Mic,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = Color.White
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = if (isRecordingVoiceNote) "Jooji" else "Duub Cod (15s)",
+                                        fontSize = 10.5.sp,
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                if (hasVoiceLandmarkNote) {
+                                    OutlinedButton(
+                                        onClick = { isPlayingVoiceNote = !isPlayingVoiceNote },
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.weight(1f).height(34.dp),
+                                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFDC2626))
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isPlayingVoiceNote) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = Color(0xFFDC2626)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            text = if (isPlayingVoiceNote) "Dhegeyso..." else "Dhageyso (0:15)",
+                                            fontSize = 10.5.sp,
+                                            color = Color(0xFFDC2626),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Selected Items Summary
                     Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF8FAFC), border = BorderStroke(1.dp, Color(0xFFE2E8F0)), modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -577,16 +939,21 @@ fun ShiriEatsMarketScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val pin = (1000..9999).random().toString()
-                        val orderId = "SHR-${System.currentTimeMillis() % 100000}"
+                        val pin = "4792"
+                        val orderId = "SHR-MG-48291"
                         trackingHandoverPin = pin
                         trackingOrderNumber = orderId
                         trackingStatus = "preparing"
                         trackingStoreName = currentStore.name
+                        merchantKitchenAlarm = true
+                        merchantPaymentVerified = false
+                        orderReadyForCourier = false
+                        enteredCourierPin = ""
                         showCheckout = false
                         showLiveTracking = true
                         hasActiveOrder = true
                         cartItems.clear()
+                        Toast.makeText(context, "Dalabkaagii waa la xaqiijiyay! Digniinta Jikada (Kitchen Alarm) ayaa dirtay.", Toast.LENGTH_LONG).show()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
                     shape = RoundedCornerShape(12.dp),
@@ -642,7 +1009,12 @@ fun ShiriEatsMarketScreen(
                 }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     // Handover PIN Card
                     Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFF1E293B), border = BorderStroke(1.5.dp, Color(0xFFDC2626)), modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -659,6 +1031,154 @@ fun ShiriEatsMarketScreen(
                                 color = Color(0xFF64748B),
                                 textAlign = TextAlign.Center
                             )
+                        }
+                    }
+
+                    // Courier Info & Voice Landmark Note Audio Playback
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF1E293B),
+                        border = BorderStroke(1.dp, Color(0xFF334155)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(shape = CircleShape, color = Color(0xFFDC2626).copy(alpha = 0.2f), modifier = Modifier.size(36.dp)) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text("🏍️", fontSize = 18.sp)
+                                        }
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    Column {
+                                        Text("Axmed Xasan (Mooto)", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text("SHR-MC-104 • ★ 4.9 • Dakhliga: +$6.50", fontSize = 10.sp, color = Color(0xFF4ADE80))
+                                    }
+                                }
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    IconButton(
+                                        onClick = {
+                                            val callIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:+252612345678"))
+                                            context.startActivity(callIntent)
+                                        },
+                                        modifier = Modifier.size(30.dp)
+                                    ) {
+                                        Icon(Icons.Default.Call, contentDescription = null, tint = Color(0xFF22C55E), modifier = Modifier.size(18.dp))
+                                    }
+                                }
+                            }
+
+                            // Dhageysiga Codka Macmiilka (Voice Landmark Player)
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF0F172A),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        isPlayingVoiceNote = !isPlayingVoiceNote
+                                        Toast.makeText(context, if (isPlayingVoiceNote) "Tilmaanta codka macmiilka ayaa dhaceysa..." else "Waa la hakiyay", Toast.LENGTH_SHORT).show()
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = if (isPlayingVoiceNote) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                            contentDescription = null,
+                                            tint = Color(0xFFDC2626),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Column {
+                                            Text("Codka Tilmaanta Guriga (15s)", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                            Text(voiceLandmarkText, fontSize = 9.sp, color = Color(0xFF94A3B8), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        }
+                                    }
+                                    Text(if (isPlayingVoiceNote) "0:15 / 0:15" else "▶ Yeeri", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
+                                }
+                            }
+                        }
+                    }
+
+                    // Handover PIN Verification Keypad (Courier Delivery Completion)
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF1E293B),
+                        border = BorderStroke(1.dp, if (trackingStatus == "delivered") Color(0xFF22C55E) else Color(0xFF334155)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "XAQIIJINTA GACAN-GELINTA (COURIER PIN)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (trackingStatus == "delivered") Color(0xFF4ADE80) else Color(0xFFCBD5E1)
+                            )
+
+                            if (trackingStatus == "delivered") {
+                                Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF22C55E).copy(alpha = 0.2f), modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier.padding(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text("✓ WAA LA GAARSIIYAY! +$6.50 DAKHLI", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color(0xFF4ADE80))
+                                    }
+                                }
+                            } else {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedTextField(
+                                        value = enteredCourierPin,
+                                        onValueChange = {
+                                            if (it.length <= 4) enteredCourierPin = it
+                                            if (it == trackingHandoverPin || it == "4792") {
+                                                trackingStatus = "delivered"
+                                                Toast.makeText(context, "Koodhka waa sax! Dalabkii waa la gaarsiiyay (+ $6.50)", Toast.LENGTH_LONG).show()
+                                            }
+                                        },
+                                        placeholder = { Text("Geli PIN (4792)", fontSize = 11.sp, color = Color(0xFF64748B)) },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedContainerColor = Color(0xFF0F172A),
+                                            unfocusedContainerColor = Color(0xFF0F172A),
+                                            focusedBorderColor = Color(0xFFDC2626),
+                                            unfocusedBorderColor = Color(0xFF334155)
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Button(
+                                        onClick = {
+                                            enteredCourierPin = trackingHandoverPin
+                                            trackingStatus = "delivered"
+                                            Toast.makeText(context, "Koodhka 4792 waa la xaqiijiyay! +$6.50 Dakhli", Toast.LENGTH_LONG).show()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier.height(48.dp)
+                                    ) {
+                                        Text("PIN 4792", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White)
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -1141,7 +1661,13 @@ fun ShiriEatsMarketScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { showAddressCardDialog = true }
+                            .padding(end = 4.dp)
+                    ) {
                         Surface(shape = CircleShape, color = Color(0xFFDC2626).copy(alpha = 0.12f), modifier = Modifier.size(34.dp)) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(18.dp))
@@ -1156,9 +1682,13 @@ fun ShiriEatsMarketScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF64748B)
                                 )
-                                Text("SHR-HO-55897", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFDC2626))
+                                Text(selectedShiriAddressCode, fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFDC2626))
                             }
-                            Text("Degmada Hodan, Muqdisho", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(selectedShiriDistrict, fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                                Spacer(Modifier.width(4.dp))
+                                Text("▾", fontSize = 12.sp, color = Color(0xFFDC2626))
+                            }
                         }
                     }
 
@@ -1693,6 +2223,100 @@ fun ShiriEatsMarketScreen(
                                 Icon(Icons.Default.Category, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(14.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Qeybaha", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
+                            }
+                        }
+                    }
+                }
+
+                // ─────────────────────────────────────────────────────────────────
+                // 1. KITCHEN ALARM & LOUD ORDER ALERT TONE (Qeybta 2aad: Business-ka)
+                // ─────────────────────────────────────────────────────────────────
+                if (merchantKitchenAlarm) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFFFEF2F2),
+                        border = BorderStroke(2.dp, Color(0xFFDC2626)),
+                        shadowElevation = 3.dp,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Surface(shape = CircleShape, color = Color(0xFFDC2626), modifier = Modifier.size(32.dp)) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                        }
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    Column {
+                                        Text("🚨 KITCHEN ALARM: DALAB CUSUB!", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color(0xFFDC2626))
+                                        Text("Dhawaaqa Jikada (Loud Tone) wuu yeerayaa...", fontSize = 10.sp, color = Color(0xFF64748B))
+                                    }
+                                }
+                                Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFDC2626)) {
+                                    Text("DEG DEG", fontSize = 9.sp, fontWeight = FontWeight.Black, color = Color.White, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                }
+                            }
+
+                            Surface(shape = RoundedCornerShape(10.dp), color = Color.White, border = BorderStroke(1.dp, Color(0xFFFECACA)), modifier = Modifier.fillMaxWidth()) {
+                                Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text("Dalabka: #SHR-MG-48291", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
+                                        Text("$14.50 (EVC Plus)", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color(0xFF16A34A))
+                                    }
+                                    Text("Macmiil: Cabdifataax • 0612345678", fontSize = 11.sp, color = Color(0xFF475569))
+                                    Text("Goobta: SHR-MG-48291 (Hodan, Muqdisho)", fontSize = 10.5.sp, color = Color(0xFF64748B))
+                                    Text("Tilmaanta Codka: \"Gurigu waa cagaar agtiisa masaajidka\"", fontSize = 10.5.sp, color = Color(0xFFDC2626), fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                                }
+                            }
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        merchantPaymentVerified = true
+                                        Toast.makeText(context, "Lacagtii waa la xaqiijiyay (Payment Approved)!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (merchantPaymentVerified) Color(0xFF16A34A) else Color(0xFF0F172A)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f).height(38.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                ) {
+                                    Text(
+                                        text = if (merchantPaymentVerified) "✓ Lacagta Waa La Oggolaaday" else "Oggolow Lacagta",
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+
+                                Button(
+                                    onClick = {
+                                        orderReadyForCourier = true
+                                        merchantKitchenAlarm = false
+                                        trackingStatus = "courier_assigned"
+                                        Toast.makeText(context, "Darawalka mootada ayaa loo yeeray (Ready for Pickup)!", Toast.LENGTH_LONG).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f).height(38.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                ) {
+                                    Text(
+                                        text = "Waa Diyaar, U Yeer Darawal",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             }
                         }
                     }
