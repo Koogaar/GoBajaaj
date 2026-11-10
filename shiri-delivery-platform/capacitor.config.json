@@ -1,0 +1,14 @@
+{
+  "appId": "so.shiri.delivery",
+  "appName": "Shiri Delivery",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "preferredContentMode": "mobile",
+    "scheme": "Shiri Delivery"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "SHIRI DELIVERY — Multi-Service Delivery Platform",
+  "description": "Production-ready multi-service delivery platform for Somalia (Mogadishu) and international expansion, featuring Customer, Merchant, Courier apps and Admin Web Dashboard with digital Shiri Address (Guri Number Digital ah).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

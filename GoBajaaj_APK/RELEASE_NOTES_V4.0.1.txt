@@ -1,0 +1,53 @@
+================================================================================
+🚀 SHIRI v4.0.1 — RELEASE NOTES (GOOGLE PLAY CONSOLE)
+================================================================================
+Release Date: November 2026
+Version Code: 48 | Version Name: 4.0.1
+================================================================================
+
+--------------------------------------------------------------------------------
+AF-SOOMAALI (Kooban — Copy & Paste):
+--------------------------------------------------------------------------------
+Waxyaabaha Cusub ee Nooca 4.0.1:
+
+🍽️ Bogga Gaarka ah ee Ganacsiga (Single Merchant Store View):
+• Marka macmiilku doorto maqaayad ama meherad (tusaale: Pizza House Mogadishu), waxa kaliya oo u muuqanaya alaabta iyo cuntada ganacsigaas oo kaliya.
+• Sawirka weyn ee meheradda (Banner), qiimeynta ⭐, waqtiga gaarsiinta, iyo kharashka mootada.
+• Badhanka tooska ah ee "+ Gali Gaariga" iyo baararka hoose ee "Arag Gaariga".
+
+🛵 Nidaamka Buuxa ee Delivery-ga (Driver & Courier):
+• Kaarka "Dalabyada Soo Dhacaya (Available Orders)" oo leh ogeysiis degdeg ah.
+• Dakhliga Maanta ($49.00) oo ay ku jiraan xisaabaadka Cash on Delivery.
+• Xiriirka darawalka iyo xaqiijinta Handover PIN (4792) ee amniga xirmada.
+
+⚡ Xawaaraha & Xasiloonida:
+• Waxaa la kordhiyay xawaaraha app-ka iyo kala-guurka shaashadaha.
+• Cillad-bixin buuxda oo lagu sameeyay nidaamka gaariga iyo dambiisha (Cart).
+
+================================================================================
+ENGLISH (Full — Copy & Paste):
+================================================================================
+What's New in SHIRI v4.0.1:
+
+🍽️ Dedicated Merchant Storefront View:
+• When a customer selects any restaurant or business (e.g. Pizza House Mogadishu), only that merchant's specific catalog and menu are displayed.
+• High-resolution banner image, store rating ⭐, delivery ETA, and delivery fee breakdown.
+• Quick "+ Add to Cart" action buttons and persistent "View Cart" sticky bottom bar.
+
+🛵 Integrated Courier Delivery System:
+• Available Orders dispatch card with real-time audio and visual alerts.
+• Today's Earnings dashboard showing completed trips and Cash on Delivery totals.
+• Direct WhatsApp/Call driver contact and 4-digit Handover PIN verification.
+
+⚡ Performance & Reliability:
+• Faster app rendering and smooth screen navigation transitions.
+• Enhanced shopping cart memory and checkout workflow.
+
+================================================================================
+BUILD INFO:
+  APK:  SHIRI_v4.0.1_release.apk  (69.9 MB)
+  AAB:  SHIRI_v4.0.1_release.aab  (39.5 MB)
+  Min SDK: 24 (Android 7.0+)
+  Target SDK: 36 (Android 14/15)
+  Version Code: 48
+================================================================================
