@@ -1153,15 +1153,15 @@ fun ShiriEatsMarketScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "XAQIIJINTA GACAN-GELINTA (COURIER PIN)",
+                                text = "PIN-KA GACAN-GELINTA (CONFIRMATION PIN)",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (trackingStatus == "delivered") Color(0xFF4ADE80) else Color(0xFFCBD5E1)
+                                color = Color(0xFFFBBF24)
                             )
 
                             if (trackingStatus == "delivered") {
@@ -1171,51 +1171,54 @@ fun ShiriEatsMarketScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.Center
                                     ) {
-                                        Text("✓ WAA LA GAARSIIYAY! +$6.50 DAKHLI", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color(0xFF4ADE80))
+                                        Text("✓ WAA LA GAARSIIYAY! (DELIVERED)", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Color(0xFF4ADE80))
                                     }
                                 }
                             } else {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = Color(0xFF0F172A),
+                                    border = BorderStroke(1.dp, Color(0xFFFBBF24).copy(alpha = 0.4f)),
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    OutlinedTextField(
-                                        value = enteredCourierPin,
-                                        onValueChange = {
-                                            if (it.length <= 4) enteredCourierPin = it
-                                            if (it == trackingHandoverPin || it == "4792") {
-                                                trackingStatus = "delivered"
-                                                Toast.makeText(context, "Koodhka waa sax! Dalabkii waa la gaarsiiyay (+ $6.50)", Toast.LENGTH_LONG).show()
-                                            }
-                                        },
-                                        placeholder = { Text("Geli PIN (4792)", fontSize = 11.sp, color = Color(0xFF64748B)) },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        singleLine = true,
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = OutlinedTextFieldDefaults.colors(
-                                            focusedTextColor = Color.White,
-                                            unfocusedTextColor = Color.White,
-                                            focusedContainerColor = Color(0xFF0F172A),
-                                            unfocusedContainerColor = Color(0xFF0F172A),
-                                            focusedBorderColor = Color(0xFFDC2626),
-                                            unfocusedBorderColor = Color(0xFF334155)
-                                        ),
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Button(
-                                        onClick = {
-                                            enteredCourierPin = trackingHandoverPin
-                                            trackingStatus = "delivered"
-                                            Toast.makeText(context, "Koodhka 4792 waa la xaqiijiyay! +$6.50 Dakhli", Toast.LENGTH_LONG).show()
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
-                                        shape = RoundedCornerShape(8.dp),
-                                        modifier = Modifier.height(48.dp)
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("PIN 4792", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White)
+                                        Column {
+                                            Text(
+                                                text = if (isSomaliLanguage) "Codkaaga PIN-ka:" else "Your Delivery PIN:",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFFCBD5E1)
+                                            )
+                                            Text(
+                                                text = if (isSomaliLanguage) "U aqri darawalka marka uu kuu keeno" else "Read aloud to your driver upon arrival",
+                                                fontSize = 9.sp,
+                                                color = Color(0xFF94A3B8)
+                                            )
+                                        }
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFFFBBF24),
+                                            modifier = Modifier.padding(start = 8.dp)
+                                        ) {
+                                            Text(
+                                                text = trackingHandoverPin.ifEmpty { "4792" },
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = Color(0xFF0F172A),
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                            )
+                                        }
                                     }
                                 }
+                                Text(
+                                    text = if (isSomaliLanguage) "⚠️ Darawalka ha siin PIN-kan ilaa aad xirmada gacanta ku dhigto." else "⚠️ Do not share this PIN until you receive your items.",
+                                    fontSize = 9.sp,
+                                    color = Color(0xFF94A3B8)
+                                )
                             }
                         }
                     }
@@ -1249,26 +1252,7 @@ fun ShiriEatsMarketScreen(
                         }
                     }
 
-                    // Advance Simulator Button
-                    Button(
-                        onClick = {
-                            trackingStatus = when (trackingStatus) {
-                                "preparing" -> "courier_assigned"
-                                "courier_assigned" -> "in_transit"
-                                "in_transit" -> "delivered"
-                                else -> "preparing"
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = if (isSomaliLanguage) "Tijaabi Xaaladda Xigta →" else "Advance Status Demo →",
-                            fontSize = 11.sp,
-                            color = Color(0xFFCBD5E1)
-                        )
-                    }
+
                 }
             },
             confirmButton = {
@@ -1939,19 +1923,16 @@ fun ShiriEatsMarketScreen(
                             } else {
                                 Surface(
                                     shape = RoundedCornerShape(14.dp),
-                                    color = Color(0xFFDC2626),
-                                    modifier = Modifier.clickable {
-                                        currentAppMode = "customer"
-                                        viewingStore = null
-                                    }
+                                    color = Color(0xFF1E293B),
+                                    border = BorderStroke(1.dp, Color(0xFF334155))
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(text = if (isSomaliLanguage) "Ku Noqo Suuqa" else "Customer App", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(13.dp))
+                                        Spacer(modifier = Modifier.width(3.dp))
+                                        Text(text = "Muqdisho", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                     }
                                 }
                             }

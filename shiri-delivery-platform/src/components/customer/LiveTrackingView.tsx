@@ -256,20 +256,31 @@ export const LiveTrackingView: React.FC<LiveTrackingViewProps> = ({ order, onBac
           <VoiceNotePlayer voiceNote={order.voiceNote} />
         )}
 
-        {/* Handover PIN Card */}
-        <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-3.5 rounded-3xl shadow-md flex items-center justify-between gap-3">
-          <div className="space-y-0.5 min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 text-[11px] text-amber-300 font-bold">
-              <KeyRound className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>{t.handoverPin}</span>
+        {/* Handover PIN Card - Customer reads aloud to Courier */}
+        <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white p-4 rounded-3xl shadow-lg border-2 border-amber-400/40 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs text-amber-300 font-bold uppercase tracking-wider">
+              <KeyRound className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Xaqiijinta Gacan-Gelinta (Handover PIN)</span>
             </div>
-            <p className="text-[10px] text-slate-300 leading-tight">
-              Sii PIN-kaan darawalka markuu xirmada kuu keeno.
-            </p>
+            <span className="text-[10px] bg-amber-400/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-400/30">
+              U Aqri Darawalka
+            </span>
           </div>
-          <div className="bg-amber-400 text-slate-950 font-mono font-black text-lg px-3 py-1 rounded-xl tracking-widest shadow-inner shrink-0">
-            {order.handoverPin}
+
+          <div className="bg-slate-900/90 rounded-2xl p-3 border border-slate-700/60 flex items-center justify-between gap-3">
+            <div>
+              <span className="text-xs text-slate-300 font-medium block">Codkaaga PIN-ka:</span>
+              <p className="text-[11px] text-slate-400 mt-0.5">U sheeg darawalka marka uu kuu keeno dalabka</p>
+            </div>
+            <div className="bg-amber-400 text-slate-950 font-mono font-black text-2xl px-4 py-1.5 rounded-2xl tracking-widest shadow-inner shrink-0 select-all">
+              {order.handoverPin || '4792'}
+            </div>
           </div>
+
+          <p className="text-[10px] text-slate-300 leading-relaxed text-center">
+            ⚠️ Darawalka ha siin PIN-kan ilaa aad gacanta ku dhigto xirmadaada. Darawalku isagaa ku qoraya taleefankiisa si uu u xaqiijiyo.
+          </p>
         </div>
 
         {/* Payment Status Card */}

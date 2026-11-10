@@ -30,6 +30,7 @@ import {
   MessageCircle,
   Plus,
   PlusCircle,
+  LogOut,
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -163,11 +164,6 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleSimulateDispatchOrder = () => {
-    platformStore.simulateIncomingOrder();
-    alert('Dalab tijaabo ah ayaa loo diray nidaamka! Darawalladu waxay hadda ka arkayaan "Dalabyada Soo Dhacaya".');
-  };
-
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
       {/* Top Admin Navigation Bar */}
@@ -186,7 +182,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-xs">
+        <div className="flex items-center gap-3 text-xs">
           <div className="hidden md:flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg text-slate-300">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span>Mogadishu Gateway: Online</span>
@@ -197,6 +193,17 @@ export const AdminDashboard: React.FC = () => {
           >
             <RefreshCw className="w-3.5 h-3.5 text-red-400" />
             <span>Cusbooneysii</span>
+          </button>
+          <button
+            onClick={() => {
+              platformStore.logoutRole('admin');
+              window.location.reload();
+            }}
+            className="flex items-center gap-1.5 bg-red-950/70 hover:bg-red-900 border border-red-800/80 px-3 py-1.5 rounded-lg text-red-200 transition-colors font-bold"
+            title="Ka bax akoonka maamulka"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Ka Bax</span>
           </button>
         </div>
       </header>

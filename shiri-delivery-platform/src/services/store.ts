@@ -37,6 +37,10 @@ class ShiriPlatformStore {
   private listeners: Set<Listener> = new Set();
   private auditLogs: { id: string; timestamp: string; action: string; actor: string; details: string }[] = [];
   private courierSimulationInterval: number | null = null;
+  private customerAuth = { isLoggedIn: false, phone: '', name: '' };
+  private merchantAuth = { isLoggedIn: false, merchantId: '', merchantName: '' };
+  private courierAuth = { isLoggedIn: false, courierId: '', courierName: '' };
+  private adminAuth = { isLoggedIn: false, username: '' };
 
   constructor() {
     this.loadInitialData();
@@ -54,6 +58,15 @@ class ShiriPlatformStore {
       this.merchants = storedMerchants ? JSON.parse(storedMerchants) : INITIAL_MERCHANTS;
       this.couriers = storedCouriers ? JSON.parse(storedCouriers) : INITIAL_COURIERS;
       this.activeOrderId = this.orders[0]?.id || null;
+
+      const custAuth = localStorage.getItem('shiri_auth_customer');
+      if (custAuth) this.customerAuth = JSON.parse(custAuth);
+      const merchAuth = localStorage.getItem('shiri_auth_merchant');
+      if (merchAuth) this.merchantAuth = JSON.parse(merchAuth);
+      const courAuth = localStorage.getItem('shiri_auth_courier');
+      if (courAuth) this.courierAuth = JSON.parse(courAuth);
+      const admAuth = localStorage.getItem('shiri_auth_admin');
+      if (admAuth) this.adminAuth = JSON.parse(admAuth);
     } catch {
       this.orders = [...INITIAL_ORDERS];
       this.addresses = [...INITIAL_ADDRESSES];
@@ -106,6 +119,128 @@ class ShiriPlatformStore {
 
   getOrders(): Order[] {
     return this.orders;
+  }
+
+  getProducts(): Product[] {
+    return this.merchants.flatMap((m) => m.products);
+  }
+
+  // --- ROLE AUTHENTICATION & SESSIONS ---
+  getCustomerAuth() {
+    return this.customerAuth;
+  }
+
+  loginCustomer(phone: string, name: string = 'Macmiil') {
+    this.customerAuth = { isLoggedIn: true, phone, name };
+    try {
+      localStorage.setItem('shiri_auth_customer', JSON.stringify(this.customerAuth));
+    } catch {}
+    this.notify();
+  }
+
+  getMerchantAuth() {
+    return this.merchantAuth;
+  }
+
+  loginMerchant(merchantId: string) {
+    const merch = this.merchants.find((m) => m.id === merchantId) || this.merchants[0];
+    this.merchantAuth = {
+      isLoggedIn: true,
+      merchantId: merch?.id || merchantId,
+      merchantName: merch?.name || 'Meherad',
+    };
+    try {
+      localStorage.setItem('shiri_auth_merchant', JSON.stringify(this.merchantAuth));
+    } catch {}
+    this.notify();
+  }
+
+  getActiveMerchantId(): string {
+    if (this.merchantAuth.isLoggedIn && this.merchantAuth.merchantId) {
+      return this.merchantAuth.merchantId;
+    }
+    return this.merchants[0]?.id || 'merch-1';
+  }
+
+  getCourierAuth() {
+    return this.courierAuth;
+  }
+
+  loginCourier(courierId: string) {
+    const cour = this.couriers.find((c) => c.id === courierId) || this.couriers[0];
+    this.courierAuth = {
+      isLoggedIn: true,
+      courierId: cour?.id || courierId,
+      courierName: cour?.name || 'Darawal',
+    };
+    try {
+      localStorage.setItem('shiri_auth_courier', JSON.stringify(this.courierAuth));
+    } catch {}
+    this.notify();
+  }
+
+  getActiveCourierId(): string {
+    if (this.courierAuth.isLoggedIn && this.courierAuth.courierId) {
+      return this.courierAuth.courierId;
+    }
+    return this.couriers[0]?.id || 'cour-1';
+  }
+
+  getAdminAuth() {
+    return this.adminAuth;
+  }
+
+  loginAdmin() {
+    this.adminAuth = { isLoggedIn: true, username: 'admin' };
+    try {
+      localStorage.setItem('shiri_auth_admin', JSON.stringify(this.adminAuth));
+    } catch {}
+    this.notify();
+  }
+
+  isRoleLoggedIn(role: AppRole): boolean {
+    switch (role) {
+      case 'customer':
+        return this.customerAuth.isLoggedIn;
+      case 'merchant':
+        return this.merchantAuth.isLoggedIn;
+      case 'courier':
+        return this.courierAuth.isLoggedIn;
+      case 'admin':
+        return this.adminAuth.isLoggedIn;
+      default:
+        return false;
+    }
+  }
+
+  logoutRole(role: AppRole) {
+    switch (role) {
+      case 'customer':
+        this.customerAuth = { isLoggedIn: false, phone: '', name: '' };
+        try {
+          localStorage.removeItem('shiri_auth_customer');
+        } catch {}
+        break;
+      case 'merchant':
+        this.merchantAuth = { isLoggedIn: false, merchantId: '', merchantName: '' };
+        try {
+          localStorage.removeItem('shiri_auth_merchant');
+        } catch {}
+        break;
+      case 'courier':
+        this.courierAuth = { isLoggedIn: false, courierId: '', courierName: '' };
+        try {
+          localStorage.removeItem('shiri_auth_courier');
+        } catch {}
+        break;
+      case 'admin':
+        this.adminAuth = { isLoggedIn: false, username: '' };
+        try {
+          localStorage.removeItem('shiri_auth_admin');
+        } catch {}
+        break;
+    }
+    this.notify();
   }
 
   getAddresses(): ShiriAddress[] {
