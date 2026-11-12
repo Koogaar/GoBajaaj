@@ -1,0 +1,29 @@
+====================================================================
+SHIRI Platform - Release Notes v4.0.8 (versionCode 55)
+====================================================================
+Taariikhda: 2026-11-12
+Saxiixaha: my-upload-key.jks (upload alias)
+====================================================================
+
+WAX KA BEDDELKA BUUXA EE V4.0.8 (CHANGES):
+-------------------------------------------
+1. [BRANDING] Logo-da Rasmiga ah ee Gaduudan ee SHIRI:
+   - Logo-dii caddayd ee ku dhex jirtay app-ka waxaa lagu beddelay Logo-da rasmiga ah ee gaduudan ee SHIRI (shiri_logo.png).
+
+2. [DATABASE FIX] Xallinta Khaladka "Profile-ka lama kaydin karin (400)":
+   - Waxaa la xalliyay cilladdii "Could not find the 'business_name' column of 'profiles' in the schema cache".
+   - App-ku wuxuu si nabadgelyo leh u keydinayaa profile-ka diiwaangelinta oo dhan iyadoo aan wax khalad ah ku dhacayn user-ka.
+
+3. [TEXT UPDATES] Qoraallada Cusub ee Dooro Adeegga (RoleSelectionScreen):
+   - CUSTOMERS / MACMIILKA: "Halkan ka dalbo adeegga sida Cunto, Cosmatics, Dukaamo, Supermarkets"
+   - DARAWAL BAJAAJ: "Iska Diiwan geli Shiri app Si Online ka Lagaga so Dalbado"
+   - BUSINESS OWNER: "Maamul Mehradada, Halkan So Geli Alaabtada, Hel Dalabyo"
+   - DELIVERY (MOOTO COURIER): "Shiri Delivery Gaarsiinta Alaabaha iyo Cuntada Wicitaan La'aan."
+
+4. [USER FLOW] Macmiilka / Customer (Gelitaan Toos ah):
+   - Macmiilku uma baahna foom diiwaangelineed; marka uu doorto "CUSTOMERS / MACMIILKA" oo uu taabto "Sii wad", wuxuu toos u galayaa shaashadda app-ka (Home Screen) si uu adeegyo u dalbado.
+
+FILES GENERATED:
+- GoBajaaj_APK/SHIRI_v4.0.8_release.aab (39.9 MB) [Google Play Store Ready]
+- GoBajaaj_APK/SHIRI_v4.0.8_release.apk (70.4 MB) [Direct Install APK]
+====================================================================

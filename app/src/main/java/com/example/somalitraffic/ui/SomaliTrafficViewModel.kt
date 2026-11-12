@@ -1,4 +1,4 @@
-package com.example.somalitraffic.ui
+﻿package com.example.somalitraffic.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -20,6 +20,18 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
 
     // User session
     val currentUser: StateFlow<UserProfile?> = repository.prefs.currentUserFlow
+
+    fun continueAsGuestCustomer() {
+        val guestUser = UserProfile(
+            id = "guest_" + System.currentTimeMillis(),
+            fullName = "Macmiil (Customer)",
+            phoneNumber = "0610000000",
+            role = UserRole.PASSENGER,
+            status = "active",
+            verificationStatus = "approved"
+        )
+        repository.prefs.saveUserSession(guestUser, "guest_token")
+    }
 
     val isDriver: StateFlow<Boolean> = currentUser.map { it?.role == UserRole.DRIVER }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)

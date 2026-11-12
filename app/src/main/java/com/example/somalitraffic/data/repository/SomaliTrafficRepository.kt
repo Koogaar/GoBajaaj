@@ -1,4 +1,4 @@
-package com.example.somalitraffic.data.repository
+﻿package com.example.somalitraffic.data.repository
 
 import android.content.Context
 import android.os.Build
@@ -971,10 +971,30 @@ class SomaliTrafficRepository(private val context: Context) {
             }
 
             var profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
-            if (profileResult.isFailure && profileResult.exceptionOrNull()?.message?.contains("profiles_role_check", ignoreCase = true) == true) {
-                // If the remote DB check constraint doesn't have the new role yet, retry with 'driver'
-                profilePayload["role"] = "driver"
-                profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+            if (profileResult.isFailure) {
+                val errMessage = profileResult.exceptionOrNull()?.message.orEmpty()
+                // 1. If role check constraint fails, fallback to driver
+                if (errMessage.contains("profiles_role_check", ignoreCase = true)) {
+                    profilePayload["role"] = "driver"
+                    profileResult = upsertOwnProfile(service, apiKey, authHeader, profilePayload)
+                }
+                // 2. If remote profiles table is missing newly added columns (PGRST204), sanitize to base columns!
+                if (profileResult.isFailure) {
+                    val secondErrMsg = profileResult.exceptionOrNull()?.message.orEmpty()
+                    if (secondErrMsg.contains("PGRST204", ignoreCase = true) || 
+                        secondErrMsg.contains("Could not find the", ignoreCase = true) ||
+                        secondErrMsg.contains("column of 'profiles'", ignoreCase = true) ||
+                        secondErrMsg.contains("schema cache", ignoreCase = true)) {
+                        val safeMinimalPayload = mutableMapOf<String, Any>(
+                            "id" to finalUserId,
+                            "full_name" to cleanName,
+                            "phone_number" to e164,
+                            "role" to if (actualRoleStr in listOf("driver", "passenger")) actualRoleStr else "driver",
+                            "status" to "active"
+                        )
+                        profileResult = upsertOwnProfile(service, apiKey, authHeader, safeMinimalPayload)
+                    }
+                }
             }
             if (profileResult.isFailure) {
                 return@withContext Result.failure(

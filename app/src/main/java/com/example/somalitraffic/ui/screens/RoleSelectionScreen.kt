@@ -1,4 +1,4 @@
-package com.example.somalitraffic.ui.screens
+﻿package com.example.somalitraffic.ui.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -127,7 +127,7 @@ fun RoleSelectionScreen(
                 // 1. Customers / Macmiilka (Super App - All Services)
                 RoleCard(
                     title = "CUSTOMERS / MACMIILKA",
-                    subtitle = "Dhammaan Adeegyada (Super App) • Dalbo Bajaaj, Cunto, Dukaamada & Dir Baakado",
+                    subtitle = "Halkan ka dalbo adeegga sida Cunto, Cosmatics, Dukaamo, Supermarkets",
                     tagText = "ALL SERVICES",
                     tagColor = Color(0xFFE50914),
                     tagBg = Color(0xFFFEF2F2),
@@ -144,7 +144,7 @@ fun RoleSelectionScreen(
                 // 2. Darawal Bajaaj (Driver Pass $0.25 - 18 isgoys removed)
                 RoleCard(
                     title = "DARAWAL BAJAAJ",
-                    subtitle = "Qaadista Rakaabka Bajaajta • Driver Pass $0.25 Maalintii",
+                    subtitle = "Iska Diiwan geli Shiri app Si Online ka Lagaga so Dalbado",
                     tagText = "BAJAAJLE",
                     tagColor = Color(0xFFB45309),
                     tagBg = Color(0xFFFEF3C7),
@@ -161,7 +161,7 @@ fun RoleSelectionScreen(
                 // 3. Business Owner (Ganacsade / Meherad)
                 RoleCard(
                     title = "BUSINESS OWNER (GANACSADE)",
-                    subtitle = "Maamul Meheraddaada, Kudar Alaab & Hel Dalabyo Toos ah",
+                    subtitle = "Maamul Mehradada, Halkan So Geli Alaabtada, Hel Dalabyo",
                     tagText = "BUSINESS",
                     tagColor = Color(0xFF16A34A),
                     tagBg = Color(0xFFF0FDF4),
@@ -178,7 +178,7 @@ fun RoleSelectionScreen(
                 // 4. Delivery (Mooto Courier / Gaarsiiye)
                 RoleCard(
                     title = "DELIVERY (MOOTO COURIER)",
-                    subtitle = "Gaarsiinta Cuntada & Baakadaha • Mooto Driver Express",
+                    subtitle = "Shiri Delivery Gaarsiinta Alaabaha iyo Cuntada Wicitaan La'aan.",
                     tagText = "COURIER",
                     tagColor = Color(0xFF0284C7),
                     tagBg = Color(0xFFF0F9FF),
