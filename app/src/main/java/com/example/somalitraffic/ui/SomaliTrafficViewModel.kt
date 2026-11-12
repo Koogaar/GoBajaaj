@@ -1,4 +1,4 @@
-﻿package com.example.somalitraffic.ui
+package com.example.somalitraffic.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -466,6 +466,7 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         businessType: String? = null,
         merchantPaymentNumber: String? = null,
         district: String? = null,
+        digitalGuriNumber: String? = null,
         onSuccess: (UserProfile) -> Unit
     ) {
         viewModelScope.launch {
@@ -486,7 +487,8 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
                 businessName = businessName,
                 businessType = businessType,
                 merchantPaymentNumber = merchantPaymentNumber,
-                district = district
+                district = district,
+                digitalGuriNumber = digitalGuriNumber
             )
             _isLoading.value = false
             res.onSuccess { user ->

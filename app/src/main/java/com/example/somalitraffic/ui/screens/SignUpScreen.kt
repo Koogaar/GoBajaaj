@@ -915,7 +915,8 @@ fun SignUpScreen(
                             businessName = if (isMerchant) businessName.trim() else null,
                             businessType = if (isMerchant) businessType else null,
                             merchantPaymentNumber = if (isMerchant) merchantPaymentNumber.trim() else null,
-                            district = if (isMerchant) "${district.trim()} • Guri: $digitalHouseNumber" else "Guri: $digitalHouseNumber"
+                            district = if (isMerchant) district.trim() else "Muqdisho",
+                            digitalGuriNumber = digitalHouseNumber
                         ) { user ->
                             onSignUpSuccess()
                         }

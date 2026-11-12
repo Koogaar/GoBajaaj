@@ -2339,7 +2339,7 @@ fun ShiriEatsMarketScreen(
                                 color = Color.White
                             )
                             Text(
-                                text = "${storeDetail.categoryId.replaceFirstChar { it.uppercase() }} • ${storeDetail.district}",
+                                text = "🏠 Guri: ${storeDetail.shiriCode} • ${storeDetail.categoryId.replaceFirstChar { it.uppercase() }} • ${storeDetail.district}",
                                 fontSize = 12.sp,
                                 color = Color(0xFFCBD5E1),
                                 maxLines = 1,
@@ -2357,6 +2357,15 @@ fun ShiriEatsMarketScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Surface(shape = RoundedCornerShape(20.dp), color = Color(0xFFEFF6FF)) {
+                            Text(
+                                text = "🏠 ${storeDetail.shiriCode}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF1D4ED8),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                         Surface(shape = RoundedCornerShape(20.dp), color = Color(0xFFFEF3C7)) {
                             Text(
                                 text = "⭐ ${storeDetail.rating}",
@@ -3647,6 +3656,45 @@ fun ShiriEatsMarketScreen(
                         // DEFAULT: DASHBOARD TAB (Quick Stats & Clickable Overview)
                         // ═════════════════════════════════════════════════════════
 
+                        // Merchant Store Info Banner with Digital Guri Number
+                        val merchantGuriNumber = viewModel.currentUser.value?.digitalGuriNumber ?: "SH-4029"
+                        val merchantStoreName = viewModel.currentUser.value?.businessName ?: "Meheradda Shiri"
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFEFF6FF),
+                            border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "🏪 $merchantStoreName",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF0F172A)
+                                    )
+                                    Text(
+                                        text = "Degmada: ${viewModel.currentUser.value?.district ?: "Hodan, Muqdisho"}",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF64748B)
+                                    )
+                                }
+                                Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF1D4ED8)) {
+                                    Text(
+                                        text = "🏠 Guri: $merchantGuriNumber",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+
                         // Quick Action Buttons
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
@@ -3950,7 +3998,7 @@ fun CustomerStoreCard(
                 }
 
                 Text(
-                    text = "${store.shiriCode} • ${store.district}",
+                    text = "🏠 Guri: ${store.shiriCode} • ${store.district}",
                     fontSize = 11.sp,
                     color = Color(0xFF64748B)
                 )

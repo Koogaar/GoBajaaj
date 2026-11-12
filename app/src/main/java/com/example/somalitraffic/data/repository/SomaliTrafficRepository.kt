@@ -838,7 +838,8 @@ class SomaliTrafficRepository(private val context: Context) {
         businessName: String? = null,
         businessType: String? = null,
         merchantPaymentNumber: String? = null,
-        district: String? = null
+        district: String? = null,
+        digitalGuriNumber: String? = null
     ): Result<UserProfile> = withContext(Dispatchers.IO) {
         try {
             val cleanName = fullName.trim()
@@ -962,6 +963,7 @@ class SomaliTrafficRepository(private val context: Context) {
             if (!businessType.isNullOrBlank()) profilePayload["business_type"] = businessType
             if (!merchantPaymentNumber.isNullOrBlank()) profilePayload["merchant_payment_number"] = merchantPaymentNumber
             if (!district.isNullOrBlank()) profilePayload["district"] = district
+            if (!digitalGuriNumber.isNullOrBlank()) profilePayload["digital_guri_number"] = digitalGuriNumber
             if (actualRoleStr == "courier" || actualRoleStr == "merchant") {
                 profilePayload["verification_status"] = "pending_approval"
                 profilePayload["monthly_fee"] = 5.00
@@ -999,6 +1001,7 @@ class SomaliTrafficRepository(private val context: Context) {
                         )
                         // For merchants, include business name even in minimal payload
                         if (!businessName.isNullOrBlank()) safeMinimalPayload["business_name"] = businessName
+                        if (!digitalGuriNumber.isNullOrBlank()) safeMinimalPayload["digital_guri_number"] = digitalGuriNumber
                         profileResult = upsertOwnProfile(service, apiKey, authHeader, safeMinimalPayload)
                     }
                 }
@@ -1032,6 +1035,7 @@ class SomaliTrafficRepository(private val context: Context) {
                 businessType = businessType,
                 merchantPaymentNumber = merchantPaymentNumber,
                 district = district,
+                digitalGuriNumber = digitalGuriNumber,
                 monthlyFee = if (actualRoleStr == "courier" || actualRoleStr == "merchant") 5.00 else null
             )
 

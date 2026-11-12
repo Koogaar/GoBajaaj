@@ -14,9 +14,14 @@ ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS business_name TEX
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS business_type TEXT;
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS merchant_payment_number TEXT;
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS district TEXT;
+ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS digital_guri_number TEXT;
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS verification_status TEXT DEFAULT 'approved';
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS monthly_fee NUMERIC(10,2) DEFAULT NULL;
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS referred_by TEXT;
+
+-- Hubi in miisaska kale ee dalabyada iyo meheraduhu yeeshaan digital_guri_number
+ALTER TABLE IF EXISTS public.merchants ADD COLUMN IF NOT EXISTS digital_guri_number TEXT;
+ALTER TABLE IF EXISTS public.bajaj_rides ADD COLUMN IF NOT EXISTS digital_guri_number TEXT;
 
 -- Column-yada driver/bajaajle u baahan
 ALTER TABLE IF EXISTS public.profiles ADD COLUMN IF NOT EXISTS plate_number TEXT;

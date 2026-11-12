@@ -1,0 +1,43 @@
+========================================================================
+  SHIRI APP — RELEASE NOTES v4.4.0 (versionCode 60)
+  Taariikhda: 2026-11-12
+========================================================================
+
+WAXYAABAHA CUSUB EE LA HIRGELIYAY (UNIVERSAL DIGITAL GURI NUMBER):
+------------------------------------------------------------------------
+
+1. DIGITAL GURI NUMBER DHAMMAAN MEELAHA (UNIVERSAL GURI SYSTEM) ✅
+   - Macmiilka Bajaajta: Dalabka bajaajta wuxuu toos ugu xiran yahay Digital Guri Number (SH-XXXX).
+   - Macmiilka Cuntada & Dukaamada: Dalabka gaari-gacanka (cart) iyo voice/chat order-ka waxay wataan Digital Guri Number-ka macmiilka.
+   - Ganacsadaha / Meheradda (Merchant):
+     * Diiwaangelinta Meheradda waxaa lagu daray Digital Guri Number oo goonni ah.
+     * Dashboard-ka Meheradda wuxuu dusha sare kaga qoran yahay "🏠 Guri: SH-XXXX".
+     * Dhammaan Store Cards-ka iyo bogga meheradda waxaa toos uga muuqda "🏠 Guri: SHR-BO-XXXX".
+   - Mootada / Courier: Alaabta waxay toos uga qaadaysaa Guri Number-ka meheradda, waxayna toos ugu geynaysaa Guri Number-ka macmiilka.
+
+2. SUPABASE DATABASE & SQL MIGRATION FIX ✅
+   - Faylka: supabase/FIX_PROFILES_SCHEMA_COLUMNS.sql
+   - Waxaa lagu daray `digital_guri_number TEXT` miisaska:
+     * `public.profiles`
+     * `public.merchants`
+     * `public.bajaj_rides`
+
+3. XOGTA PROFILES-KA & BACKEND REPOSITORY ✅
+   - `UserProfile`: Waxaa lagu daray `val digitalGuriNumber: String? = null`.
+   - `SomaliTrafficRepository`: `registerUser` wuxuu toos database-ka ugu keydinayaa `digital_guri_number` xitaa marka fallback safe minimal payload la isticmaalo.
+   - `SomaliTrafficViewModel`: Foomka `register()` wuxuu qaadayaa `digitalGuriNumber`.
+   - `SignUpScreen`: Meheradda iyo qof kasta waxay helayaan koodka tooska ah ee "SH-XXXX" oo leh beddelaad "✨ Kood Cusub".
+
+BUILD SPECIFICATIONS:
+---------------------
+  Version:      4.4.0 (60)
+  Target SDK:   36 (Android 15+)
+  Min SDK:      24 (Android 7.0+)
+  Build Status: BUILD SUCCESSFUL (3m 49s)
+  Signed:       Release Signed (my-upload-key.jks)
+
+FILES GENERATED:
+----------------
+  APK: GoBajaaj_APK/SHIRI_v4.4.0_release.apk (70.3 MB)
+  AAB: GoBajaaj_APK/SHIRI_v4.4.0_release.aab (39.9 MB)
+========================================================================

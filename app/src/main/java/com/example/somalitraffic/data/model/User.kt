@@ -94,6 +94,7 @@ data class UserProfile(
     val businessType: String? = null,
     val merchantPaymentNumber: String? = null,
     val district: String? = null,
+    val digitalGuriNumber: String? = null,
     val monthlyFee: Double? = null
 )
 
