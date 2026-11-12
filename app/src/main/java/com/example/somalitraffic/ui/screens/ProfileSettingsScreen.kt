@@ -214,99 +214,111 @@ fun ProfileSettingsScreen(
             
             Spacer(modifier = Modifier.height(20.dp))
 
-            // SHIRI Role Portals (Merchant, Driver, Courier)
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Qaybaha & Maamulka Gaarka ah",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A)
-                )
+            // SHIRI Role Portals — Waxay u muuqdaan kaliya role-kooda u gaar ah
+            // PASSENGER: Ma arki karaan qaybaha Merchant, Driver, ama Courier
+            val currentRole = currentUser?.role
+            val isPassengerOnly = currentRole == com.example.somalitraffic.data.model.UserRole.PASSENGER
 
-                // 1. Merchant Dashboard
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
-                    border = BorderStroke(1.dp, Color(0xFFFECACA)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigate("merchant_app") }
+            if (!isPassengerOnly) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🏪", fontSize = 22.sp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Maamulka Meheradda (Merchant)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                                Text("Kudar alaab cusub, qiimaha & dalabaadka", fontSize = 11.sp, color = Color(0xFF64748B))
+                    Text(
+                        text = "Qaybaha & Maamulka Gaarka ah",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+
+                    // 1. Merchant Dashboard — only for MERCHANT role
+                    if (currentRole == com.example.somalitraffic.data.model.UserRole.MERCHANT) {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
+                            border = BorderStroke(1.dp, Color(0xFFFECACA)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onNavigate("merchant_app") }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🏪", fontSize = 22.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text("Maamulka Meheradda (Merchant)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                                        Text("Kudar alaab cusub, qiimaha & dalabaadka", fontSize = 11.sp, color = Color(0xFF64748B))
+                                    }
+                                }
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
                             }
                         }
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
                     }
-                }
 
-                // 2. Darawal Bajaaj Pass
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7ED)),
-                    border = BorderStroke(1.dp, Color(0xFFFED7AA)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigate("driver_pass") }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🛺", fontSize = 22.sp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Adeegga Darawalka Bajaajta", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                                Text("Bajaaj Pass $0.25 & Khariidadda Jaamka", fontSize = 11.sp, color = Color(0xFF64748B))
+                    // 2. Darawal Bajaaj Pass — only for DRIVER role
+                    if (currentRole == com.example.somalitraffic.data.model.UserRole.DRIVER) {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7ED)),
+                            border = BorderStroke(1.dp, Color(0xFFFED7AA)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onNavigate("driver_pass") }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🛺", fontSize = 22.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text("Adeegga Darawalka Bajaajta", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                                        Text("Bajaaj Pass $0.25 & Khariidadda Jaamka", fontSize = 11.sp, color = Color(0xFF64748B))
+                                    }
+                                }
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFEA580C), modifier = Modifier.size(16.dp))
                             }
                         }
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFEA580C), modifier = Modifier.size(16.dp))
                     }
-                }
 
-                // 3. Mooto Delivery Express
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF)),
-                    border = BorderStroke(1.dp, Color(0xFFBAE6FD)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigate("delivery") }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🏍️", fontSize = 22.sp)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text("Shaqada Mooto Delivery (Courier)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                                Text("Handover PIN keypad & xisaabta dalabyada", fontSize = 11.sp, color = Color(0xFF64748B))
+                    // 3. Mooto Delivery Express — only for COURIER role
+                    if (currentRole == com.example.somalitraffic.data.model.UserRole.COURIER) {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F9FF)),
+                            border = BorderStroke(1.dp, Color(0xFFBAE6FD)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onNavigate("delivery") }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🏍️", fontSize = 22.sp)
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text("Shaqada Mooto Delivery (Courier)", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
+                                        Text("Handover PIN keypad & xisaabta dalabyada", fontSize = 11.sp, color = Color(0xFF64748B))
+                                    }
+                                }
+                                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF0284C7), modifier = Modifier.size(16.dp))
                             }
                         }
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFF0284C7), modifier = Modifier.size(16.dp))
                     }
                 }
             }

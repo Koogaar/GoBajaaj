@@ -186,7 +186,7 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
   };
 
   const filteredMerchants = merchants.filter(m => {
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = searchQuery === '' ||
       m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.district.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || m.category === selectedCategory;
@@ -236,9 +236,8 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
-                selectedCategory === cat ? 'bg-red-600 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${selectedCategory === cat ? 'bg-red-600 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                }`}
             >
               {cat === 'all' ? 'Dhammaan' : cat.toUpperCase()}
             </button>
@@ -318,11 +317,10 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
                     <button
                       onClick={() => toggleOpenStatus(merchant.id, merchant.is_open)}
                       disabled={!canManage}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black cursor-pointer transition ${
-                        merchant.is_open
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black cursor-pointer transition ${merchant.is_open
                           ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
                           : 'bg-neutral-100 text-neutral-500 hover:bg-neutral-200'
-                      }`}
+                        }`}
                     >
                       {merchant.is_open ? '✓ Furan (Open)' : '✕ Xiran (Closed)'}
                     </button>
@@ -431,9 +429,8 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
                             item.id === p.id ? { ...item, in_stock: !item.in_stock } : item
                           ));
                         }}
-                        className={`px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer transition ${
-                          p.in_stock ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
-                        }`}
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer transition ${p.in_stock ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
+                          }`}
                       >
                         {p.in_stock ? 'In Stock' : 'Out of Stock'}
                       </button>

@@ -1,8 +1,16 @@
 package com.example.somalitraffic.ui.screens
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -85,6 +93,19 @@ fun ShiriEatsMarketScreen(
     var voiceOrderText by remember { mutableStateOf("") }
     var voiceOrderDuration by remember { mutableIntStateOf(0) }
     var voiceOrderPlacedSuccess by remember { mutableStateOf(false) }
+
+    // Real MediaRecorder state for voice ordering
+    val mediaRecorderRef = remember { mutableStateOf<MediaRecorder?>(null) }
+    val mediaPlayerRef = remember { mutableStateOf<MediaPlayer?>(null) }
+    val voiceRecordFilePath = remember { mutableStateOf("") }
+    var audioPermissionGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> audioPermissionGranted = granted }
 
     // Master list of Categories (Admin extensible)
     val categories = remember {
@@ -305,13 +326,54 @@ fun ShiriEatsMarketScreen(
                                     color = if (voiceOrderIsRecording) Color(0xFFDC2626) else Color(0xFF334155)
                                 )
 
+                                // Real-time timer while recording
+                                LaunchedEffect(voiceOrderIsRecording) {
+                                    if (voiceOrderIsRecording) {
+                                        while (voiceOrderIsRecording) {
+                                            kotlinx.coroutines.delay(1000L)
+                                            voiceOrderDuration++
+                                        }
+                                    }
+                                }
+
                                 Button(
                                     onClick = {
                                         if (voiceOrderIsRecording) {
+                                            // STOP recording
+                                            try {
+                                                mediaRecorderRef.value?.stop()
+                                                mediaRecorderRef.value?.release()
+                                                mediaRecorderRef.value = null
+                                            } catch (_: Exception) {}
                                             voiceOrderIsRecording = false
                                         } else {
-                                            voiceOrderIsRecording = true
-                                            voiceOrderDuration = 0
+                                            // START recording
+                                            if (!audioPermissionGranted) {
+                                                audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                            } else {
+                                                val file = java.io.File(context.cacheDir, "shiri_voice_${System.currentTimeMillis()}.3gp")
+                                                voiceRecordFilePath.value = file.absolutePath
+                                                val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                                    MediaRecorder(context)
+                                                } else {
+                                                    @Suppress("DEPRECATION")
+                                                    MediaRecorder()
+                                                }
+                                                recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+                                                recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                                                recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+                                                recorder.setOutputFile(file.absolutePath)
+                                                try {
+                                                    recorder.prepare()
+                                                    recorder.start()
+                                                    mediaRecorderRef.value = recorder
+                                                    voiceOrderIsRecording = true
+                                                    voiceOrderDuration = 0
+                                                } catch (e: Exception) {
+                                                    recorder.release()
+                                                    Toast.makeText(context, "Codka duubista ayaa fashilmay: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -326,6 +388,32 @@ fun ShiriEatsMarketScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
                                     )
+                                }
+
+                                // Playback button — shown after recording stops
+                                if (!voiceOrderIsRecording && voiceOrderDuration > 0 && voiceRecordFilePath.value.isNotBlank()) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            try {
+                                                mediaPlayerRef.value?.release()
+                                                val player = MediaPlayer()
+                                                player.setDataSource(voiceRecordFilePath.value)
+                                                player.prepare()
+                                                player.start()
+                                                mediaPlayerRef.value = player
+                                                player.setOnCompletionListener { it.release() }
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Dhegaysiga wuu fashilmay", Toast.LENGTH_SHORT).show()
+                                            }
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = BorderStroke(1.dp, Color(0xFFDC2626)),
+                                        modifier = Modifier.fillMaxWidth().height(38.dp)
+                                    ) {
+                                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
+                                        Spacer(Modifier.width(4.dp))
+                                        Text("▶ Dhegeyso Codka (${voiceOrderDuration}s)", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
+                                    }
                                 }
                             }
                         }
@@ -377,6 +465,14 @@ fun ShiriEatsMarketScreen(
                     Button(
                         onClick = {
                             if (voiceOrderText.isNotBlank() || voiceOrderDuration > 0 || voiceOrderIsRecording) {
+                                // Stop recorder if still running when user submits
+                                if (voiceOrderIsRecording) {
+                                    try {
+                                        mediaRecorderRef.value?.stop()
+                                        mediaRecorderRef.value?.release()
+                                        mediaRecorderRef.value = null
+                                    } catch (_: Exception) {}
+                                }
                                 voiceOrderIsRecording = false
                                 voiceOrderPlacedSuccess = true
                                 val newOrderCode = "#SHR-V" + (1000..9999).random()

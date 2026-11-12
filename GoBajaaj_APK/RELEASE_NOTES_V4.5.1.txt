@@ -1,0 +1,48 @@
+================================================================================
+🚀 SHIRI v4.5.1 — RELEASE NOTES (HOTFIX & BRANDING POLISH)
+================================================================================
+Version Code: 62 | Version Name: 4.5.1
+Release Date: November 2026
+================================================================================
+
+ENGLISH (Copy & Paste into Google Play Console — What's New):
+─────────────────────────────────────────────────────────────
+What's New in SHIRI v4.5.1:
+
+🎨 Brand New Red Splash Screen:
+• Replaced legacy dark background with the official SHIRI Red brand identity.
+• Features the signature SHIRI location-pin logo with smooth pulse and progress animations.
+
+👤 Passenger Profile Role Isolation:
+• Cleaned customer profile screen: Merchant Management, Bajaaj Driver Pass, and Courier Delivery cards are hidden for regular customers.
+• Each user role (Customer, Merchant, Courier, Bajaaj Driver) strictly sees only their relevant tools and dashboards.
+
+🎙️ Real Native Voice Recording for Orders:
+• Upgraded the Voice Order Assistant from mock state to real native Android MediaRecorder.
+• Supports microphone runtime permission requests, live recording counter, and instant audio playback before checkout.
+• Customers can easily record voice descriptions of their orders or house landmark directions.
+
+📍 Digital House & Landmark Address:
+• Integrated digital address code (e.g. SHR-MG-XXXXX) for precise deliveries across Mogadishu.
+
+================================================================================
+AF-SOOMAALI (Kooban — Nuqulka Play Store-ka & Bulshada):
+─────────────────────────────────────────────────────────────
+Waxyaabaha Lagu Hagaajiyay Nooca 4.5.1 (SHIRI v4.5.1):
+
+🎨 Shaashadda Furitaanka (Splash Screen) Cusub:
+• Waxaa lagu bedelay midabka rasmiga ah ee casanka SHIRI (Brand Red Gradient) oo leh astaanta rasmiga ah ee SHIRI.
+• Ma jiro shaashad buluug madow ah — bilowgu waa mid casri ah oo DoorDash & SHIRI style ah.
+
+👤 Nadiifinta Profile-ka Macmiilka (Role-Based Isolation):
+• Macmiilka caadiga ah (Passenger/Customer) hadda ma arkayo kaadhadhka aan khusayn sida "Maamulka Meheradda", "Adeegga Bajaajta", ama "Shaqada Mootada".
+• Doorkasta qofka leh kaliya ayaa loo muujinayaa qeybta uu leeyahay.
+
+🎙️ Duubista Codka Rasmiga ah (Real MediaRecorder):
+• Nidaamka duubista codka dalabka (Voice Order & Landmark Note) hadda waa mid dhab ah oo isticmaalaya Android MediaRecorder.
+• Macmiilku wuxuu duubi karaa codkiisa, wuu dhageysan karaa inta uusan dirin, dalabkuna wuxuu ku tagayaa cod dhab ah.
+
+📍 Ciwaanka Dijitaalka ah ee Guriga & Meheradda:
+• Ciwaan gaar ah oo lambaraysan (SHR-MG-XXXXX) si sahlan loogu gaaro guriga ama dukaanka.
+================================================================================
+

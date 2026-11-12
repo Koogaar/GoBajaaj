@@ -1,19 +1,25 @@
 package com.example.somalitraffic.ui.screens
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
 import kotlinx.coroutines.*
 
@@ -22,7 +28,19 @@ fun SplashScreen(
     viewModel: SomaliTrafficViewModel,
     onNavigateNext: (String) -> Unit
 ) {
-    val progress = remember { Animatable(0.12f) }
+    val progress = remember { Animatable(0.0f) }
+
+    // Pulse animation for logo
+    val pulse = rememberInfiniteTransition(label = "pulse")
+    val logoScale by pulse.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoScale"
+    )
 
     LaunchedEffect(Unit) {
         // 1) Validate the restored session FIRST. Android Auto Backup can restore
@@ -80,50 +98,116 @@ fun SplashScreen(
         }
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    // SHIRI RED SPLASH SCREEN — Logo casaan ah oo cad ku ah (Screen 7 Mockup)
+    // Gadaalka: Gradiyaan cas ah oo SHIRI-ka u gaar ah
+    // ══════════════════════════════════════════════════════════════════
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF031433))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFE50914), // SHIRI Red top
+                        Color(0xFFDC2626), // Mid red
+                        Color(0xFFB91C1C)  // Darker red bottom
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        // High-resolution full splash graphic matching SHIRI design
-        Image(
-            painter = painterResource(id = com.example.R.drawable.ic_gobajaaj_splash_bg),
-            contentDescription = "SHIRI Splash",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Live animated glowing gradient progress bar overlay
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center)
-                .padding(top = 115.dp),
-            contentAlignment = Alignment.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+            // ══════════════════════════════
+            // SHIRI LOGO — Cad oo wareegsan
+            // ══════════════════════════════
+            Surface(
+                shape = CircleShape,
+                color = Color.White,
+                shadowElevation = 16.dp,
+                modifier = Modifier
+                    .size(110.dp)
+                    .scale(logoScale)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    // S + pin icon (matches master logo design)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "S",
+                            fontSize = 52.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFDC2626)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = null,
+                            tint = Color(0xFFDC2626),
+                            modifier = Modifier
+                                .size(28.dp)
+                                .offset(x = (-8).dp, y = (-2).dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Brand Name
+            Text(
+                text = "SHIRI",
+                fontSize = 40.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                letterSpacing = 4.sp
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Dalbo • Hel • Ku Raaxayso",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.85f),
+                letterSpacing = 0.5.sp
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // ══════════════════════════════
+            // Loading Bar — cad oo qurux badan
+            // ══════════════════════════════
             Box(
                 modifier = Modifier
-                    .width(148.dp)
-                    .height(6.5.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color(0xFF082252).copy(alpha = 0.9f))
+                    .width(180.dp)
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color.White.copy(alpha = 0.25f))
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .fillMaxWidth(progress.value)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    Color(0xFF00E676), // Bright Green
-                                    Color(0xFF00B0FF)  // Bright Cyan
-                                )
-                            )
-                        )
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Color.White)
                 )
             }
         }
+
+        // Bottom tagline
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 32.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Text(
+                text = "Safarka Bajaajta & Gaarsiinta Muqdisho",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White.copy(alpha = 0.70f)
+            )
+        }
     }
 }
-

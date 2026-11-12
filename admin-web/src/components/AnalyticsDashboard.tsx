@@ -56,7 +56,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ isAnalys
       const { count: driverCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'driver');
       const { count: customerCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'passenger');
       const { count: merchantCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'merchant');
-      
+
       // 2. Active reporters count
       const { count: repCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'reporter').eq('status', 'active');
 
@@ -66,7 +66,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ isAnalys
       // 4. Completed Payments Total & Daily Revenue
       const { data: payData } = await supabase.from('payment_transactions').select('amount, created_at').eq('status', 'completed');
       const rev = payData ? payData.reduce((acc, curr) => acc + Number(curr.amount || 0.25), 0) : 0;
-      
+
       const todayCompleted = payData ? payData.filter(p => {
         if (!p.created_at) return false;
         try {
@@ -130,7 +130,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ isAnalys
   }, []);
 
   const handleExportCSV = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + "Metric,Value\n"
       + `Total Orders,${metrics.totalOrders}\n`
       + `Total Customers,${metrics.totalCustomers}\n`
@@ -185,7 +185,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ isAnalys
             <option value="90days">Last 90 Days</option>
           </select>
 
-          <button 
+          <button
             onClick={fetchAnalyticsData}
             disabled={isLoading}
             className="p-2.5 border border-neutral-200 rounded-xl hover:bg-neutral-50 transition text-neutral-700 cursor-pointer"
@@ -193,8 +193,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ isAnalys
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-[#DC2626]' : ''}`} />
           </button>
-          
-          <button 
+
+          <button
             onClick={handleExportCSV}
             className="px-4 py-2.5 bg-neutral-900 text-white rounded-xl text-xs font-bold shadow hover:bg-neutral-800 transition flex items-center space-x-2 cursor-pointer"
           >
