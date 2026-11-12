@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -60,13 +62,6 @@ private enum class RiderFlowStep {
     LOOKING_FOR_DRIVERS,
     ON_TRIP_TRACKING,
     TRIP_COMPLETED
-}
-
-enum class ShiriRideTab {
-    BOOK_RIDE,
-    LIVE_JUNCTIONS,
-    ROAD_CONDITIONS,
-    ALERTS
 }
 
 private enum class DriverFlowStep {
@@ -115,9 +110,6 @@ fun BajajRideScreen(
             isDriverMode = (currentUser?.role == com.example.somalitraffic.data.model.UserRole.DRIVER)
         }
     }
-
-    // SHIRI RIDE 4-TABS STATE
-    var selectedRideTab by remember { mutableStateOf(ShiriRideTab.BOOK_RIDE) }
 
     // ----------------------------------------------------
     // RIDER STATE (Screens 4, 5, 6, 7 from Blueprint)
@@ -383,26 +375,22 @@ fun BajajRideScreen(
                             }
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFFDC2626),
+                        Image(
+                            painter = painterResource(id = com.example.R.drawable.shiri_logo),
+                            contentDescription = "SHIRI Logo",
                             modifier = Modifier.size(34.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("S", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Color.White)
-                            }
-                        }
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
                                 text = "SHIRI BAJAAJ",
-                                fontSize = 15.sp,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Color(0xFF0F172A)
                             )
                             Text(
-                                text = if (isDriverMode) "App-ka Darawalka • $0.25 Pass" else "Dalbo Safar • Rakaab ($0)",
-                                fontSize = 10.sp,
+                                text = if (isDriverMode) "App-ka Darawalka • $0.25 Pass" else "Dalbo Safar • Rakaab",
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFDC2626)
                             )
@@ -417,74 +405,12 @@ fun BajajRideScreen(
                         modifier = Modifier.clickable { isDriverMode = !isDriverMode }
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(if (isDriverMode) "🛺 Darawal" else "👤 Rakaab", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = if (isDriverMode) Color(0xFFC2410C) else Color(0xFFDC2626))
+                            Text(if (isDriverMode) "🛺 Darawal" else "👤 Rakaab", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isDriverMode) Color(0xFFC2410C) else Color(0xFFDC2626))
                         }
                     }
-                }
-
-                // Sub-navigation Tabs: 1. Dalbo Safar, 2. Isgoysyada Live, 3. Waddooyinka, 4. Digniinaha
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White)
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    FilterChip(
-                        selected = selectedRideTab == ShiriRideTab.BOOK_RIDE,
-                        onClick = { selectedRideTab = ShiriRideTab.BOOK_RIDE },
-                        label = { Text("🛺 Dalbo Safar", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFDC2626),
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0xFFF1F5F9),
-                            labelColor = Color(0xFF475569)
-                        ),
-                        border = null
-                    )
-
-                    FilterChip(
-                        selected = selectedRideTab == ShiriRideTab.LIVE_JUNCTIONS,
-                        onClick = { selectedRideTab = ShiriRideTab.LIVE_JUNCTIONS },
-                        label = { Text("🚦 Isgoysyada Live", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF16A34A),
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0xFFF1F5F9),
-                            labelColor = Color(0xFF475569)
-                        ),
-                        border = null
-                    )
-
-                    FilterChip(
-                        selected = selectedRideTab == ShiriRideTab.ROAD_CONDITIONS,
-                        onClick = { selectedRideTab = ShiriRideTab.ROAD_CONDITIONS },
-                        label = { Text("🛣️ Waddooyinka", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF0284C7),
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0xFFF1F5F9),
-                            labelColor = Color(0xFF475569)
-                        ),
-                        border = null
-                    )
-
-                    FilterChip(
-                        selected = selectedRideTab == ShiriRideTab.ALERTS,
-                        onClick = { selectedRideTab = ShiriRideTab.ALERTS },
-                        label = { Text("⚠️ Digniinaha Jaamka", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFD97706),
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0xFFF1F5F9),
-                            labelColor = Color(0xFF475569)
-                        ),
-                        border = null
-                    )
                 }
                 HorizontalDivider(color = Color(0xFFF1F5F9))
             }
@@ -496,34 +422,14 @@ fun BajajRideScreen(
                 isDriver = isDriverMode
             )
         },
-        containerColor = GoBajaajCardBg
+        containerColor = Color(0xFFF8FAFC)
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when (selectedRideTab) {
-                ShiriRideTab.LIVE_JUNCTIONS -> {
-                    ShiriLiveJunctionsTab(
-                        intersections = intersections,
-                        onSelectAsDestination = { name: String ->
-                            destinationLocation = name
-                            selectedRideTab = ShiriRideTab.BOOK_RIDE
-                        }
-                    )
-                }
-                ShiriRideTab.ROAD_CONDITIONS -> {
-                    ShiriRoadConditionsTab(intersections = intersections)
-                }
-                ShiriRideTab.ALERTS -> {
-                    ShiriTrafficAlertsTab(
-                        intersections = intersections,
-                        onPlayAudioAlert = { ArrivalSoundManager.playSingleHornBeep(context) }
-                    )
-                }
-                ShiriRideTab.BOOK_RIDE -> {
-                    if (!isDriverMode) {
+            if (!isDriverMode) {
                 // ==========================================
                 // RIDER APP EXPERIENCE (ROW 1 OF BLUEPRINT)
                 // ==========================================
@@ -947,8 +853,6 @@ fun BajajRideScreen(
                 }
             }
         }
-    }
-}
 
         if (showAddressDialog) {
             CreateAddressDialog(
@@ -1191,6 +1095,171 @@ private fun RiderRequestFormScreen(
                             )
                         }
                     )
+                }
+            }
+
+            // ── Goobaha Caanka ah ee Muqdisho (Hal Taabasho) ──
+            val popularDestinations = listOf(
+                "KM4 (Taleex)" to "📍",
+                "Suuqa Bakaaraha" to "🏪",
+                "Isbitaal Digfeer" to "🏥",
+                "Xeebta Liido" to "🏖️",
+                "Isgoyska KM5" to "📍",
+                "Banaadir Hospital" to "🏥",
+                "Dabka (Wadnaha)" to "📍",
+                "Garoonka Aadan Cadde" to "✈️"
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Goobaha Muqdisho ugu Caansan (Hal Taabasho):",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF64748B)
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    popularDestinations.forEach { (place, icon) ->
+                        val isSelected = destination == place
+                        Surface(
+                            onClick = { onDestinationChange(place) },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (isSelected) Color(0xFFDC2626) else Color.White,
+                            border = BorderStroke(1.dp, if (isSelected) Color(0xFFDC2626) else Color(0xFFE2E8F0)),
+                            shadowElevation = 1.dp
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(icon, fontSize = 12.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = place,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else Color(0xFF0F172A)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ── Doorashada Gaadiidka (Vehicle Options) ──
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Dooro Nooca Safarka",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0F172A)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    VehicleOptionCard(
+                        title = "Bajaaj Caadi",
+                        price = "$1.50",
+                        capacity = "1-3 Qof",
+                        iconDrawableRes = com.example.R.drawable.ic_bajaaj_icon,
+                        badge = "Raqiis",
+                        isSelected = selectedVehicle == VehicleType.BAJAAJ && offer != "2.00",
+                        onClick = {
+                            onVehicleSelect(VehicleType.BAJAAJ)
+                            onOfferChange("1.50")
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    VehicleOptionCard(
+                        title = "Bajaaj VIP",
+                        price = "$2.00",
+                        capacity = "Toos & AC",
+                        iconDrawableRes = com.example.R.drawable.ic_bajaaj_icon,
+                        badge = "Express",
+                        isSelected = selectedVehicle == VehicleType.BAJAAJ && offer == "2.00",
+                        onClick = {
+                            onVehicleSelect(VehicleType.BAJAAJ)
+                            onOfferChange("2.00")
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    VehicleOptionCard(
+                        title = "Gaari Taxi",
+                        price = "$3.00",
+                        capacity = "4 Qof",
+                        icon = Icons.Default.DirectionsCar,
+                        badge = "Qoys",
+                        isSelected = selectedVehicle == VehicleType.CAR,
+                        onClick = {
+                            onVehicleSelect(VehicleType.CAR)
+                            onOfferChange("3.00")
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // ── Habka Lacag-bixinta (Payment Method Selection) ──
+            var selectedPaymentMethod by remember { mutableStateOf("EVC Plus") }
+            val paymentMethods = listOf(
+                "EVC Plus" to "📱",
+                "Sahal" to "💳",
+                "Zaad" to "📲",
+                "Kaash" to "💵"
+            )
+
+            Card(
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = "Habka Lacag-bixinta (Payment)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        paymentMethods.forEach { (method, icon) ->
+                            val isSelected = selectedPaymentMethod == method
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (isSelected) Color(0xFFDC2626) else Color(0xFFF8FAFC),
+                                border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clickable { selectedPaymentMethod = method }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(icon, fontSize = 11.sp)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = method,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color.White else Color(0xFF0F172A)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -1638,7 +1707,7 @@ private fun RiderBidsScreen(
             }
             Column {
                 Text(
-                    text = "Looking for drivers...",
+                    text = "Raadinta Darawallada...",
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = BrandBlack
@@ -3481,689 +3550,3 @@ private fun openExternalNavigation(
     openGoogleMapsNavigation(context, lat, lng, label, isDrivingMode = true)
 }
 
-// =========================================================================
-// SHIRI TRAFFIC INTELLIGENCE INTEGRATION (LIVE JUNCTIONS, CONDITIONS, ALERTS)
-// =========================================================================
-
-@Composable
-fun ShiriLiveJunctionsTab(
-    intersections: List<Intersection>,
-    onSelectAsDestination: (String) -> Unit
-) {
-    var searchQuery by remember { mutableStateOf("") }
-    val filtered = remember(intersections, searchQuery) {
-        if (searchQuery.isBlank()) intersections
-        else intersections.filter {
-            it.name.contains(searchQuery, ignoreCase = true) ||
-            it.district.contains(searchQuery, ignoreCase = true) ||
-            it.roadNames.contains(searchQuery, ignoreCase = true)
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ShiriSurfaceLight)
-            .padding(16.dp)
-    ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Isgoysyada Muqdisho Live",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ShiriDarkSlate
-                )
-                Text(
-                    text = "${intersections.size} isgoys oo toos ah (GPS Mesh)",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
-            Surface(
-                color = ShiriEmerald.copy(alpha = 0.12f),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(modifier = Modifier.size(8.dp).background(ShiriEmerald, CircleShape))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Toos / Live",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ShiriEmerald
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Search Bar
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Raadi isgoys (KM4, Zoobe, Dabka, Banaadir)...", fontSize = 13.sp) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { searchQuery = "" }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.Gray)
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = ShiriCrimson,
-                unfocusedBorderColor = Color(0xFFE2E8F0)
-            )
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        if (filtered.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(top = 40.dp),
-                contentAlignment = Alignment.TopCenter
-            ) {
-                Text(
-                    text = "Lama helin isgoys ku habboon '$searchQuery'",
-                    color = Color.Gray,
-                    fontSize = 14.sp
-                )
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filtered, key = { it.id }) { item ->
-                    val statusColor = when (item.currentStatus.lowercase()) {
-                        "furan" -> ShiriEmerald
-                        "dhexdhexaad" -> Color(0xFFD97706)
-                        "mashquul", "saxmad badan" -> ShiriCrimson
-                        else -> ShiriEmerald
-                    }
-
-                    Card(
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .background(statusColor, CircleShape)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = item.name,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = ShiriDarkSlate,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-
-                                Surface(
-                                    color = statusColor.copy(alpha = 0.12f),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = item.currentStatus,
-                                        color = statusColor,
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(6.dp))
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.LocationOn,
-                                    contentDescription = null,
-                                    tint = Color.Gray,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Degmada ${item.district}${if (item.roadNames.isNotBlank()) " • ${item.roadNames}" else ""}",
-                                    fontSize = 12.sp,
-                                    color = Color.Gray
-                                )
-                            }
-
-                            if (!item.alternativeRoute.isNullOrBlank()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.AltRoute,
-                                        contentDescription = null,
-                                        tint = Color(0xFF0284C7),
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Waddo kale: ${item.alternativeRoute}",
-                                        fontSize = 11.5.sp,
-                                        color = Color(0xFF0284C7),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                Button(
-                                    onClick = { onSelectAsDestination(item.name) },
-                                    colors = ButtonDefaults.buttonColors(containerColor = ShiriCrimson),
-                                    shape = RoundedCornerShape(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DirectionsCar,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "Dalbo Safar Meeshan",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ShiriRoadConditionsTab(
-    intersections: List<Intersection>
-) {
-    val scrollState = rememberScrollState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ShiriSurfaceLight)
-            .verticalScroll(scrollState)
-            .padding(16.dp)
-    ) {
-        // Banner
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = ShiriDarkSlate),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "Xaaladda Waddooyinka Muqdisho",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Makka Al-Mukarama, Wadnaha, Soddonka & Taleex",
-                            fontSize = 11.5.sp,
-                            color = Color.White.copy(alpha = 0.7f)
-                        )
-                    }
-                    Surface(
-                        color = ShiriEmerald.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = "88% Furan",
-                            color = ShiriEmerald,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    RoadMetricPill("Cimilada", "Qallalan", Icons.Default.WbSunny, Color(0xFFF59E0B))
-                    RoadMetricPill("Laamiyada", "Wanaagsan", Icons.Default.CheckCircle, ShiriEmerald)
-                    RoadMetricPill("Koontarool", "Socod Caadi", Icons.Default.Security, Color(0xFF0284C7))
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Waddooyinka Waaweyn ee Caasimadda",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = ShiriDarkSlate
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        RoadCorridorCard(
-            name = "Wadada Makka Al-Mukarama",
-            path = "KM4 ➔ Taleex ➔ Shaqaalaha ➔ Dabka ➔ Sayidka",
-            surface = "Laami Wanaagsan (Tar OK)",
-            flowStatus = "Socod Deggan (Moderate)",
-            statusColor = ShiriEmerald,
-            checkpointNote = "Koontaroolka KM4: 2-3 daqiiqo safka baabuurta"
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        RoadCorridorCard(
-            name = "Wadada Wadnaha",
-            path = "Tarabuunka ➔ Hawlwadaag ➔ Bakaaro ➔ Isgoyska Jubba",
-            surface = "Qaybo dhisan & Qaybo mashquul ah",
-            flowStatus = "Mashquul Ganacsi",
-            statusColor = Color(0xFFD97706),
-            checkpointNote = "Mashquulka Suuqa Bakaaraha: Baabuurta xamuulka"
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        RoadCorridorCard(
-            name = "Wadada Soddonka",
-            path = "Banaadir ➔ Tarabuunka ➔ Black Sea ➔ Al-Hikma",
-            surface = "Laami Caadi ah",
-            flowStatus = "Furan (Free Flowing)",
-            statusColor = ShiriEmerald,
-            checkpointNote = "Waddo furan oo aan wax carqalad ah lahayn"
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        RoadCorridorCard(
-            name = "Wadada Garoonka (Airport Road)",
-            path = "KM4 ➔ Isgoyska Medina ➔ Garoonka Aadan Cadde",
-            surface = "Aad u wanaagsan (High Security)",
-            flowStatus = "Aad u Furan",
-            statusColor = ShiriEmerald,
-            checkpointNote = "Baaritaan amni oo adag bar-koontaroolka"
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        RoadCorridorCard(
-            name = "Wadada Taleex (Beddelka KM4)",
-            path = "Taleex St ➔ Isgoyska Dabka / Shaqaalaha",
-            surface = "Waddo Laamiyaysan oo cusub",
-            flowStatus = "Furan (Waddo Beddel ah)",
-            statusColor = Color(0xFF0284C7),
-            checkpointNote = "Wadada ugu fiican haddii KM4 mashquul tahay"
-        )
-    }
-}
-
-@Composable
-private fun RoadMetricPill(
-    label: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(10.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp)
-    ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(text = label, fontSize = 10.sp, color = Color.White.copy(alpha = 0.7f))
-        Text(text = value, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-    }
-}
-
-@Composable
-private fun RoadCorridorCard(
-    name: String,
-    path: String,
-    surface: String,
-    flowStatus: String,
-    statusColor: Color,
-    checkpointNote: String
-) {
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ShiriDarkSlate
-                )
-                Surface(
-                    color = statusColor.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        text = flowStatus,
-                        color = statusColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = path, fontSize = 11.5.sp, color = Color.Gray)
-
-            Spacer(modifier = Modifier.height(8.dp))
-            HorizontalDivider(color = Color(0xFFF1F5F9))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.DirectionsCar,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = surface, fontSize = 11.sp, color = ShiriDarkSlate)
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Shield,
-                        contentDescription = null,
-                        tint = Color(0xFF0284C7),
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "Hubsan", fontSize = 11.sp, color = Color(0xFF0284C7), fontWeight = FontWeight.SemiBold)
-                }
-            }
-
-            if (checkpointNote.isNotBlank()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFF8FAFC), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = checkpointNote, fontSize = 11.sp, color = Color.Gray)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun ShiriTrafficAlertsTab(
-    intersections: List<Intersection>,
-    onPlayAudioAlert: () -> Unit
-) {
-    val scrollState = rememberScrollState()
-    val highTrafficItems = intersections.filter {
-        it.hasClosure || it.hasAccident || it.hasHazard ||
-        it.currentStatus.equals("Saxmad badan", ignoreCase = true) ||
-        it.currentStatus.equals("Mashquul", ignoreCase = true)
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ShiriSurfaceLight)
-            .verticalScroll(scrollState)
-            .padding(16.dp)
-    ) {
-        // Somali Voice Guidance Card
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = ShiriCrimson),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color.White.copy(alpha = 0.2f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.VolumeUp,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Digniinta Codka Soomaaliga",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Dhawaaqa & digniinaha waddooyinka tooska ah",
-                            fontSize = 11.5.sp,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = onPlayAudioAlert,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        tint = ShiriCrimson,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Dhageyso Digniinta Tooska ah",
-                        color = ShiriCrimson,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Digniinaha Firfircoon ee Muqdisho",
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = ShiriDarkSlate
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Fixed primary alert (KM4 Roundabout & Taleex)
-        AlertCardItem(
-            title = "KM4 Roundabout • Bar Koontarool",
-            severity = "+12m Delay",
-            severityColor = ShiriCrimson,
-            message = "Safka baabuurta ee Wadada Makka Al-Mukarama. Isticmaal wadada Taleex si aad uga badbaaddo daaha.",
-            timeAgo = "Hada Live"
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        AlertCardItem(
-            title = "Isgoyska Taleex ➔ Dabka",
-            severity = "Waddo Furan",
-            severityColor = ShiriEmerald,
-            message = "Wadada Taleex way furan tahay waxayna toos ku geyneysaa Isgoyska Dabka adigoon marin KM4.",
-            timeAgo = "3 daqiiqo kahor"
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        AlertCardItem(
-            title = "Suuqa Bakaaraha (Wadnaha)",
-            severity = "Mashquul Ganacsi",
-            severityColor = Color(0xFFD97706),
-            message = "Socodka xamuulka iyo bajaajta ayaa xoogaa gaabis ah howlwadaag ilaa Tarabuunka.",
-            timeAgo = "10 daqiiqo kahor"
-        )
-
-        // Dynamic intersection alerts if any
-        highTrafficItems.forEach { item ->
-            Spacer(modifier = Modifier.height(10.dp))
-            AlertCardItem(
-                title = "Isgoyska ${item.name} (${item.district})",
-                severity = item.currentStatus,
-                severityColor = if (item.currentStatus.equals("Saxmad badan", ignoreCase = true)) ShiriCrimson else Color(0xFFD97706),
-                message = item.hazardDescription ?: if (item.hasClosure) "Wadada waa la xiray si kumeel gaar ah." else "Mashquul ayaa ka jira isgoyskan, wadada xawaaraheedu wuu gaabis yahay.",
-                timeAgo = item.lastUpdated ?: "Dhawaan"
-            )
-        }
-    }
-}
-
-@Composable
-private fun AlertCardItem(
-    title: String,
-    severity: String,
-    severityColor: Color,
-    message: String,
-    timeAgo: String
-) {
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.5.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = severityColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = title,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ShiriDarkSlate,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Surface(
-                    color = severityColor.copy(alpha = 0.12f),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        text = severity,
-                        color = severityColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(text = message, fontSize = 12.sp, color = Color.Gray, lineHeight = 17.sp)
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Text(text = timeAgo, fontSize = 10.5.sp, color = Color.LightGray)
-            }
-        }
-    }
-}

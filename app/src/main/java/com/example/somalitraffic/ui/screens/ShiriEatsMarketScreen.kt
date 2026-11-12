@@ -1,4 +1,4 @@
-package com.example.somalitraffic.ui.screens
+﻿package com.example.somalitraffic.ui.screens
 
 import android.content.Intent
 import android.net.Uri
@@ -78,6 +78,13 @@ fun ShiriEatsMarketScreen(
 
     // Search query
     var customerSearchQuery by remember { mutableStateOf("") }
+
+    // Voice & Chat Order Assistant State
+    var showVoiceOrderDialog by remember { mutableStateOf(false) }
+    var voiceOrderIsRecording by remember { mutableStateOf(false) }
+    var voiceOrderText by remember { mutableStateOf("") }
+    var voiceOrderDuration by remember { mutableIntStateOf(0) }
+    var voiceOrderPlacedSuccess by remember { mutableStateOf(false) }
 
     // Master list of Categories (Admin extensible)
     val categories = remember {
@@ -206,6 +213,196 @@ fun ShiriEatsMarketScreen(
     // ─────────────────────────────────────────────────────────────────────────────
     // 1. ADMIN CATEGORY MANAGER DIALOG
     // ─────────────────────────────────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────────
+    // VOICE & CHAT ORDERING DIALOG (Dalbo wax kasta cod ama qoraal)
+    // ─────────────────────────────────────────────────────────────────────────────
+    if (showVoiceOrderDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!voiceOrderIsRecording) showVoiceOrderDialog = false
+            },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFFEF2F2),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("🎙️", fontSize = 18.sp)
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = if (isSomaliLanguage) "Dalabka Codka & Qoraalka" else "Voice & Chat Ordering",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = if (isSomaliLanguage) "SHIRI Express Order" else "Fast Instant Order",
+                                fontSize = 11.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+                    }
+                    IconButton(onClick = { showVoiceOrderDialog = false }) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFF64748B))
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (voiceOrderPlacedSuccess) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFF0FDF4),
+                            border = BorderStroke(1.dp, Color(0xFF86EFAC)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text("✅", fontSize = 32.sp)
+                                Text(
+                                    text = if (isSomaliLanguage) "Dalabkaaga waa la helay!" else "Order Received Successfully!",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFF166534)
+                                )
+                                Text(
+                                    text = if (isSomaliLanguage) "Mooto Courier ayaa laguu soo diri doonaa isla markiiba." else "A courier has been dispatched immediately.",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF15803D),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                )
+                            }
+                        }
+                    } else {
+                        // Voice Recording Card
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (voiceOrderIsRecording) Color(0xFFFEF2F2) else Color(0xFFF8FAFC),
+                            border = BorderStroke(1.dp, if (voiceOrderIsRecording) Color(0xFFF87171) else Color(0xFFE2E8F0)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = if (voiceOrderIsRecording) "🔴 Duubista codka ayaa socota... 0:${voiceOrderDuration}s" else "🎤 Riix badhanka si aad codka u duubto",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (voiceOrderIsRecording) Color(0xFFDC2626) else Color(0xFF334155)
+                                )
+
+                                Button(
+                                    onClick = {
+                                        if (voiceOrderIsRecording) {
+                                            voiceOrderIsRecording = false
+                                        } else {
+                                            voiceOrderIsRecording = true
+                                            voiceOrderDuration = 0
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (voiceOrderIsRecording) Color(0xFFDC2626) else Color(0xFF0F172A)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp),
+                                    modifier = Modifier.fillMaxWidth().height(42.dp)
+                                ) {
+                                    Text(
+                                        text = if (voiceOrderIsRecording) "Jooji Duubista ⏹️" else "Bilaaw Duubista Codka 🎙️",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+
+                        // Chat / Text Order
+                        Text(
+                            text = if (isSomaliLanguage) "Ama ku qor qoraal waxaad rabto:" else "Or type what you need:",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF334155)
+                        )
+
+                        OutlinedTextField(
+                            value = voiceOrderText,
+                            onValueChange = { voiceOrderText = it },
+                            placeholder = {
+                                Text(
+                                    text = if (isSomaliLanguage) "Tusaale: 'Waxaan rabaa 2 Pizza, 1 Canjeero iyo Cabitaan...'" else "E.g., 'I need 2 Pizzas, Burger and cold drink...'",
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFF94A3B8)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = Color(0xFFDC2626),
+                                unfocusedBorderColor = Color(0xFFE2E8F0)
+                            )
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (voiceOrderPlacedSuccess) {
+                    Button(
+                        onClick = {
+                            showVoiceOrderDialog = false
+                            voiceOrderPlacedSuccess = false
+                            voiceOrderText = ""
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF166534)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Waayahay / Xir", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            if (voiceOrderText.isNotBlank() || voiceOrderDuration > 0 || voiceOrderIsRecording) {
+                                voiceOrderIsRecording = false
+                                voiceOrderPlacedSuccess = true
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = if (isSomaliLanguage) "Dir Dalabka Hadda 🚀" else "Submit Order Now 🚀",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        )
+    }
+
     if (showAdminCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showAdminCategoryDialog = false },
@@ -2421,6 +2618,66 @@ fun ShiriEatsMarketScreen(
                     }
                 }
 
+                // Voice & Chat Order Quick Bar
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    shadowElevation = 1.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFFFEF2F2),
+                                modifier = Modifier.size(38.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text("🎙️", fontSize = 18.sp)
+                                }
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = if (isSomaliLanguage) "Dalabka Codka & Qoraalka" else "Voice & Chat Ordering",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0F172A)
+                                )
+                                Text(
+                                    text = if (isSomaliLanguage) "Cod ku dalbo waxaad rabto (Wicitaan la'aan)" else "Order anything via Voice note or Chat",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFF64748B)
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = { showVoiceOrderDialog = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.height(34.dp)
+                        ) {
+                            Text(
+                                text = if (isSomaliLanguage) "Ku Dalbo Cod 🎤" else "Voice Order 🎤",
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+
                 // Search Bar across all stores, products, and categories
                 OutlinedTextField(
                     value = customerSearchQuery,
@@ -2611,7 +2868,7 @@ fun ShiriEatsMarketScreen(
 
                     // 3. Gaarsiin Mooto
                     CategorySquareCard(
-                        title = if (isSomaliLanguage) "Dir Baakad" else "Parcel Express",
+                        title = if (isSomaliLanguage) "Dir Alaab" else "Parcel Express",
                         emoji = "🏍️",
                         isSelected = false,
                         onClick = { onNavigate("delivery") },

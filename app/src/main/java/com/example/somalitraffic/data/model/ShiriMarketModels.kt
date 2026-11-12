@@ -1,4 +1,4 @@
-package com.example.somalitraffic.data.model
+﻿package com.example.somalitraffic.data.model
 
 import java.util.UUID
 
@@ -540,7 +540,7 @@ object ShiriMarketRepository {
                         category = "Raashin",
                         imageUrl = "https://images.unsplash.com/photo-1621996346565-e3d5d6281699?w=400&auto=format&fit=crop&q=80",
                         emoji = "🍝",
-                        description = "Xirmo 5 baakado oo baasto Talyaani ah"
+                        description = "Xirmo 5 xabbo oo baasto Talyaani ah"
                     )
                 )
             ),

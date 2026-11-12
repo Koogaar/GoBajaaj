@@ -1,0 +1,35 @@
+====================================================================
+SHIRI Platform - Release Notes v4.1.0 (versionCode 57)
+====================================================================
+Taariikhda: 2026-11-12
+Saxiixaha: my-upload-key.jks (upload alias)
+====================================================================
+
+WAX KA BEDDELKA BUUXA EE V4.1.0 (CHANGES):
+-------------------------------------------
+1. [SIMPLIFIED BAJAAJ RIDE BOOKING] Naqshad Cusub & Fudud oo Dalbashada Bajaajta ah:
+   - Waxaa gebi ahaanba laga saaray saxmadda jidadka (traffic congestion, 18 isgoys, wariyeyaasha saxmadda, digniinaha jaamka).
+   - Shaashadda dalbashada Bajaajta hadda waa mid 100% u heellan safarka rakaabka (DoorDash & Uber/Bolt-style):
+     * Helitaanka GPS toos ah hal taabasho (📍 Hel Goobtayda)
+     * Soo-jeedinta Degdegga ah ee Muqdisho (Hal-taabasho: KM4, Suuqa Bakaaraha, Digfeer, Xeebta Liido, KM5, Banaadir Hospital, Dabka, Garoonka)
+     * Dooro Nooca Safarka (Vehicle Cards: 🛺 Bajaaj Caadi $1.50, ⚡ Bajaaj VIP $2.00, 🚗 Gaari Taxi $3.00)
+     * Gorgortanka & Qiimaha (Quick Steppers -0.25 / +0.25 iyo Presets $1.00, $1.50, $2.00, $2.50, $3.00)
+     * Dooro Habka Lacag-bixinta (EVC Plus, Sahal, Zaad, Kaash)
+     * Badhanka Dalbashada Degdegga ah ee CASAANKA ah (Dalbo Bajaaj Hadda 🛺)
+
+2. [VOICE & CHAT ORDERING] Dalbasho Cod & Qoraal ah:
+   - Macmiilku wuxuu ku dalban karaa cod (Voice note) iyo qoraal (Chat ordering) si fudud.
+   - Waxaa lagu daray beddelka erayga "Baakad / Baakado" oo laga dhigay "Alaab / Alaabaha".
+
+3. [SHIRI BRAND COLORS & LOGO] Midabbada iyo Astaanta SHIRI:
+   - Logo-da rasmiga ah ee gaduudan ee SHIRI ayaa lagu muujiyay shaashad kasta.
+   - Midabka aasaasiga ah: SHIRI Red (0xFFDC2626 / 0xFFE50914), Background Caddaan ah (0xFFFFFFFF / 0xFFF8FAFC), Qoraalka Dark Navy (0xFF0F172A).
+
+4. [GUEST CUSTOMER ACCESS] Galitaanka Macmiilka Aan Diiwaangelin U Baahnayn:
+   - Macmiilka / Customer-ka si degdeg ah ayuu u galaa app-ka isagoon diiwaangeli marin.
+
+FILES GENERATED:
+- GoBajaaj_APK/SHIRI_v4.1.0_release.aab (Google Play Store Ready)
+- GoBajaaj_APK/SHIRI_v4.1.0_release.apk (Direct Install APK)
+====================================================================
+

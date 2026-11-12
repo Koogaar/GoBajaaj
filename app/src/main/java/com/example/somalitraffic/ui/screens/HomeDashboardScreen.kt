@@ -1,4 +1,4 @@
-package com.example.somalitraffic.ui.screens
+﻿package com.example.somalitraffic.ui.screens
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -510,7 +510,7 @@ fun HomeDashboardScreen(
                     // 3. SHIRI DELIVERY (Blue - Mooto Courier)
                     ShiriHubCard(
                         title = "SHIRI DELIVERY",
-                        subtitle = "Dirso Alaab • Baakado",
+                        subtitle = "Dirso Alaab",
                         statusTag = "Mooto Express",
                         badgeText = "COURIER",
                         icon = Icons.Default.LocalShipping,
