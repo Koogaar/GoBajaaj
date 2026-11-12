@@ -1,4 +1,4 @@
-﻿package com.example.somalitraffic.ui.screens
+package com.example.somalitraffic.ui.screens
 
 import android.content.Intent
 import android.net.Uri
@@ -160,15 +160,9 @@ fun ShiriEatsMarketScreen(
     // Courier PIN Keypad Input State
     var enteredCourierPin by remember { mutableStateOf("") }
 
-    // Merchant Orders List
+    // Merchant Orders List (Dynamic - starts empty, populated when customers place orders)
     val merchantOrders = remember {
-        mutableStateListOf(
-            MerchantOrder("ord-1", "#SHR-MG-48291", "Cabdifataax Cismaan", "0612345678", "Margherita Pizza x1, Coca-Cola x2", 14.50, "pending", "2 daqiiqo ka hor", "4792", "Hodan, Muqdisho (Waddo 21)"),
-            MerchantOrder("ord-2", "#SHR-MG-48290", "Hodan Axmed", "0615559810", "Chicken Burger x2, French Fries x1", 12.00, "preparing", "15 daqiiqo ka hor", "6182", "Taleex, Muqdisho"),
-            MerchantOrder("ord-3", "#SHR-MG-48289", "Maxamed Cali", "0618092060", "Pepperoni Pizza x1", 8.50, "ready", "25 daqiiqo ka hor", "3821", "Waberi, Muqdisho"),
-            MerchantOrder("ord-4", "#SHR-MG-48288", "Deeqa Yuusuf", "0615553392", "Spaghetti Bolognese x2", 16.00, "delivered", "1 saac ka hor", "9912", "Kaxda, Muqdisho"),
-            MerchantOrder("ord-5", "#SHR-MG-48287", "Faarax Nuur", "0615557011", "BBQ Chicken Wings x3", 22.50, "delivered", "2 saac ka hor", "5541", "Hodan, Muqdisho")
-        )
+        mutableStateListOf<MerchantOrder>()
     }
 
     var selectedOrderForDetail by remember { mutableStateOf<MerchantOrder?>(null) }
@@ -385,6 +379,19 @@ fun ShiriEatsMarketScreen(
                             if (voiceOrderText.isNotBlank() || voiceOrderDuration > 0 || voiceOrderIsRecording) {
                                 voiceOrderIsRecording = false
                                 voiceOrderPlacedSuccess = true
+                                val newOrderCode = "#SHR-V" + (1000..9999).random()
+                                merchantOrders.add(0, MerchantOrder(
+                                    id = UUID.randomUUID().toString(),
+                                    orderNumber = newOrderCode,
+                                    customerName = viewModel.currentUser.value?.fullName ?: "Macmiil Cod/Chat",
+                                    customerPhone = viewModel.currentUser.value?.phoneNumber ?: "0612345678",
+                                    itemsSummary = if (voiceOrderText.isNotBlank()) voiceOrderText else "Dalab Cod Ah (${voiceOrderDuration}s)",
+                                    total = 10.0,
+                                    status = "pending",
+                                    timeAgo = "Hadda",
+                                    handoverPin = (1000..9999).random().toString(),
+                                    address = "$selectedShiriDistrict ($selectedShiriStreet)"
+                                ))
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
@@ -1174,8 +1181,8 @@ fun ShiriEatsMarketScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val pin = "4792"
-                        val orderId = "SHR-MG-48291"
+                        val pin = (1000..9999).random().toString()
+                        val orderId = "SHR-MG-" + (10000..99999).random()
                         trackingHandoverPin = pin
                         trackingOrderNumber = orderId
                         trackingStatus = "preparing"
@@ -1187,6 +1194,24 @@ fun ShiriEatsMarketScreen(
                         showCheckout = false
                         showLiveTracking = true
                         hasActiveOrder = true
+
+                        val itemsSummaryStr = cartItems.entries.joinToString(", ") { (prodId, qty) ->
+                            val p = currentStore.products.find { it.id == prodId }
+                            "${p?.name ?: "Alaab"} x$qty"
+                        }
+                        merchantOrders.add(0, MerchantOrder(
+                            id = orderId,
+                            orderNumber = "#$orderId",
+                            customerName = viewModel.currentUser.value?.fullName ?: "Macmiil Shiri",
+                            customerPhone = viewModel.currentUser.value?.phoneNumber ?: "0612345678",
+                            itemsSummary = itemsSummaryStr,
+                            total = cartTotal + currentStore.deliveryFee,
+                            status = "pending",
+                            timeAgo = "Hadda",
+                            handoverPin = pin,
+                            address = "$selectedShiriDistrict ($selectedShiriStreet)"
+                        ))
+
                         cartItems.clear()
                         Toast.makeText(context, "Dalabkaagii waa la xaqiijiyay! Digniinta Jikada (Kitchen Alarm) ayaa dirtay.", Toast.LENGTH_LONG).show()
                     },

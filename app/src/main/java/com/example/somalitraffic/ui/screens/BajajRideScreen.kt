@@ -118,6 +118,7 @@ fun BajajRideScreen(
     var pickupLocation by remember { mutableStateOf("") }
     var destinationLocation by remember { mutableStateOf("") }
     var somaliLandmarkNote by remember { mutableStateOf("") }
+    var digitalGuriNumber by remember { mutableStateOf("") }
     var showAddressDialog by remember { mutableStateOf(false) }
     var selectedVehicle by remember { mutableStateOf(VehicleType.BAJAAJ) }
     var riderOfferText by remember { mutableStateOf("1.50") }
@@ -443,14 +444,12 @@ fun BajajRideScreen(
                             onDestinationChange = { destinationLocation = it },
                             somaliNote = somaliLandmarkNote,
                             onSomaliNoteChange = { somaliLandmarkNote = it },
+                            digitalGuriNumber = digitalGuriNumber,
+                            onDigitalGuriNumberChange = { digitalGuriNumber = it },
                             selectedVehicle = selectedVehicle,
                             onVehicleSelect = { vehicle ->
                                 selectedVehicle = vehicle
-                                riderOfferText = when (vehicle) {
-                                    VehicleType.BAJAAJ -> "1.50"
-                                    VehicleType.CAR -> "2.50"
-                                    VehicleType.SUV -> "4.00"
-                                }
+                                riderOfferText = "1.50"
                             },
                             offer = riderOfferText,
                             onOfferChange = { riderOfferText = it },
@@ -494,11 +493,11 @@ fun BajajRideScreen(
                                     val destCoords = resolveIntersectionCoords(destinationLocation.trim(), intersections)
                                         ?: (2.0425 to 45.3411)
 
-                                    val finalPickup = if (somaliLandmarkNote.isNotBlank() && !pickupLocation.contains(somaliLandmarkNote)) {
-                                        "$pickupLocation • $somaliLandmarkNote"
-                                    } else {
-                                        pickupLocation
-                                    }
+                                    val finalPickup = listOfNotNull(
+                                        pickupLocation.ifBlank { "Goobtayda Hadda (GPS)" },
+                                        if (digitalGuriNumber.isNotBlank()) "Guri: $digitalGuriNumber" else null,
+                                        somaliLandmarkNote.ifBlank { null }
+                                    ).joinToString(" • ")
 
                                     isDriverArrivedState = false
                                     arrivalSoundPlayedForRideId = null
@@ -883,6 +882,8 @@ private fun RiderRequestFormScreen(
     onDestinationChange: (String) -> Unit,
     somaliNote: String = "",
     onSomaliNoteChange: (String) -> Unit = {},
+    digitalGuriNumber: String = "",
+    onDigitalGuriNumberChange: (String) -> Unit = {},
     selectedVehicle: VehicleType,
     onVehicleSelect: (VehicleType) -> Unit,
     offer: String,
@@ -897,6 +898,23 @@ private fun RiderRequestFormScreen(
     onRequestRide: () -> Unit
 ) {
     val quickPresets = listOf("1.00", "1.50", "2.00", "2.50", "3.00")
+    var showVoiceChatOrderDialog by remember { mutableStateOf(false) }
+    var voiceOrderRecording by remember { mutableStateOf(false) }
+    var voiceOrderText by remember { mutableStateOf("") }
+    var voiceOrderDuration by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(voiceOrderRecording) {
+        if (voiceOrderRecording) {
+            voiceOrderDuration = 0
+            while (voiceOrderRecording && voiceOrderDuration < 30) {
+                delay(1000)
+                voiceOrderDuration++
+            }
+            if (voiceOrderRecording) {
+                voiceOrderRecording = false
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -1068,6 +1086,67 @@ private fun RiderRequestFormScreen(
                             )
                         )
                     }
+                    // Digital Guri Number (SH-xxxx)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Nambarka Guriga (Digital Guri Number) — Ikhtiyaari",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GoBajaajNavy
+                        )
+                        Surface(
+                            onClick = {
+                                onDigitalGuriNumberChange("SH-" + (1000..9999).random())
+                            },
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color(0xFFFEF2F2)
+                        ) {
+                            Text(
+                                text = "✨ Kood Cusub",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFDC2626),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = digitalGuriNumber,
+                        onValueChange = onDigitalGuriNumberChange,
+                        placeholder = {
+                            Text(
+                                "Tusaale: SH-4821 ama Dabaqa 2aad, Guri 5...",
+                                fontSize = 12.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Home,
+                                contentDescription = null,
+                                tint = Color(0xFFDC2626),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = BrandBlack,
+                            unfocusedTextColor = BrandBlack,
+                            focusedContainerColor = Color(0xFFF8FAFC),
+                            unfocusedContainerColor = Color(0xFFF8FAFC),
+                            focusedBorderColor = Color(0xFFDC2626),
+                            unfocusedBorderColor = Color(0xFFCBD5E1),
+                            cursorColor = Color(0xFFDC2626)
+                        )
+                    )
+
                     // Somali Landmark Note (optional directions)
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
@@ -1149,60 +1228,79 @@ private fun RiderRequestFormScreen(
                 }
             }
 
-            // ── Doorashada Gaadiidka (Vehicle Options) ──
+            // ── Ku Dalbo Cod ama Qoraal (Voice & Chat Order) ──
+            Surface(
+                onClick = { showVoiceChatOrderDialog = true },
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFF0F172A),
+                shadowElevation = 2.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFDC2626)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Ku Dalbo Cod ama Qoraal",
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Ku hadal goobtaada & meeshaad u socoto",
+                                fontSize = 11.sp,
+                                color = Color(0xFF94A3B8)
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Dalbo 🎙️",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFBBF24)
+                    )
+                }
+            }
+
+            // ── Doorashada Gaadiidka (Bajaaj Caadi Keliya) ──
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "Dooro Nooca Safarka",
+                    text = "Gaadiidka Safarka",
                     fontSize = 12.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0F172A)
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    VehicleOptionCard(
-                        title = "Bajaaj Caadi",
-                        price = "$1.50",
-                        capacity = "1-3 Qof",
-                        iconDrawableRes = com.example.R.drawable.ic_bajaaj_icon,
-                        badge = "Raqiis",
-                        isSelected = selectedVehicle == VehicleType.BAJAAJ && offer != "2.00",
-                        onClick = {
-                            onVehicleSelect(VehicleType.BAJAAJ)
-                            onOfferChange("1.50")
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    VehicleOptionCard(
-                        title = "Bajaaj VIP",
-                        price = "$2.00",
-                        capacity = "Toos & AC",
-                        iconDrawableRes = com.example.R.drawable.ic_bajaaj_icon,
-                        badge = "Express",
-                        isSelected = selectedVehicle == VehicleType.BAJAAJ && offer == "2.00",
-                        onClick = {
-                            onVehicleSelect(VehicleType.BAJAAJ)
-                            onOfferChange("2.00")
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    VehicleOptionCard(
-                        title = "Gaari Taxi",
-                        price = "$3.00",
-                        capacity = "4 Qof",
-                        icon = Icons.Default.DirectionsCar,
-                        badge = "Qoys",
-                        isSelected = selectedVehicle == VehicleType.CAR,
-                        onClick = {
-                            onVehicleSelect(VehicleType.CAR)
-                            onOfferChange("3.00")
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                VehicleOptionCard(
+                    title = "🛺 Bajaaj Caadi",
+                    price = "$1.50",
+                    capacity = "1-3 Qof • Safar Degdeg ah & Qiimo Jaban",
+                    iconDrawableRes = com.example.R.drawable.ic_bajaaj_icon,
+                    badge = "Doorka Koowaad",
+                    isSelected = true,
+                    onClick = {
+                        onVehicleSelect(VehicleType.BAJAAJ)
+                        onOfferChange("1.50")
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             // ── Habka Lacag-bixinta (Payment Method Selection) ──
@@ -1568,6 +1666,125 @@ private fun RiderRequestFormScreen(
                 }
             }
         }
+    }
+
+    // ── Voice & Chat Order Dialog ──
+    if (showVoiceChatOrderDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!voiceOrderRecording) showVoiceChatOrderDialog = false },
+            title = {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFFEF2F2),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text("🎙️", fontSize = 18.sp)
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Ku Dalbo Cod ama Qoraal",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF0F172A)
+                            )
+                            Text(
+                                text = "Safar Degdeg ah oo Bajaaj",
+                                fontSize = 11.sp,
+                                color = Color(0xFF64748B)
+                            )
+                        }
+                    }
+                    IconButton(onClick = { showVoiceChatOrderDialog = false }) {
+                        Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFF64748B))
+                    }
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Ku duub cod gaaban ama ku qor halka lagaa qaadayo & meesha aad u socoto:",
+                        fontSize = 12.sp,
+                        color = Color(0xFF475569)
+                    )
+
+                    // Voice Recording Action
+                    Surface(
+                        onClick = {
+                            voiceOrderRecording = !voiceOrderRecording
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (voiceOrderRecording) Color(0xFFFEF2F2) else Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, if (voiceOrderRecording) Color(0xFFDC2626) else Color(0xFFCBD5E1)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (voiceOrderRecording) Icons.Default.Stop else Icons.Default.Mic,
+                                contentDescription = null,
+                                tint = if (voiceOrderRecording) Color(0xFFDC2626) else Color(0xFF0F172A),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = if (voiceOrderRecording) "Duubistu way socotaa... (${voiceOrderDuration}s)" else "🎙️ Taabo si aad Cod ugu Duubto",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (voiceOrderRecording) Color(0xFFDC2626) else Color(0xFF0F172A)
+                            )
+                        }
+                    }
+
+                    // Chat Input Area
+                    OutlinedTextField(
+                        value = voiceOrderText,
+                        onValueChange = { voiceOrderText = it },
+                        placeholder = {
+                            Text("Ama qor: 'KM4 Taleex ka soo qaad, Bakaaraha gee...'", fontSize = 12.sp)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (voiceOrderText.isNotBlank()) {
+                            onSomaliNoteChange("Dalab: $voiceOrderText")
+                            if (destination.isBlank()) {
+                                onDestinationChange(voiceOrderText)
+                            }
+                        }
+                        showVoiceChatOrderDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text("Xaqiiji Dalabka →", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVoiceChatOrderDialog = false }) {
+                    Text("Ka Noqo", color = Color(0xFF64748B))
+                }
+            }
+        )
     }
 }
 

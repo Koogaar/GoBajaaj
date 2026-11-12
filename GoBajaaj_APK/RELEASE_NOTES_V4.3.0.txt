@@ -1,0 +1,57 @@
+========================================================================
+  SHIRI APP — RELEASE NOTES v4.3.0 (versionCode 59)
+  Taariikhda: 2026-11-12
+========================================================================
+
+WAXYAABAHA LA HIRGELIYAY & LA HAGAAJIYAY (PRODUCTION UPDATES):
+------------------------------------------------------------------------
+
+1. GAADIIDKA SAFARKA (BAJAAJ CAADI KELIYA) ✅
+   - Waxaa laga saaray: "Bajaaj VIP ($2.00)" iyo "Gaari Taxi ($3.00)"
+   - Waxaa loo daayay: "🛺 Bajaaj Caadi ($1.50)" oo keliya oo ballaaran (full-width)
+   - Qiimaha & gorgortanku si toos ah ayuu u shaqeynayaa ($1.50 default)
+
+2. KU DALBO CODKA & QORAALKA (VOICE & CHAT ORDERING) ✅
+   - Shaashadda dalbashada bajaajta waxaa toos loogu daray:
+     [🎙️ Ku Dalbo Cod ama Qoraal (Voice & Chat)]
+   - Dialog-ka waxaad ku duubi kartaa cod tilmaamaya goobtaada iyo meesha aad u socoto
+   - Waxaad kaloo ku qori kartaa qoraal gaaban oo toos ugu lifaaqmaya safarka
+
+3. DIGITAL GURI NUMBER (CINWAANKA DIGITAL-KA AH) ✅
+   - Goob cusub oo loogu talagalay lambarka guriga (Digital Guri Number)
+   - Waxaa ku jira badhanka "✨ Kood Cusub" oo auto-generate ku sameynaya koodadka sida: SH-4821
+   - Xogtan waxay toos ula soconaysaa darawalka bajaajta si uu gurigaaga toos ugu yimaado
+
+4. GOOBAHA MUQDISHO UGU CAANSAN (HAL TAABASHO) ✅
+   - 📍 KM4 (Taleex)
+   - 🏪 Suuqa Bakaaraha
+   - 🏥 Isbitaal Digfeer
+   - 🏖️ Xeebta Liido
+   - 📍 Isgoyska KM5
+   - 🏥 Banaadir Hospital
+   - 📍 Dabka (Wadnaha)
+   - ✈️ Garoonka Aadan Cadde
+
+5. DOORDASH-STYLE SHIRI EATS & MARKETPLACE & REMOVAL OF DEMO DATA ✅
+   - Dalabyadii hardcoded-ka ahaa ee meheradaha (demo orders) waa laga saaray
+   - Meheraduhu waxay hadda arkayaan kaliya dalabyada dhabta ah ee macaamiishu soo diraan
+   - Macmiilku marka uu dalab cusub ku sameeyo Cart ama Cod/Chat, dalabka wuxuu toos ugu dhacayaa jikada meheradda
+   - Baakad kasta waxaa lagu bedelay "Alaab"
+
+6. SUPABASE SQL MIGRATION (REGISTRATION FIX) ✅
+   - Faylka: supabase/FIX_PROFILES_SCHEMA_COLUMNS.sql
+   - Xalinta PGRST204 "Could not find 'business_name' column of 'profiles'"
+
+BUILD SPECIFICATIONS:
+---------------------
+  Version:      4.3.0 (59)
+  Target SDK:   36 (Android 15+)
+  Min SDK:      24 (Android 7.0+)
+  Build Status: BUILD SUCCESSFUL (3m 19s)
+  Signed:       Release Signed (my-upload-key.jks)
+
+FILES GENERATED:
+----------------
+  APK: GoBajaaj_APK/SHIRI_v4.3.0_release.apk (70.3 MB)
+  AAB: GoBajaaj_APK/SHIRI_v4.3.0_release.aab (39.9 MB)
+========================================================================
