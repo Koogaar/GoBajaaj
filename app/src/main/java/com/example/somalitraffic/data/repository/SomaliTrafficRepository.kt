@@ -985,13 +985,20 @@ class SomaliTrafficRepository(private val context: Context) {
                         secondErrMsg.contains("Could not find the", ignoreCase = true) ||
                         secondErrMsg.contains("column of 'profiles'", ignoreCase = true) ||
                         secondErrMsg.contains("schema cache", ignoreCase = true)) {
+                        // Fallback: safe minimal payload preserving the actual role
+                        val safeRole = when (actualRoleStr) {
+                            "driver", "passenger", "merchant", "courier" -> actualRoleStr
+                            else -> "driver"
+                        }
                         val safeMinimalPayload = mutableMapOf<String, Any>(
                             "id" to finalUserId,
                             "full_name" to cleanName,
                             "phone_number" to e164,
-                            "role" to if (actualRoleStr in listOf("driver", "passenger")) actualRoleStr else "driver",
+                            "role" to safeRole,
                             "status" to "active"
                         )
+                        // For merchants, include business name even in minimal payload
+                        if (!businessName.isNullOrBlank()) safeMinimalPayload["business_name"] = businessName
                         profileResult = upsertOwnProfile(service, apiKey, authHeader, safeMinimalPayload)
                     }
                 }

@@ -1,0 +1,44 @@
+====================================================
+  SHIRI APP — RELEASE NOTES v4.2.0 (versionCode 58)
+  Taariikhda: 2026-11-12
+====================================================
+
+DHIBAATOOYINKA LA XALIYAY (BUG FIXES):
+---------------------------------------
+
+1. GALITAANKA KHALAD (Registration Fix) ✅
+   - Khalad: "Could not find the 'business_name' column of 'profiles' in the schema cache"
+   - Xal: Repository.kt fallback code la hagaajiyay
+   - Merchant/Courier role-ka loo ilaaliyo marka schema cache dhibaato leh
+   - Hore role-ka merchant/courier waxaa khaldan lagu baddelay "driver" — WAXAA LA SAXAY
+
+2. SUPABASE SCHEMA MIGRATION ✅
+   - SQL migration cusub la abuuray: supabase/FIX_PROFILES_SCHEMA_COLUMNS.sql
+   - Column-yada cusub: business_name, business_type, merchant_payment_number,
+     district, verification_status, monthly_fee, referred_by,
+     license_number, guarantor_name, guarantor_phone, cid_letter_number
+
+3. FALLBACK CODE WAXAA LA WANAAGSANAA ✅
+   - Marka column maqan yahay, role-ka sax ah waa la ilaaliyaa
+   - Merchant register-ka: business_name minimal payload-ka ku jira
+
+LAGAMA MAARMAAN — SUPABASE SQL RUN GALISO:
+-------------------------------------------
+  URL: https://supabase.com/dashboard/project/lcigjbtprkloopvzpaxy/sql/new
+  File: supabase/FIX_PROFILES_SCHEMA_COLUMNS.sql
+
+BUILD INFO:
+-----------
+  Version:      4.2.0 (58)
+  Build Type:   Release (Signed)
+  Min SDK:      24
+  Target SDK:   36
+  Build Time:   5m 38s
+  Tasks:        60 (26 executed, 34 up-to-date)
+
+FILES:
+------
+  APK: SHIRI_v4.2.0_release.apk  (70.3 MB)
+  AAB: SHIRI_v4.2.0_release.aab  (39.9 MB)
+
+====================================================
