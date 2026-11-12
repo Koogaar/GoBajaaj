@@ -47,13 +47,30 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
 
       if (error) {
         console.warn('Could not fetch merchants, using mock preview:', error.message);
-        // Fallback default Somali merchants
+        // Fallback default Somali merchants matching master mockups
         setMerchants([
+          {
+            id: 'm0',
+            name: 'Al-Furqan Restaurant',
+            category: 'cunto',
+            district: 'Waberi, Muqdisho',
+            phone: '0615123456',
+            rating: 4.7,
+            review_count: 2500,
+            delivery_time_minutes: 30,
+            min_order: 5.00,
+            delivery_fee: 1.00,
+            is_open: true,
+            shiri_address_code: 'SHR-MG-0012',
+            digital_guri_number: 'SHR-MG-0012',
+            verification_status: 'verified',
+            commission_rate: 15.00
+          },
           {
             id: 'm1',
             name: 'Pizza House Mogadishu',
             category: 'cunto',
-            district: 'Hodan',
+            district: 'Hodan, Muqdisho',
             phone: '0615551024',
             rating: 4.9,
             review_count: 142,
@@ -61,6 +78,8 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
             min_order: 3.00,
             delivery_fee: 2.00,
             is_open: true,
+            shiri_address_code: 'SHR-MG-48291',
+            digital_guri_number: 'SHR-MG-48291',
             verification_status: 'verified',
             commission_rate: 15.00
           },
@@ -267,6 +286,11 @@ export const MerchantsManagement: React.FC<MerchantsManagementProps> = ({ canMan
                       <MapPin className="w-3.5 h-3.5 text-neutral-400" />
                       {merchant.district}
                     </span>
+                    {(merchant.digital_guri_number || merchant.shiri_address_code) && (
+                      <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-amber-50 text-amber-800 rounded font-mono text-[10px] font-bold">
+                        🏠 Guri: {merchant.digital_guri_number || merchant.shiri_address_code}
+                      </span>
+                    )}
                   </td>
                   <td className="py-3.5 px-4 font-mono text-neutral-600">
                     {merchant.phone}

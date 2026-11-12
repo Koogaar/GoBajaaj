@@ -53,6 +53,8 @@ export interface Profile {
   business_type?: string;
   merchant_payment_number?: string;
   district?: string;
+  digital_guri_number?: string;
+  shiri_address_code?: string;
   verification_status?: string;
   monthly_fee?: number;
   subscription_status?: string;
@@ -120,6 +122,7 @@ export interface ShiriMerchant {
   delivery_fee: number;
   is_open: boolean;
   shiri_address_code?: string;
+  digital_guri_number?: string;
   district: string;
   verification_status: string;
   commission_rate: number;

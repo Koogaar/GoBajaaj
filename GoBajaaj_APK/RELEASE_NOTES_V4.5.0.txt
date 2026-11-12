@@ -1,0 +1,79 @@
+========================================================================
+  SHIRI APP — RELEASE NOTES v4.5.0 (versionCode 61)
+  Taariikhda: 2026-11-12
+========================================================================
+
+WAXYAABAHA CUSUB EE 100% DOORDASH STYLE DESIGN MASTER MOCKUPS:
+------------------------------------------------------------------------
+
+1. ONBOARDING WELCOME SCREEN (Screen 1 Master Mockup) ✅
+   - Gadaal casaan qurux badan leh (#DC2626).
+   - Astaanta rasmiga ah ee SHIRI oo caddaan ah + "Dalbo • Hel • Ku Raaxayso".
+   - Sawirka macaan ee Burger & Fries hero graphic.
+   - Badhanka cad ee wareegsan "Bilow →" oo toos macmiilka ugu furaya DoorDash Marketplace.
+   - Linkiga hoose ee "Gal Account" loogu talagalay darawallada iyo ganacsatada.
+
+2. DOORDASH MARKETPLACE FEED (Screen 2 Master Mockup) ✅
+   - Dusha sare: Dropdown-ka "📍 Muqdisho ⌵" oo furaya Digital Guri Selector + Dawladda Ogeysiisyada 🔔 (2).
+   - Baarka raadinta: Capsule search bar cad oo leh mikarofoonka codka (Voice Order).
+   - Promo Banner: "Ku Dalbo Cunto Qiimo Jaban 30% OFF SHIRI" oo leh sawirka pizza.
+   - Qeybaha Adeegyada (2x4 Grid — 8 tiles oo midabaysan):
+     * Cunto (🍴 Casaan)
+     * Dukaamo (🛒 Buluug Khafiif)
+     * Caafimaad (➕ Pink)
+     * Gaadiid (🚗 Buluug)
+     * Guryo (🏠 Oranji)
+     * Waxbarasho (🎓 Indigo)
+     * Ubax (🌸 Jaalle)
+     * Dhammaan (🔲 Cadaan)
+   - "Maqaayada Caanka Ah": Carousel toos ah oo dhinac u wareegaya (Horizontal Scroll) oo ay ku jirto Al-Furqan Restaurant.
+   - Kaararka Meheradaha (DoorDash Full Store Cards): Sawir tayo sare leh, Waqtiga Gaarsiinta (25-30 daq), Qiimaha Gaarsiinta ($1.00), iyo Qiimeynta (⭐ 4.7).
+
+3. RESTAURANT & MENU DETAIL SCREEN (Screen 3 Master Mockup) ✅
+   - Hero cover image oo leh badhamada Dib-u-noqosho, Share, iyo Jecleysi (❤️).
+   - Magaca Meheradda: "Al-Furqan Restaurant ✔" (Verified).
+   - 3-da Kaar Metric:
+     * Delivery $1.00
+     * Min Order $5.00
+     * Furan 8:00 AM - 11:00 PM
+   - Tabs: Menu, Reviews, Info.
+   - Liiska Cuntooyinka (Cuntooyinka): Sawir, Magaca, Qiimaha, iyo badhanka wareegsan ee casaanka ah ee (+) lagu dalbado.
+   - Floating Sticky Checkout Bar: Icon-ka boorsada cuntada oo wata badge-ka tirada, Wadarta qiimaha ($14.00), iyo badhanka "Checkout" oo toos u geynaya Live Tracking.
+
+4. LIVE ORDER TRACKING SCREEN (Screen 4 Master Mockup) ✅
+   - Madaxa: Dalabkaaga #SH123456.
+   - 4-ta Talaabo ee Dalabka (Stepper):
+     * La Shaqeynayo (Done)
+     * Waa la Diyaarinayaa (Done)
+     * Waa la Bixiyay (Active)
+     * La Keenay (Upcoming)
+   - Khariidada Tooska ah ee Waddada (Route Map Canvas) oo leh calaamadda mootada iyo ETA "5 min ≈ 1.2 km".
+   - Kaarka Gaarsiiyaha (Courier Card): "Ahmed Hassan ⭐ 4.9" oo leh badhamada Tooska ah ee Wicitaanka 📞 iyo Qoraalka 💬.
+   - Waqtiga la qiyaasay: 5 min.
+   - Badhanka "Faahfaahin Dalabka".
+
+5. WEB ADMIN MANAGEMENT (Screen 7 Master Mockup) ✅
+   - 4-ta Master KPI Cards:
+     * Total Orders: 12,540 (+12%)
+     * Customers: 48,230 (+18%)
+     * Drivers: 2,860 (+10%)
+     * Merchants: 1,240 (+14%)
+   - Orders Overview Line Chart (Mon - Sun, Peak 2,450).
+   - Top Categories Donut Chart (Food 45%, Shopping 35%, Health 20%).
+   - Recent Orders Live Table (#SH123456 Delivered, #SH123455 On the Way).
+   - SHIRI Promo Card Banner oo leh wadaha mootada.
+   - Digital Guri Number toos loogu soo daray meheradaha iyo macaamiisha.
+
+BUILD SPECIFICATIONS:
+---------------------
+  Version:      4.5.0 (versionCode 61)
+  Target SDK:   36 (Android 15+)
+  Min SDK:      24 (Android 7.0+)
+  Sign Key:     my-upload-key.jks (Release Keystore)
+  Build Status: BUILD SUCCESSFUL (4m 34s)
+
+FILES GENERATED:
+----------------
+  APK: GoBajaaj_APK/SHIRI_v4.5.0_release.apk (73.7 MB)
+  AAB: GoBajaaj_APK/SHIRI_v4.5.0_release.aab (41.8 MB)
+========================================================================

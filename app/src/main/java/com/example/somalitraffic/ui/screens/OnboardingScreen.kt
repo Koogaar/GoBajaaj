@@ -1,192 +1,184 @@
 package com.example.somalitraffic.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
-import com.example.ui.theme.*
 
 @Composable
 fun OnboardingScreen(
     viewModel: SomaliTrafficViewModel,
-    onFinishOnboarding: () -> Unit
+    onFinishOnboarding: () -> Unit,
+    onNavigateToLogin: () -> Unit = {}
 ) {
-    fun complete() {
+    fun startAsGuest() {
         viewModel.repository.prefs.setOnboardingCompleted(true)
+        viewModel.continueAsGuestCustomer()
         onFinishOnboarding()
     }
 
-    Scaffold(
-        containerColor = SomaliBackground
-    ) { padding ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFE50914),
+                        Color(0xFFDC2626),
+                        Color(0xFFB91C1C)
+                    )
+                )
+            )
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(24.dp),
+                .padding(horizontal = 24.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(
-                    onClick = { complete() },
-                    modifier = Modifier.testTag("btn_skip_onboarding")
-                ) {
-                    Text(
-                        text = "Ka bood",
-                        color = TextBlack,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-            }
-
-            // Central Illustration & Feature List
+            // TOP BRAND SECTION: SHIRI Logo + Title + Tagline
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
+                modifier = Modifier.padding(top = 28.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(CircleShape)
-                        .background(BrandBlack),
-                    contentAlignment = Alignment.Center
+                // White circular logo badge with pin & letter S
+                Surface(
+                    shape = CircleShape,
+                    color = Color.White,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.size(76.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.DirectionsCar,
-                        contentDescription = null,
-                        tint = BrandRedPrimary,
-                        modifier = Modifier.size(50.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "S",
+                                fontSize = 38.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFFDC2626)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                tint = Color(0xFFDC2626),
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .offset(x = (-6).dp, y = (-2).dp)
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Ku Soo Dhawoow\nGoBajaaj",
-                    fontSize = 24.sp,
+                    text = "SHIRI",
+                    fontSize = 38.sp,
                     fontWeight = FontWeight.Black,
-                    color = TextBlack,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 30.sp
+                    color = Color.White,
+                    letterSpacing = 2.sp
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Hal nidaam oo isku xira saxmadda tooska ah iyo ilaalinta taleefankaaga gacanta.",
-                    fontSize = 14.sp,
-                    color = TextBlack,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Feature items
-                FeatureItem(
-                    icon = Icons.Default.Traffic,
-                    title = "La soco saxmadda waddooyinka",
-                    description = "Arag xaaladda isgoysyada Muqdisho si toos ah (Furan, Mashquul, Saxmad)."
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                FeatureItem(
-                    icon = Icons.Default.NotificationsActive,
-                    title = "Hel digniino degdeg ah",
-                    description = "Ogow shilalka, waddooyinka xiran, iyo dariiqyada kale ee furan."
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                FeatureItem(
-                    icon = Icons.Default.PhoneAndroid,
-                    title = "Ilaali taleefankaaga",
-                    description = "Diiwaangeli taleefankaaga si aad u hesho ammaan buuxa iyo raadraac toos ah."
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                FeatureItem(
-                    icon = Icons.Default.GpsFixed,
-                    title = "Raac taleefanka lumay",
-                    description = "Haddii taleefanku kaa lumo, si degdeg ah u hel goobtii ugu dambeysay."
+                    text = "Dalbo • Hel • Ku Raaxayso",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.92f),
+                    letterSpacing = 0.5.sp
                 )
             }
 
-            // Bottom CTA
-            Button(
-                onClick = { complete() },
+            // CENTER HERO ILLUSTRATION: Delicious Food (Burger, Fries, Drink)
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = Color.Transparent,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
-                    .testTag("btn_start_onboarding"),
-                colors = ButtonDefaults.buttonColors(containerColor = BrandRedPrimary),
-                shape = RoundedCornerShape(12.dp)
+                    .height(280.dp)
             ) {
-                Text(
-                    text = "Bilow",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextWhite
+                AsyncImage(
+                    model = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&auto=format&fit=crop&q=80",
+                    contentDescription = "SHIRI Cunto & Gaarsiin",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(28.dp))
                 )
             }
-        }
-    }
-}
 
-@Composable
-private fun FeatureItem(
-    icon: ImageVector,
-    title: String,
-    description: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFFEE2E2)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = BrandRedPrimary,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(14.dp))
-        Column {
-            Text(
-                text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextBlack
-            )
-            Text(
-                text = description,
-                fontSize = 12.sp,
-                color = TextBlack
-            )
+            // BOTTOM ACTION BUTTONS: "Bilow ->" and "Gal Account"
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+            ) {
+                // White Pill Button: Bilow ->
+                Button(
+                    onClick = { startAsGuest() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(28.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Bilow",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF0F172A)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = Color(0xFF0F172A),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                // Text Link: Gal Account
+                Text(
+                    text = "Gal Account",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { onNavigateToLogin() }
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                )
+            }
         }
     }
 }

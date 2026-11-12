@@ -68,14 +68,17 @@ fun SomaliTrafficNavHost(
             )
         }
 
-        // Screen 2: Onboarding
+        // Screen 2: Onboarding (DoorDash Style Welcome Screen)
         composable(NavRoutes.ONBOARDING) {
             OnboardingScreen(
                 viewModel = viewModel,
                 onFinishOnboarding = {
-                    navController.navigate(NavRoutes.LOGIN) {
+                    navController.navigate(NavRoutes.HOME) {
                         popUpTo(NavRoutes.ONBOARDING) { inclusive = true }
                     }
+                },
+                onNavigateToLogin = {
+                    navController.navigate(NavRoutes.LOGIN)
                 }
             )
         }

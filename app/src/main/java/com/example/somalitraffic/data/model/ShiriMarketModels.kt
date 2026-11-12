@@ -1,4 +1,4 @@
-﻿package com.example.somalitraffic.data.model
+package com.example.somalitraffic.data.model
 
 import java.util.UUID
 
@@ -212,7 +212,88 @@ object ShiriMarketRepository {
 
     fun getDefaultStores(): List<ShiriMerchantStore> {
         return listOf(
-            // ─── 1. FOOD & RESTAURANTS ───
+            // ─── 1. AL-FURQAN RESTAURANT (FEATURED SOMALI & FAST FOOD) ───
+            ShiriMerchantStore(
+                name = "Al-Furqan Restaurant",
+                nameEn = "Al-Furqan Restaurant",
+                shiriCode = "SHR-MG-48291",
+                district = "Hodan, Muqdisho",
+                categoryId = "cunto",
+                subcategoryId = "traditional",
+                extraCategories = listOf("cunto", "fast_food", "traditional"),
+                rating = 4.7,
+                deliveryTimeMin = 35,
+                deliveryFee = 1.00,
+                imageUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=80",
+                emoji = "🍗",
+                phone = "0615554829",
+                products = listOf(
+                    ShiriProductItem(
+                        name = "Bariis & Digaag",
+                        nameEn = "Bariis & Digaag",
+                        price = 6.00,
+                        category = "Cuntooyinka",
+                        imageUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍗",
+                        description = "Bariis xawaash leh oo udgoon iyo digaag duban oo Somali style ah"
+                    ),
+                    ShiriProductItem(
+                        name = "Bariis & Hilib",
+                        nameEn = "Bariis & Hilib",
+                        price = 7.00,
+                        category = "Cuntooyinka",
+                        imageUrl = "https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🥩",
+                        description = "Bariis xawaash leh iyo hilib geel ama ari oo la shiilay ama suugo leh"
+                    ),
+                    ShiriProductItem(
+                        name = "Pizza Special",
+                        nameEn = "Pizza Special",
+                        price = 8.00,
+                        category = "Cuntooyinka",
+                        imageUrl = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍕",
+                        description = "Pizza jiis badan leh, hilib, basbaas iyo yaanyo"
+                    ),
+                    ShiriProductItem(
+                        name = "Chicken Burger Special",
+                        nameEn = "Chicken Burger Special",
+                        price = 5.00,
+                        category = "Cuntooyinka",
+                        imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍔",
+                        description = "Burger digaag shiilan oo leh chips iyo suugo garlic ah"
+                    ),
+                    ShiriProductItem(
+                        name = "Somali Shawarma",
+                        nameEn = "Somali Shawarma",
+                        price = 4.50,
+                        category = "Cuntooyinka",
+                        imageUrl = "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🌯",
+                        description = "Shuwarma hilib ama digaag leh basbaas iyo tahini"
+                    ),
+                    ShiriProductItem(
+                        name = "French Fries",
+                        nameEn = "French Fries",
+                        price = 2.50,
+                        category = "Cuntooyinka",
+                        imageUrl = "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍟",
+                        description = "Baradho cusbo iyo ketchup leh"
+                    ),
+                    ShiriProductItem(
+                        name = "Coca-Cola Can 330ml",
+                        nameEn = "Coca-Cola Can 330ml",
+                        price = 1.00,
+                        category = "Cuntooyinka",
+                        imageUrl = "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🥤",
+                        description = "Cabitaan qabow"
+                    )
+                )
+            ),
+            // ─── 2. PIZZA HOUSE MOGADISHU ───
             ShiriMerchantStore(
                 name = "Pizza House Mogadishu",
                 nameEn = "Pizza House Mogadishu",
