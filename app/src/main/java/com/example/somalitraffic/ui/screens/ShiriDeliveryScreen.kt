@@ -1,16 +1,17 @@
 package com.example.somalitraffic.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,27 +21,34 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
 import com.example.somalitraffic.util.ArrivalSoundManager
+import com.example.ui.theme.BrandGreenPrimary
+import com.example.ui.theme.BrandGreenDark
+import com.example.ui.theme.BrandGreenLight
+import com.example.ui.theme.BrandBgLight
+import com.example.ui.theme.BrandCardWhite
+import com.example.ui.theme.BrandTextDark
 
-// ─── Delivery Step Enum for Customer Flow ───────────────────────────────────
-private enum class DeliveryStep {
-    SELECT,     // Tallaabada 1: Dooro nooca + geli faahfaahin
-    CHECKOUT,   // Tallaabada 2: Checkout - address, lacag-bixin, xaqiiji
-    MERCHANT,   // Tallaabada 3: Merchant aqbalay
-    TRACKING,   // Tallaabada 4: Live tracking + darawal
-    HANDOVER    // Tallaabada 5: PIN gacangelinta
-}
-
+/**
+ * SHIRI Delivery Screen (Courier / Delivery App)
+ * Matches master visual design:
+ * 1. Screen 1: New Delivery (Map route, pickup/delivery addresses, "Accept Order" green button)
+ * 2. Screen 2: On the Way (Map with scooter, "Arriving in 8 min", customer Ahmed Hassan ⭐ 4.9, "Contact" green button)
+ * 3. Screen 3: Earnings ($85.50 Today, 8 Deliveries, 5.2h Online, Weekly Bar Chart, "View Details" button)
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShiriDeliveryScreen(
@@ -49,1011 +57,740 @@ fun ShiriDeliveryScreen(
 ) {
     val context = LocalContext.current
 
-    // View Mode: "driver" (Image 1 Courier App) or "customer" (5-Step Customer Flow)
-    var currentDeliveryView by remember { mutableStateOf("driver") }
-
-    // Driver States (Image 3)
+    // Current driver tab: "new_delivery", "on_the_way", "earnings"
+    var driverTab by remember { mutableStateOf("new_delivery") }
     var isDriverOnline by remember { mutableStateOf(true) }
-    var availableOrdersCount by remember { mutableStateOf(0) }
-    var driverPaymentNumber by remember { mutableStateOf("0613456789") }
-    var driverDirectPhone by remember { mutableStateOf("+252613456789") }
-    var driverWhatsappNumber by remember { mutableStateOf("252613456789") }
-    var showEditDriverContactDialog by remember { mutableStateOf(false) }
-
-    // Driver Bottom Navigation Tab: "dashboard", "orders", "navigation", "earnings"
-    var driverBottomTab by remember { mutableStateOf("dashboard") }
-
-    // Customer 5-Step Flow States
-    var selectedServiceType by remember { mutableStateOf("package") }
-    var pickupLocation by remember { mutableStateOf("") }
-    var dropoffLocation by remember { mutableStateOf("") }
-    var recipientPhone by remember { mutableStateOf("") }
-    var packageNotes by remember { mutableStateOf("") }
-    var deliverySpeed by remember { mutableStateOf("express") }
-
-    var shiriAddress by remember { mutableStateOf("") }
-    var voiceLandmark by remember { mutableStateOf("") }
-    var selectedPayment by remember { mutableStateOf("evc") }
-    var payerPhone by remember { mutableStateOf("") }
-
-    var orderTrackingId by remember { mutableStateOf("SHR-2026-636919") }
-    var handoverPin by remember { mutableStateOf("4829") }
-    var driverEnteredPin by remember { mutableStateOf("") }
-    var merchantApproved by remember { mutableStateOf(false) }
-    var isDelivered by remember { mutableStateOf(false) }
-
-    var currentStep by remember { mutableStateOf(DeliveryStep.SELECT) }
-
-    val fareAmount = when {
-        selectedServiceType == "shopping" -> if (deliverySpeed == "express") 3.50 else 2.50
-        deliverySpeed == "express" -> 2.50
-        else -> 1.50
-    }
-
-    val ussdCode = when (selectedPayment) {
-        "evc"   -> "*712*618092060*${String.format("%.2f", fareAmount)}#"
-        "edahab"-> "*712*628512131*${String.format("%.2f", fareAmount)}#"
-        "zaad"  -> "*920*${String.format("%.2f", fareAmount)}#"
-        "sahal" -> "*889*${String.format("%.2f", fareAmount)}#"
-        else    -> "Lacag gacanta ah (Cash)"
-    }
-
-    // Dialog for Driver editing payment & contact details
-    if (showEditDriverContactDialog) {
-        var editEvc by remember { mutableStateOf(driverPaymentNumber) }
-        var editDirect by remember { mutableStateOf(driverDirectPhone) }
-        var editWa by remember { mutableStateOf(driverWhatsappNumber) }
-
-        AlertDialog(
-            onDismissRequest = { showEditDriverContactDialog = false },
-            title = {
-                Text(
-                    text = "Wax ka beddel Xiriirka & Lacagta",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF0F172A)
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = editEvc,
-                        onValueChange = { editEvc = it },
-                        label = { Text("Lambarka EVC / eDahab") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editDirect,
-                        onValueChange = { editDirect = it },
-                        label = { Text("Wacitaanka Caadiga ah (Direct Call)") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = editWa,
-                        onValueChange = { editWa = it },
-                        label = { Text("WhatsApp Toos ah") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        driverPaymentNumber = editEvc.trim()
-                        driverDirectPhone = editDirect.trim()
-                        driverWhatsappNumber = editWa.trim()
-                        showEditDriverContactDialog = false
-                        Toast.makeText(context, "Xogta darawalka waa la cusbooneysiiyay!", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
-                ) {
-                    Text("Keydi", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditDriverContactDialog = false }) {
-                    Text("Ka Noqo")
-                }
-            }
-        )
-    }
+    var orderAccepted by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             Surface(
-                color = Color(0xFF0F172A),
-                shadowElevation = 3.dp,
+                color = BrandCardWhite,
+                shadowElevation = 1.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .statusBarsPadding()
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
-                                onClick = {
-                                    if (currentDeliveryView == "customer" && currentStep != DeliveryStep.SELECT) {
-                                        when (currentStep) {
-                                            DeliveryStep.CHECKOUT -> currentStep = DeliveryStep.SELECT
-                                            DeliveryStep.MERCHANT -> currentStep = DeliveryStep.CHECKOUT
-                                            DeliveryStep.TRACKING -> currentStep = DeliveryStep.MERCHANT
-                                            DeliveryStep.HANDOVER -> currentStep = DeliveryStep.TRACKING
-                                            else -> onBackClick()
-                                        }
-                                    } else {
-                                        onBackClick()
-                                    }
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Dib", tint = Color.White)
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "SHIRI COURIER",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color.White
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = onBackClick,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Dib",
+                                tint = BrandTextDark
                             )
                         }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = when (driverTab) {
+                                "new_delivery" -> "New Delivery"
+                                "on_the_way" -> "On the Way"
+                                "earnings" -> "Earnings"
+                                else -> "Delivery with SHIRI"
+                            },
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                            color = BrandTextDark
+                        )
+                    }
 
-                        // Role Indicator Badge (Role-locked, no in-app switching)
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = Color.White.copy(alpha = 0.12f)
+                    // Online toggle switch
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isDriverOnline) BrandGreenPrimary else Color(0xFF64748B),
+                        modifier = Modifier.clickable {
+                            isDriverOnline = !isDriverOnline
+                            Toast.makeText(
+                                context,
+                                if (isDriverOnline) "Darawalku waa ONLINE" else "Darawalku waa OFFLINE",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(text = if (currentDeliveryView == "customer") "📦" else "🏍️", fontSize = 12.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (currentDeliveryView == "customer") "Adeegga Xirmada" else "Darawalka Shiri",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isDriverOnline) "Online" else "Offline",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
                         }
                     }
                 }
             }
         },
         bottomBar = {
-            if (currentDeliveryView == "driver") {
-                // Courier Driver Bottom Navigation (Image 3): Dashboard, Dalabyada, Navigation (badge 1), Dakhliga
-                Surface(
-                    color = Color.White,
-                    shadowElevation = 8.dp,
-                    border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
-                    modifier = Modifier.fillMaxWidth()
+            Surface(
+                color = BrandCardWhite,
+                shadowElevation = 8.dp,
+                border = BorderStroke(1.dp, Color(0xFFF1F5F9)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        DriverBottomNavItem(
-                            icon = Icons.Default.TwoWheeler,
-                            label = "Dashboard",
-                            isSelected = driverBottomTab == "dashboard",
-                            badge = null,
-                            onClick = { driverBottomTab = "dashboard" }
-                        )
-                        DriverBottomNavItem(
-                            icon = Icons.Default.ShoppingBag,
-                            label = "Dalabyada",
-                            isSelected = driverBottomTab == "orders",
-                            badge = if (availableOrdersCount > 0) availableOrdersCount.toString() else null,
-                            onClick = { driverBottomTab = "orders" }
-                        )
-                        DriverBottomNavItem(
-                            icon = Icons.Default.Navigation,
-                            label = "Navigation",
-                            isSelected = driverBottomTab == "navigation",
-                            badge = "1",
-                            onClick = { driverBottomTab = "navigation" }
-                        )
-                        DriverBottomNavItem(
-                            icon = Icons.Default.AttachMoney,
-                            label = "Dakhliga",
-                            isSelected = driverBottomTab == "earnings",
-                            badge = null,
-                            onClick = { driverBottomTab = "earnings" }
-                        )
-                    }
+                    DriverTabItem(
+                        icon = Icons.Default.DirectionsBike,
+                        label = "New Delivery",
+                        isSelected = driverTab == "new_delivery",
+                        onClick = { driverTab = "new_delivery" }
+                    )
+                    DriverTabItem(
+                        icon = Icons.Default.Navigation,
+                        label = "On the Way",
+                        isSelected = driverTab == "on_the_way",
+                        badge = if (orderAccepted) "1" else null,
+                        onClick = { driverTab = "on_the_way" }
+                    )
+                    DriverTabItem(
+                        icon = Icons.Default.AttachMoney,
+                        label = "Earnings",
+                        isSelected = driverTab == "earnings",
+                        onClick = { driverTab = "earnings" }
+                    )
                 }
             }
         },
-        containerColor = Color(0xFFF8FAFC)
+        containerColor = BrandBgLight
     ) { padding ->
-
-        if (currentDeliveryView == "driver") {
-            // ══════════════════════════════════════════════════════════════════
-            // 1. COURIER / DRIVER APP VIEW (IMAGE 3)
-            // ══════════════════════════════════════════════════════════════════
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // Driver Profile Header Card (Image 3)
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shadowElevation = 1.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0xFF0F172A),
-                                modifier = Modifier.size(44.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        Icons.Default.TwoWheeler,
-                                        contentDescription = null,
-                                        tint = Color(0xFF38BDF8),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "Ahmed Hassan (Canab)",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFF0F172A)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .size(7.dp)
-                                            .clip(CircleShape)
-                                            .background(if (isDriverOnline) Color(0xFF10B981) else Color.Gray)
-                                    )
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "Bajaj • MG-4821-B",
-                                        fontSize = 11.sp,
-                                        color = Color(0xFF64748B)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(text = "★", fontSize = 11.sp, color = Color(0xFFF59E0B))
-                                    Text(
-                                        text = "4.8",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
-                                    )
-                                }
-                            }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            when (driverTab) {
+                "new_delivery" -> {
+                    NewDeliveryScreenView(
+                        orderAccepted = orderAccepted,
+                        onAcceptOrder = {
+                            orderAccepted = true
+                            ArrivalSoundManager.playBajajHornSequence(context)
+                            Toast.makeText(context, "Dalabka waa la aqbalay! U dhaqaaq maqaayadda.", Toast.LENGTH_LONG).show()
+                            driverTab = "on_the_way"
                         }
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Alert Sound Button (Image 3)
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = Color(0xFFFEF2F2),
-                                border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
-                                modifier = Modifier.clickable {
-                                    ArrivalSoundManager.playBajajHornSequence(context)
-                                    Toast.makeText(context, "Siren / Alert Sound dhacay!", Toast.LENGTH_SHORT).show()
-                                }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.VolumeUp,
-                                        contentDescription = null,
-                                        tint = Color(0xFFDC2626),
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        text = "Alert",
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFDC2626)
-                                    )
-                                }
-                            }
-
-                            // Online Toggle Button (Image 3)
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = if (isDriverOnline) Color(0xFF059669) else Color(0xFF64748B),
-                                modifier = Modifier.clickable {
-                                    isDriverOnline = !isDriverOnline
-                                    Toast.makeText(
-                                        context,
-                                        if (isDriverOnline) "Darawalku waa ONLINE" else "Darawalku waa OFFLINE",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.PowerSettingsNew,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(13.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        text = if (isDriverOnline) "Online" else "Offline",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White
-                                    )
-                                }
-                            }
-                        }
-                    }
+                    )
                 }
-
-                // Card 1: DALABYADA SOO DHACAYA (AVAILABLE ORDERS) (Image 3)
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color(0xFFDC2626),
-                    shadowElevation = 3.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFFDC2626), Color(0xFFB91C1C), Color(0xFF991B1B))
-                                )
-                            )
-                            .padding(16.dp)
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFF97316))
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "DALABYADA SOO DHACAYA\n(AVAILABLE ORDERS)",
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White,
-                                        lineHeight = 14.sp
-                                    )
+                "on_the_way" -> {
+                    OnTheWayScreenView(
+                        onContactClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_DIAL).apply {
+                                    data = Uri.parse("tel:+252613456789")
                                 }
-
-                                Surface(
-                                    color = Color.White.copy(alpha = 0.25f),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Text(
-                                        text = "$availableOrdersCount Banaan",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
-                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Wacaya Ahmed Hassan: +252613456789", Toast.LENGTH_SHORT).show()
                             }
-
-                            Text(
-                                text = "Dalabyo cusub oo laga dalbaday maqaayadaha iyo dukaamada Mogadishu ayaa diyaar u ah qaadasho.",
-                                fontSize = 11.5.sp,
-                                color = Color.White.copy(alpha = 0.9f)
-                            )
-
-                            // Action buttons: "Eeg Dalabyada" & "Cusbooneysii"
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        Toast.makeText(
-                                            context,
-                                            if (availableOrdersCount > 0) "Waxaa jira $availableOrdersCount dalab oo furan!" else "Waqtigan ma jiraan dalabyo furan. Fadlan sug inta dalab cusub laga soo dirayo.",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.weight(1.3f).height(38.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.MailOutline,
-                                        contentDescription = null,
-                                        tint = Color(0xFFDC2626),
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Eeg Dalabyada ($availableOrdersCount)",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color(0xFFDC2626),
-                                        maxLines = 1
-                                    )
-                                }
-
-                                OutlinedButton(
-                                    onClick = {
-                                        Toast.makeText(context, "Liiska dalabyada waa la cusbooneysiiyay", Toast.LENGTH_SHORT).show()
-                                    },
-                                    border = BorderStroke(1.dp, Color.White),
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.weight(1f).height(38.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Refresh,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Cusbooneysii",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White,
-                                        maxLines = 1
-                                    )
-                                }
-                            }
+                        },
+                        onDeliveredClick = {
+                            orderAccepted = false
+                            Toast.makeText(context, "Dalabka waa la gaarsiiyay! Dakhliga $3.50 ayaa lagu daray.", Toast.LENGTH_LONG).show()
+                            driverTab = "earnings"
                         }
-                    }
+                    )
                 }
-
-                // Card 2: DAKHLIGA MAANTA (Dark Slate Card - Image 3)
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color(0xFF1E293B),
-                    shadowElevation = 2.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "DAKHLIGA MAANTA",
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF94A3B8),
-                                letterSpacing = 0.5.sp
-                            )
-                            Text(
-                                text = "$",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFF10B981)
-                            )
+                "earnings" -> {
+                    DriverEarningsScreenView(
+                        onViewDetails = {
+                            Toast.makeText(context, "Dakhliga maanta: $85.50 (8 Safar oo la dhammeeyay)", Toast.LENGTH_LONG).show()
                         }
-
-                        Text(
-                            text = "$49.00",
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF34D399)
-                        )
-
-                        Divider(color = Color(0xFF334155), thickness = 0.8.dp)
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Gaarsiin la dhammeystiray:",
-                                    fontSize = 10.5.sp,
-                                    color = Color(0xFF94A3B8)
-                                )
-                                Text(
-                                    text = "13 safar",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color.White
-                                )
-                            }
-
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(
-                                    text = "Cash on Delivery:",
-                                    fontSize = 10.5.sp,
-                                    color = Color(0xFF94A3B8)
-                                )
-                                Text(
-                                    text = "$18.00",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFFFBBF24)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Card 3: Xiriirka & Lacag-Bixinta Darawalka (Image 3)
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                    shadowElevation = 1.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Xiriirka & Lacag-Bixinta Darawalka",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFF0F172A)
-                                )
-                                Text(
-                                    text = "Nambarada lacag-bixinta EVC Plus & WhatsApp tooska ah",
-                                    fontSize = 10.sp,
-                                    color = Color(0xFF64748B)
-                                )
-                            }
-
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFF1F5F9),
-                                modifier = Modifier.clickable { showEditDriverContactDialog = true }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = null,
-                                        tint = Color(0xFF0F172A),
-                                        modifier = Modifier.size(12.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(3.dp))
-                                    Text(
-                                        text = "Wax ka beddel",
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF0F172A)
-                                    )
-                                }
-                            }
-                        }
-
-                        Divider(color = Color(0xFFF1F5F9))
-
-                        // Details rows
-                        ContactDetailRow(
-                            label = "Lambarka Lacag-bixinta (EVC/eDahab):",
-                            value = driverPaymentNumber,
-                            icon = null,
-                            valueColor = Color(0xFF059669)
-                        )
-                        ContactDetailRow(
-                            label = "Wacitaanka Caadiga ah (Direct Call):",
-                            value = driverDirectPhone,
-                            icon = Icons.Default.Call,
-                            valueColor = Color(0xFF0F172A)
-                        )
-                        ContactDetailRow(
-                            label = "WhatsApp Toos ah:",
-                            value = driverWhatsappNumber,
-                            icon = Icons.Default.Chat,
-                            valueColor = Color(0xFF059669)
-                        )
-                    }
-                }
-
-                // Card 4: ACTIVE DELIVERY IN PROGRESS (Image 3)
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.5.dp, Color(0xFFFCA5A5)),
-                    shadowElevation = 2.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            currentDeliveryView = "customer"
-                            currentStep = DeliveryStep.TRACKING
-                            Toast.makeText(context, "Furaya shaashadda gaarsiinta...", Toast.LENGTH_SHORT).show()
-                        }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Surface(
-                                shape = CircleShape,
-                                color = Color(0xFFFEF2F2),
-                                modifier = Modifier.size(44.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        Icons.Default.TwoWheeler,
-                                        contentDescription = null,
-                                        tint = Color(0xFFDC2626),
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "ACTIVE DELIVERY IN PROGRESS",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFFDC2626),
-                                    letterSpacing = 0.5.sp
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = "#SHR-2026-636919 • SHR-MG-73120",
-                                    fontSize = 12.5.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color(0xFF0F172A)
-                                )
-                                Text(
-                                    text = "(Waberi)",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF64748B)
-                                )
-                            }
-                        }
-
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = Color(0xFFDC2626),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-            }
-        } else {
-            // ══════════════════════════════════════════════════════════════════
-            // 2. CUSTOMER 5-STEP DELIVERY FLOW
-            // ══════════════════════════════════════════════════════════════════
-            AnimatedContent(
-                targetState = currentStep,
-                transitionSpec = {
-                    slideInHorizontally { it } + fadeIn() togetherWith
-                    slideOutHorizontally { -it } + fadeOut()
-                },
-                label = "customer_step"
-            ) { step ->
-                when (step) {
-                    DeliveryStep.SELECT -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(padding)
-                                .verticalScroll(rememberScrollState())
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            // Step 1: Form
-                            Text("1/5 — Xulashada Nooca Gaarsiinta", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                DeliveryServiceCard("Send Package", "Documents", "📦", selectedServiceType == "package", { selectedServiceType = "package" }, Modifier.weight(1f))
-                                DeliveryServiceCard("Send Shopping", "Market Items", "🛍️", selectedServiceType == "shopping", { selectedServiceType = "shopping" }, Modifier.weight(1f))
-                                DeliveryServiceCard("Send Food", "Restaurant", "🍔", selectedServiceType == "food", { selectedServiceType = "food" }, Modifier.weight(1f))
-                            }
-
-                            Surface(shape = RoundedCornerShape(16.dp), color = Color.White, border = BorderStroke(1.dp, Color(0xFFE2E8F0))) {
-                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    OutlinedTextField(
-                                        value = pickupLocation,
-                                        onValueChange = { pickupLocation = it },
-                                        label = { Text("Goobta laga qaadayo (Pickup)") },
-                                        placeholder = { Text("KM4, Hodan, Muqdisho") },
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    OutlinedTextField(
-                                        value = dropoffLocation,
-                                        onValueChange = { dropoffLocation = it },
-                                        label = { Text("Goobta la geynayo (Dropoff)") },
-                                        placeholder = { Text("Taleex, Waberi, Bakaaro...") },
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    OutlinedTextField(
-                                        value = recipientPhone,
-                                        onValueChange = { recipientPhone = it },
-                                        label = { Text("Telefoonka Qaataha") },
-                                        placeholder = { Text("61XXXXXXX") },
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                                        singleLine = true,
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                }
-                            }
-
-                            Button(
-                                onClick = {
-                                    if (dropoffLocation.isBlank()) {
-                                        Toast.makeText(context, "Geli goobta la geynayo!", Toast.LENGTH_SHORT).show()
-                                        return@Button
-                                    }
-                                    if (recipientPhone.isBlank()) {
-                                        Toast.makeText(context, "Geli telefoonka!", Toast.LENGTH_SHORT).show()
-                                        return@Button
-                                    }
-                                    currentStep = DeliveryStep.CHECKOUT
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.fillMaxWidth().height(50.dp)
-                            ) {
-                                Text("Gudub Checkout (2/5) →", fontWeight = FontWeight.Black, color = Color.White)
-                            }
-                        }
-                    }
-
-                    DeliveryStep.CHECKOUT -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(padding)
-                                .verticalScroll(rememberScrollState())
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Text("2/5 — Checkout & Lacag-bixin", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
-                            OutlinedTextField(
-                                value = shiriAddress,
-                                onValueChange = { shiriAddress = it },
-                                label = { Text("Shiri Address (tusaale: SHR-MG-48291)") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            OutlinedTextField(
-                                value = voiceLandmark,
-                                onValueChange = { voiceLandmark = it },
-                                label = { Text("Voice Landmark / Tilmaanta Goobta") },
-                                placeholder = { Text("Agta masaajidka, dabaq cagaar ah...") },
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Button(
-                                onClick = { currentStep = DeliveryStep.MERCHANT },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
-                                shape = RoundedCornerShape(14.dp),
-                                modifier = Modifier.fillMaxWidth().height(50.dp)
-                            ) {
-                                Text("Xaqiiji & Dalbo Hadda (3/5) →", fontWeight = FontWeight.Black, color = Color.White)
-                            }
-                        }
-                    }
-
-                    DeliveryStep.MERCHANT -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(padding)
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("3/5 — Aqbalida Meheradda", fontSize = 18.sp, fontWeight = FontWeight.Black)
-                            Spacer(Modifier.height(10.dp))
-                            Text("Dalab #$orderTrackingId ayaa u gartay meheradda.")
-                            Spacer(Modifier.height(20.dp))
-                            Button(
-                                onClick = { currentStep = DeliveryStep.TRACKING },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7))
-                            ) {
-                                Text("Oggolow Lacagta & Dir Darawalka (4/5) →", fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-
-                    DeliveryStep.TRACKING -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(padding)
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Text("4/5 — Live Tracking & Darawal", fontSize = 18.sp, fontWeight = FontWeight.Black)
-                            Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFFE0F2FE), modifier = Modifier.fillMaxWidth().height(160.dp)) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text("🏍️ Khariidadda Live-ka ah — Darawalku wuu soo socdaa", fontWeight = FontWeight.Bold, color = Color(0xFF0369A1))
-                                }
-                            }
-                            Button(
-                                onClick = { currentStep = DeliveryStep.HANDOVER },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
-                                modifier = Modifier.fillMaxWidth().height(50.dp)
-                            ) {
-                                Text("Fur Handover PIN (5/5) →", fontWeight = FontWeight.Black, color = Color.White)
-                            }
-                        }
-                    }
-
-                    DeliveryStep.HANDOVER -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(padding)
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text("5/5 — Handover PIN", fontSize = 20.sp, fontWeight = FontWeight.Black)
-                            Spacer(Modifier.height(10.dp))
-                            Text("Koodhkaaga sirta ah ee darawalka:", fontSize = 13.sp)
-                            Spacer(Modifier.height(10.dp))
-                            Surface(color = Color(0xFF7C3AED), shape = RoundedCornerShape(16.dp)) {
-                                Text(
-                                    handoverPin,
-                                    fontSize = 44.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color.White,
-                                    letterSpacing = 8.sp,
-                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
-                                )
-                            }
-                            Spacer(Modifier.height(20.dp))
-                            Button(
-                                onClick = {
-                                    Toast.makeText(context, "✅ Si nabad ah ayaa laguugu keenay!", Toast.LENGTH_LONG).show()
-                                    currentStep = DeliveryStep.SELECT
-                                    currentDeliveryView = "driver"
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
-                            ) {
-                                Text("Dhammee Dalabka (Delivered ✅)", fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                        }
-                    }
+                    )
                 }
             }
         }
     }
 }
 
-// ─── Contact Detail Row Component ────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREEN 1: NEW DELIVERY (Matching Master Mockup)
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun ContactDetailRow(
-    label: String,
-    value: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector?,
-    valueColor: Color
+private fun NewDeliveryScreenView(
+    orderAccepted: Boolean,
+    onAcceptOrder: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            color = Color(0xFF64748B),
-            modifier = Modifier.weight(1f)
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (icon != null) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = valueColor,
-                    modifier = Modifier.size(13.dp)
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Map Canvas simulation (Upper Half)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color(0xFFE2E8F0))
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+
+                // Road grid
+                drawRect(color = Color(0xFFEDF2F7))
+
+                // Roads (grey lines)
+                val roadColor = Color(0xFFCBD5E1)
+                drawLine(roadColor, Offset(0f, h * 0.3f), Offset(w, h * 0.3f), strokeWidth = 14f)
+                drawLine(roadColor, Offset(0f, h * 0.7f), Offset(w, h * 0.7f), strokeWidth = 14f)
+                drawLine(roadColor, Offset(w * 0.25f, 0f), Offset(w * 0.25f, h), strokeWidth = 14f)
+                drawLine(roadColor, Offset(w * 0.75f, 0f), Offset(w * 0.75f, h), strokeWidth = 14f)
+
+                // Park / Greenery patches
+                drawRoundRect(
+                    color = Color(0xFFDCFCE7),
+                    topLeft = Offset(w * 0.05f, h * 0.05f),
+                    size = androidx.compose.ui.geometry.Size(w * 0.16f, h * 0.2f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16f, 16f)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                drawRoundRect(
+                    color = Color(0xFFDCFCE7),
+                    topLeft = Offset(w * 0.65f, h * 0.4f),
+                    size = androidx.compose.ui.geometry.Size(w * 0.28f, h * 0.22f),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16f, 16f)
+                )
+
+                // Route Path (Blue line)
+                val routePath = Path().apply {
+                    moveTo(w * 0.25f, h * 0.65f) // Pizza Palace
+                    cubicTo(
+                        w * 0.4f, h * 0.75f,
+                        w * 0.6f, h * 0.45f,
+                        w * 0.75f, h * 0.35f  // Via Somalia
+                    )
+                }
+                drawPath(
+                    path = routePath,
+                    color = Color(0xFF3B82F6),
+                    style = Stroke(width = 10f, cap = StrokeCap.Round)
+                )
+
+                // Green Start Pin: Pizza Palace
+                drawCircle(color = BrandGreenPrimary.copy(alpha = 0.25f), radius = 22f, center = Offset(w * 0.25f, h * 0.65f))
+                drawCircle(color = BrandGreenPrimary, radius = 12f, center = Offset(w * 0.25f, h * 0.65f))
+                drawCircle(color = Color.White, radius = 5f, center = Offset(w * 0.25f, h * 0.65f))
+
+                // Red End Pin: Via Somalia
+                drawCircle(color = Color(0xFFEF4444).copy(alpha = 0.25f), radius = 22f, center = Offset(w * 0.75f, h * 0.35f))
+                drawCircle(color = Color(0xFFEF4444), radius = 12f, center = Offset(w * 0.75f, h * 0.35f))
+                drawCircle(color = Color.White, radius = 5f, center = Offset(w * 0.75f, h * 0.35f))
             }
+        }
+
+        // Bottom Details Card
+        Surface(
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            color = BrandCardWhite,
+            shadowElevation = 12.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Route Locations
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // Pick up
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = BrandGreenLight,
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .clip(CircleShape)
+                                        .background(BrandGreenPrimary)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Pick up from",
+                                fontSize = 11.sp,
+                                color = Color(0xFF64748B),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Pizza Palace",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandTextDark
+                            )
+                        }
+                    }
+
+                    // Deliver to
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFFEF2F2),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEF4444),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Deliver to",
+                                fontSize = 11.sp,
+                                color = Color(0xFF64748B),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Via Somalia",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandTextDark
+                            )
+                        }
+                    }
+                }
+
+                // Accept Order Button (Mockup exact)
+                Button(
+                    onClick = onAcceptOrder,
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                ) {
+                    Text(
+                        text = if (orderAccepted) "Order Accepted ✓" else "Accept Order",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREEN 2: ON THE WAY (Matching Master Mockup)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun OnTheWayScreenView(
+    onContactClick: () -> Unit,
+    onDeliveredClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Map with Scooter & "Arriving in 8 min" floating pill
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .background(Color(0xFFE2E8F0))
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val w = size.width
+                val h = size.height
+
+                drawRect(color = Color(0xFFEDF2F7))
+
+                val roadColor = Color(0xFFCBD5E1)
+                drawLine(roadColor, Offset(0f, h * 0.4f), Offset(w, h * 0.4f), strokeWidth = 14f)
+                drawLine(roadColor, Offset(0f, h * 0.7f), Offset(w, h * 0.7f), strokeWidth = 14f)
+                drawLine(roadColor, Offset(w * 0.35f, 0f), Offset(w * 0.35f, h), strokeWidth = 14f)
+                drawLine(roadColor, Offset(w * 0.8f, 0f), Offset(w * 0.8f, h), strokeWidth = 14f)
+
+                // Route
+                val routePath = Path().apply {
+                    moveTo(w * 0.2f, h * 0.75f)
+                    cubicTo(
+                        w * 0.4f, h * 0.8f,
+                        w * 0.6f, h * 0.35f,
+                        w * 0.8f, h * 0.25f
+                    )
+                }
+                drawPath(
+                    path = routePath,
+                    color = Color(0xFF3B82F6),
+                    style = Stroke(width = 10f, cap = StrokeCap.Round)
+                )
+
+                // Start
+                drawCircle(color = BrandGreenPrimary, radius = 10f, center = Offset(w * 0.2f, h * 0.75f))
+            }
+
+            // Floating Scooter Badge on Route
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x = 40.dp, y = (-20.dp))
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = BrandGreenPrimary,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.size(46.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.TwoWheeler,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+
+            // Floating Pill: "Arriving in 8 min"
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = BrandCardWhite,
+                shadowElevation = 6.dp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 20.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Arriving in",
+                        fontSize = 11.sp,
+                        color = Color(0xFF64748B),
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "8 min",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = BrandTextDark
+                    )
+                }
+            }
+        }
+
+        // Bottom Customer Card (Ahmed Hassan ⭐ 4.9)
+        Surface(
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            color = BrandCardWhite,
+            shadowElevation = 12.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Customer row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFE2E8F0),
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Ahmed Hassan",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = BrandTextDark
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "★",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFF59E0B)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "4.9",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF64748B)
+                                )
+                            }
+                        }
+                    }
+
+                    // Phone & Chat icons
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFF1F5F9),
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { onContactClick() }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Phone,
+                                    contentDescription = "Call",
+                                    tint = BrandGreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFFF1F5F9),
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clickable { onContactClick() }
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Chat,
+                                    contentDescription = "Message",
+                                    tint = BrandGreenPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Big Green Contact Button
+                Button(
+                    onClick = onContactClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                ) {
+                    Text(
+                        text = "Contact",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                // Mark Delivered Text Button
+                TextButton(
+                    onClick = onDeliveredClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Dhammee Gaarsiinta (Delivered) ✓",
+                        color = Color(0xFF64748B),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREEN 3: EARNINGS (Matching Master Mockup)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun DriverEarningsScreenView(
+    onViewDetails: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Earnings Today Card ($85.50 Today)
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = BrandCardWhite,
+            shadowElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Text(
+                    text = "$85.50",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Black,
+                    color = BrandTextDark
+                )
+                Text(
+                    text = "Today",
+                    fontSize = 13.sp,
+                    color = Color(0xFF64748B),
+                    fontWeight = FontWeight.Medium
+                )
+
+                Divider(color = Color(0xFFF1F5F9))
+
+                // Stat boxes: 8 Deliveries | 5.2h Online
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "8",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            color = BrandTextDark
+                        )
+                        Text(
+                            text = "Deliveries",
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(36.dp)
+                            .background(Color(0xFFE2E8F0))
+                    )
+
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "5.2h",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Black,
+                            color = BrandTextDark
+                        )
+                        Text(
+                            text = "Online",
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Weekly Earnings Bar Chart (Mon - Sun)
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = BrandCardWhite,
+            shadowElevation = 2.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp)
+            ) {
+                Text(
+                    text = "Weekly Activity",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF64748B)
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                ShiriWeeklyEarningsBarChart(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                )
+            }
+        }
+
+        // Big Green View Details Button
+        Button(
+            onClick = onViewDetails,
+            colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+        ) {
             Text(
-                text = value,
-                fontSize = 11.5.sp,
+                text = "View Details",
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = valueColor
+                color = Color.White
             )
         }
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Driver Bottom Tab Item Component
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun DriverBottomNavItem(
+private fun DriverTabItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     isSelected: Boolean,
-    badge: String?,
+    badge: String? = null,
     onClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 2.dp),
+            .padding(horizontal = 14.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box {
             Icon(
-                icon,
+                imageVector = icon,
                 contentDescription = label,
-                tint = if (isSelected) Color(0xFFDC2626) else Color(0xFF94A3B8),
-                modifier = Modifier.size(22.dp)
+                tint = if (isSelected) BrandGreenPrimary else Color(0xFF94A3B8),
+                modifier = Modifier.size(24.dp)
             )
             if (badge != null) {
                 Surface(
-                    color = Color(0xFFDC2626),
+                    color = BrandGreenPrimary,
                     shape = CircleShape,
                     modifier = Modifier
                         .size(14.dp)
@@ -1070,54 +807,12 @@ private fun DriverBottomNavItem(
                 }
             }
         }
-        Spacer(modifier = Modifier.height(2.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = label,
-            fontSize = 10.sp,
-            fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-            color = if (isSelected) Color(0xFFDC2626) else Color(0xFF94A3B8)
+            fontSize = 11.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) BrandGreenPrimary else Color(0xFF94A3B8)
         )
-    }
-}
-
-@Composable
-private fun DeliveryServiceCard(
-    title: String,
-    subtitle: String,
-    emoji: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) Color(0xFF0284C7) else Color(0xFFE2E8F0)),
-        color = if (isSelected) Color(0xFFEFF6FF) else Color.White,
-        modifier = modifier.clickable { onClick() }
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(emoji, fontSize = 24.sp)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Black,
-                color = if (isSelected) Color(0xFF0284C7) else Color(0xFF0F172A),
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                subtitle,
-                fontSize = 9.sp,
-                color = Color(0xFF64748B),
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
     }
 }

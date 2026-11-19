@@ -198,13 +198,154 @@ object ShiriMarketRepository {
                 id = "hardware",
                 nameSo = "Qalabka Guryaha & Dhismaha",
                 nameEn = "Building & Hardware",
-                emoji = "🏠",
+                emoji = "🏢",
                 bannerImageUrl = "https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=500&auto=format&fit=crop&q=80",
                 subcategories = listOf(
-                    ShiriBusinessSubcategory("all_hardware", "Dhammaan Dhismaha", "All Hardware", "🏠"),
+                    ShiriBusinessSubcategory("all_hardware", "Dhammaan Dhismaha", "All Hardware", "🏢"),
                     ShiriBusinessSubcategory("building", "Qalabka Dhismaha", "Building Materials", "🧱"),
                     ShiriBusinessSubcategory("tools", "Qalabka Farsamada", "Tools & Hardware", "🔨"),
                     ShiriBusinessSubcategory("paint", "Rinji & Qurxinta Guriga", "Paint & Decoration", "🎨")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "beauty",
+                nameSo = "Qurxinta & Cosmetics",
+                nameEn = "Beauty & Cosmetics",
+                emoji = "💄",
+                bannerImageUrl = "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_beauty", "Dhammaan Qurxinta", "All Beauty", "💄"),
+                    ShiriBusinessSubcategory("makeup", "Isqurxin & Make-up", "Cosmetics & Makeup", "💋"),
+                    ShiriBusinessSubcategory("haircare", "Daryeelka Timaha", "Hair Care", "💇"),
+                    ShiriBusinessSubcategory("skincare_adv", "Serum & Creams", "Skin Serums", "🧴")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "bakery",
+                nameSo = "Rooti & Macmacaan",
+                nameEn = "Bakery & Desserts",
+                emoji = "🥐",
+                bannerImageUrl = "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_bakery", "Dhammaan Macmacaanka", "All Bakery", "🥐"),
+                    ShiriBusinessSubcategory("cakes", "Keeg & Birthday Cakes", "Cakes & Pastries", "🎂"),
+                    ShiriBusinessSubcategory("bread", "Rooti Cusub & Roti", "Fresh Bread", "🍞"),
+                    ShiriBusinessSubcategory("sweets", "Xalwo & Macmacaan Somali", "Somali Sweets", "🍬")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "home_household",
+                nameSo = "Alaabta Guriga",
+                nameEn = "Home & Household",
+                emoji = "🏠",
+                bannerImageUrl = "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_home", "Dhammaan Alaabta Guriga", "All Household", "🏠"),
+                    ShiriBusinessSubcategory("kitchen", "Qalabka Jikada", "Kitchenware", "🍳"),
+                    ShiriBusinessSubcategory("bedding", "Gogol & Firaash", "Bedding & Linen", "🛏️"),
+                    ShiriBusinessSubcategory("cleaning_items", "Qalabka Nadaafadda", "Cleaning Supplies", "🧹")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "baby_products",
+                nameSo = "Alaabta Carruurta",
+                nameEn = "Baby Products",
+                emoji = "🍼",
+                bannerImageUrl = "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_baby", "Dhammaan Carruurta", "All Baby", "🍼"),
+                    ShiriBusinessSubcategory("diapers", "Xafaayado & Wipes", "Diapers & Wipes", "🧷"),
+                    ShiriBusinessSubcategory("baby_food", "Cuntada Dhallaanka", "Baby Nutrition", "🥣"),
+                    ShiriBusinessSubcategory("baby_clothes", "Dharka Carruurta Yaryar", "Infant Clothes", "👶")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "furniture",
+                nameSo = "Alaabta Qolka & Fadhiga",
+                nameEn = "Furniture & Living",
+                emoji = "🛋️",
+                bannerImageUrl = "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_furniture", "Dhammaan Fadhiga", "All Furniture", "🛋️"),
+                    ShiriBusinessSubcategory("sofas", "Fadhiyo & Kuraas", "Living Room Sofas", "🛋️"),
+                    ShiriBusinessSubcategory("beds", "Sariiro & Wardrobes", "Bedroom & Beds", "🛏️"),
+                    ShiriBusinessSubcategory("tables", "Miisas & Khaanado", "Tables & Desks", "🪑")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "flowers_gifts",
+                nameSo = "Ubax & Hadiyado",
+                nameEn = "Flowers & Gifts",
+                emoji = "💐",
+                bannerImageUrl = "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_flowers", "Dhammaan Ubaxa", "All Flowers & Gifts", "💐"),
+                    ShiriBusinessSubcategory("fresh_bouquets", "Ubax Cusub", "Fresh Bouquets", "🌹"),
+                    ShiriBusinessSubcategory("gift_boxes", "Sanduuqyo Hadiyadeed", "Gift Hampers", "🎁"),
+                    ShiriBusinessSubcategory("chocolates", "Shukulaato & Macmacaan", "Chocolates", "🍫")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "water_beverages",
+                nameSo = "Biyo & Cabitaanno",
+                nameEn = "Water & Beverages",
+                emoji = "🥤",
+                bannerImageUrl = "https://images.unsplash.com/photo-1559839914-ba2ac5a899c8?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_water", "Dhammaan Cabitaanka", "All Drinks", "🥤"),
+                    ShiriBusinessSubcategory("mineral_water", "Biyaha Caagaga (Cartons)", "Mineral Water", "💧"),
+                    ShiriBusinessSubcategory("soft_drinks", "Cabitaannada Qabow", "Soft Drinks & Sodas", "🧃"),
+                    ShiriBusinessSubcategory("energy_drinks", "Cabitaanka Awoodda", "Energy Drinks", "⚡")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "sports_fitness",
+                nameSo = "Jimicsiga & Ciyaaraha",
+                nameEn = "Sports & Fitness",
+                emoji = "⚽",
+                bannerImageUrl = "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_sports", "Dhammaan Ciyaaraha", "All Sports", "⚽"),
+                    ShiriBusinessSubcategory("football", "Kubadda Cagta & Funaanado", "Football Gear", "⚽"),
+                    ShiriBusinessSubcategory("gym_wear", "Dharka Jimicsiga", "Gym & Activewear", "🏃"),
+                    ShiriBusinessSubcategory("supplements", "Barootiin & Fiitamiinno", "Supplements", "💪")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "auto_parts",
+                nameSo = "Qalabka Baabuurta & Bajaajta",
+                nameEn = "Auto Parts & Garage",
+                emoji = "🚗",
+                bannerImageUrl = "https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_auto", "Dhammaan Qalabka Gaadiidka", "All Auto Parts", "🚗"),
+                    ShiriBusinessSubcategory("bajaaj_parts", "Qalabka Bajaajta & TVS", "Bajaaj & TVS Parts", "🛺"),
+                    ShiriBusinessSubcategory("oil_filters", "Saliid & Shaandheeye", "Engine Oil & Filters", "🛢️"),
+                    ShiriBusinessSubcategory("tires", "Taayiro & Tuubbo", "Tires & Tubes", "🛞")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "pet_supplies",
+                nameSo = "Xanaanada Xoolaha & Xayawaanka",
+                nameEn = "Pet Supplies",
+                emoji = "🐾",
+                bannerImageUrl = "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_pets", "Dhammaan Xayawaanka", "All Pet Care", "🐾"),
+                    ShiriBusinessSubcategory("cat_dog_food", "Cuntada Bisadaha & Eeyaha", "Pet Food", "🐱"),
+                    ShiriBusinessSubcategory("vet_care", "Daawooyinka Xoolaha", "Veterinary Medicine", "🩺")
+                )
+            ),
+            ShiriBusinessCategory(
+                id = "other_services",
+                nameSo = "Adeegyo Kale & Ganacsiyada",
+                nameEn = "Other Businesses",
+                emoji = "💼",
+                bannerImageUrl = "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&auto=format&fit=crop&q=80",
+                subcategories = listOf(
+                    ShiriBusinessSubcategory("all_other", "Dhammaan Adeegyada", "All Services", "💼"),
+                    ShiriBusinessSubcategory("laundry", "Dhaqidda Dharka (Laundry)", "Laundry Services", "👔"),
+                    ShiriBusinessSubcategory("car_wash", "Mayrida Baabuurta", "Car Wash", "🚿")
                 )
             )
         )
@@ -212,7 +353,301 @@ object ShiriMarketRepository {
 
     fun getDefaultStores(): List<ShiriMerchantStore> {
         return listOf(
-            // ─── 1. AL-FURQAN RESTAURANT (FEATURED SOMALI & FAST FOOD) ───
+            // ─── 1. PIZZA PALACE (FEATURED IN MASTER MOCKUP) ───
+            ShiriMerchantStore(
+                name = "Pizza Palace",
+                nameEn = "Pizza Palace",
+                shiriCode = "SHR-MG-1024",
+                district = "Hodan, Muqdisho",
+                categoryId = "cunto",
+                subcategoryId = "pizza",
+                extraCategories = listOf("cunto", "pizza", "fast_food"),
+                rating = 4.7,
+                deliveryTimeMin = 25,
+                deliveryFee = 1.00,
+                imageUrl = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=80",
+                emoji = "🍕",
+                phone = "0615551024",
+                products = listOf(
+                    ShiriProductItem(
+                        name = "Margherita Pizza",
+                        nameEn = "Margherita Pizza",
+                        price = 12.00,
+                        category = "Pizza",
+                        imageUrl = "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍕",
+                        description = "Classic Italian cheese pizza with fresh tomato sauce and mozzarella"
+                    ),
+                    ShiriProductItem(
+                        name = "Pepperoni Pizza",
+                        nameEn = "Pepperoni Pizza",
+                        price = 14.00,
+                        category = "Pizza",
+                        imageUrl = "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍕",
+                        description = "Spicy beef pepperoni, premium melted mozzarella, and fresh herbs"
+                    ),
+                    ShiriProductItem(
+                        name = "Chicken Pizza",
+                        nameEn = "Chicken Pizza",
+                        price = 15.00,
+                        category = "Pizza",
+                        imageUrl = "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍕",
+                        description = "Grilled BBQ chicken, mushrooms, sweet bell peppers and cheese"
+                    ),
+                    ShiriProductItem(
+                        name = "Coca Cola",
+                        nameEn = "Coca Cola",
+                        price = 2.00,
+                        category = "Drinks",
+                        imageUrl = "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🥤",
+                        description = "Chilled ice-cold Coca Cola can 330ml"
+                    ),
+                    ShiriProductItem(
+                        name = "Garlic Cheese Bread",
+                        nameEn = "Garlic Cheese Bread",
+                        price = 4.50,
+                        category = "Sides",
+                        imageUrl = "https://images.unsplash.com/photo-1619535860434-ba1d8fa12536?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🥖",
+                        description = "Crispy golden bread toasted with garlic butter and melted cheddar"
+                    )
+                )
+            ),
+
+            // ─── 2. FRESH MARKET (GROCERY - MASTER MOCKUP) ───
+            ShiriMerchantStore(
+                name = "Fresh Market",
+                nameEn = "Fresh Market",
+                shiriCode = "SHR-MG-2045",
+                district = "Waberi, Muqdisho",
+                categoryId = "supermarket",
+                subcategoryId = "groceries",
+                extraCategories = listOf("supermarket", "groceries", "fresh"),
+                rating = 4.6,
+                deliveryTimeMin = 20,
+                deliveryFee = 0.50,
+                imageUrl = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=80",
+                emoji = "🛒",
+                phone = "0615552045",
+                products = listOf(
+                    ShiriProductItem(
+                        name = "Fresh Somali Bananas (1 Dozen)",
+                        nameEn = "Fresh Somali Bananas (1 Dozen)",
+                        price = 1.50,
+                        category = "Fruits",
+                        imageUrl = "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍌",
+                        description = "Moos macaan oo Shabelle laga keenay oo aad u cusub"
+                    ),
+                    ShiriProductItem(
+                        name = "Basmati Rice (5kg Bag)",
+                        nameEn = "Basmati Rice (5kg Bag)",
+                        price = 7.00,
+                        category = "Pantry",
+                        imageUrl = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍚",
+                        description = "Bariis Basmati ah oo tayo sare leh oo cad"
+                    ),
+                    ShiriProductItem(
+                        name = "Pure Sunflower Cooking Oil (3L)",
+                        nameEn = "Pure Sunflower Cooking Oil (3L)",
+                        price = 5.50,
+                        category = "Pantry",
+                        imageUrl = "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🛢️",
+                        description = "Saliid daafi ah oo caafimaad leh oo cunto karinta ah"
+                    ),
+                    ShiriProductItem(
+                        name = "Fresh Farm Milk (2L)",
+                        nameEn = "Fresh Farm Milk (2L)",
+                        price = 2.00,
+                        category = "Dairy",
+                        imageUrl = "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🥛",
+                        description = "Caano lo'aad oo cusub oo la kariyay"
+                    )
+                )
+            ),
+
+            // ─── 3. HEALTH PLUS (PHARMACY - MASTER MOCKUP) ───
+            ShiriMerchantStore(
+                name = "Health Plus",
+                nameEn = "Health Plus",
+                shiriCode = "SHR-MG-4190",
+                district = "Hamar Weyne, Muqdisho",
+                categoryId = "daawo",
+                subcategoryId = "medicine",
+                extraCategories = listOf("daawo", "pharmacy", "health"),
+                rating = 4.8,
+                deliveryTimeMin = 18,
+                deliveryFee = 0.50,
+                imageUrl = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop&q=80",
+                emoji = "💊",
+                phone = "0615554190",
+                products = listOf(
+                    ShiriProductItem(
+                        name = "Paracetamol 500mg (Pack of 20)",
+                        nameEn = "Paracetamol 500mg (Pack of 20)",
+                        price = 1.00,
+                        category = "Pain Relief",
+                        imageUrl = "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&auto=format&fit=crop&q=80",
+                        emoji = "💊",
+                        description = "Xanuun baabi'iye iyo qandho jabin degdeg ah"
+                    ),
+                    ShiriProductItem(
+                        name = "Vitamin C 1000mg Effervescent",
+                        nameEn = "Vitamin C 1000mg Effervescent",
+                        price = 3.50,
+                        category = "Vitamins",
+                        imageUrl = "https://images.unsplash.com/photo-1550572017-edd951aa8f72?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍊",
+                        description = "Fiitamiin difaaca jirka kor u qaadaya oo biyo lagu dhex milo"
+                    ),
+                    ShiriProductItem(
+                        name = "Digital Thermometer",
+                        nameEn = "Digital Thermometer",
+                        price = 4.00,
+                        category = "Devices",
+                        imageUrl = "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🌡️",
+                        description = "Heerkulbeeg degdeg ah oo sax ah oo qandhada cabbira"
+                    )
+                )
+            ),
+
+            // ─── 4. BURGER HOUSE (MASTER MOCKUP) ───
+            ShiriMerchantStore(
+                name = "Burger House",
+                nameEn = "Burger House",
+                shiriCode = "SHR-MG-3081",
+                district = "Karaan, Muqdisho",
+                categoryId = "cunto",
+                subcategoryId = "fast_food",
+                extraCategories = listOf("cunto", "burger", "fast_food"),
+                rating = 4.6,
+                deliveryTimeMin = 30,
+                deliveryFee = 1.00,
+                imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=80",
+                emoji = "🍔",
+                phone = "0615553081",
+                products = listOf(
+                    ShiriProductItem(
+                        name = "Double Beef Cheeseburger",
+                        nameEn = "Double Beef Cheeseburger",
+                        price = 7.50,
+                        category = "Burgers",
+                        imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍔",
+                        description = "Hilib lo'aad oo laba lakab ah, cheddar cheese, pickles iyo special sauce"
+                    ),
+                    ShiriProductItem(
+                        name = "Crispy Fried Chicken Burger",
+                        nameEn = "Crispy Fried Chicken Burger",
+                        price = 6.00,
+                        category = "Burgers",
+                        imageUrl = "https://images.unsplash.com/photo-1625813506062-0aeb1d7a094b?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍗",
+                        description = "Digaag jilicsan oo la shiilay oo leh coleslaw iyo chips"
+                    ),
+                    ShiriProductItem(
+                        name = "Loaded Cheese Fries",
+                        nameEn = "Loaded Cheese Fries",
+                        price = 3.50,
+                        category = "Sides",
+                        imageUrl = "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍟",
+                        description = "Baradho shiilan oo lagu shubay jiis dhalaalay iyo jalapeno"
+                    )
+                )
+            ),
+
+            // ─── 5. SOMALI FOOD (TRADITIONAL - MASTER MOCKUP) ───
+            ShiriMerchantStore(
+                name = "Somali Food",
+                nameEn = "Somali Food",
+                shiriCode = "SHR-MG-5231",
+                district = "Howlwadaag, Muqdisho",
+                categoryId = "cunto",
+                subcategoryId = "traditional",
+                extraCategories = listOf("cunto", "traditional"),
+                rating = 4.8,
+                deliveryTimeMin = 20,
+                deliveryFee = 0.80,
+                imageUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=80",
+                emoji = "🍲",
+                phone = "0615555231",
+                products = listOf(
+                    ShiriProductItem(
+                        name = "Bariis & Hilib Geel",
+                        nameEn = "Bariis & Hilib Geel",
+                        price = 7.00,
+                        category = "Traditional",
+                        imageUrl = "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🥩",
+                        description = "Bariis udgoon iyo hilib geel la kariyay oo maraq leh"
+                    ),
+                    ShiriProductItem(
+                        name = "Baasto Suugo & Digaag",
+                        nameEn = "Baasto Suugo & Digaag",
+                        price = 6.00,
+                        category = "Pasta",
+                        imageUrl = "https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍝",
+                        description = "Baasto Somali suugo xawaash leh iyo digaag duban"
+                    ),
+                    ShiriProductItem(
+                        name = "Canjeero & Beer",
+                        nameEn = "Canjeero & Beer",
+                        price = 3.50,
+                        category = "Breakfast",
+                        imageUrl = "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🥞",
+                        description = "Canjeero cusub oo subag leh iyo beer ari oo la shiilay"
+                    )
+                )
+            ),
+
+            // ─── 6. KFC SOMALIA (FAST FOOD - MASTER MOCKUP) ───
+            ShiriMerchantStore(
+                name = "KFC Somalia",
+                nameEn = "KFC Somalia",
+                shiriCode = "SHR-MG-6340",
+                district = "Hodan, Muqdisho",
+                categoryId = "cunto",
+                subcategoryId = "fast_food",
+                extraCategories = listOf("cunto", "fast_food", "chicken"),
+                rating = 4.5,
+                deliveryTimeMin = 28,
+                deliveryFee = 1.00,
+                imageUrl = "https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?w=500&auto=format&fit=crop&q=80",
+                emoji = "🍗",
+                phone = "0615556340",
+                products = listOf(
+                    ShiriProductItem(
+                        name = "Crispy Chicken Bucket (6 Pcs)",
+                        nameEn = "Crispy Chicken Bucket (6 Pcs)",
+                        price = 11.00,
+                        category = "Buckets",
+                        imageUrl = "https://images.unsplash.com/photo-1513639776629-7b61b0ac49cb?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍗",
+                        description = "6 xabbo oo digaag shiilan oo jajaban oo leh chips iyo suugo"
+                    ),
+                    ShiriProductItem(
+                        name = "Zinger Burger Meal",
+                        nameEn = "Zinger Burger Meal",
+                        price = 6.50,
+                        category = "Burgers",
+                        imageUrl = "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80",
+                        emoji = "🍔",
+                        description = "Zinger burger basbaas leh, chips iyo cabitaan"
+                    )
+                )
+            ),
+
+            // ─── 7. AL-FURQAN RESTAURANT (FEATURED SOMALI & FAST FOOD) ───
             ShiriMerchantStore(
                 name = "Al-Furqan Restaurant",
                 nameEn = "Al-Furqan Restaurant",

@@ -99,8 +99,8 @@ fun SplashScreen(
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // SHIRI RED SPLASH SCREEN — Logo casaan ah oo cad ku ah (Screen 7 Mockup)
-    // Gadaalka: Gradiyaan cas ah oo SHIRI-ka u gaar ah
+    // SHIRI GREEN SPLASH SCREEN — Modern Green DoorDash-style Theme
+    // Gadaalka: Gradiyaan cagaar ah oo SHIRI-ka u gaar ah
     // ══════════════════════════════════════════════════════════════════
     Box(
         modifier = Modifier
@@ -108,9 +108,9 @@ fun SplashScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFE50914), // SHIRI Red top
-                        Color(0xFFDC2626), // Mid red
-                        Color(0xFFB91C1C)  // Darker red bottom
+                        Color(0xFF00B05F), // SHIRI Vibrant Green top
+                        Color(0xFF00A859), // Primary Green mid
+                        Color(0xFF008746)  // Deep Green bottom
                     )
                 )
             ),
@@ -138,12 +138,12 @@ fun SplashScreen(
                             text = "S",
                             fontSize = 52.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFFDC2626)
+                            color = Color(0xFF00A859)
                         )
                         Icon(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = null,
-                            tint = Color(0xFFDC2626),
+                            tint = Color(0xFF00A859),
                             modifier = Modifier
                                 .size(28.dp)
                                 .offset(x = (-8).dp, y = (-2).dp)
@@ -166,10 +166,10 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Dalbo • Hel • Ku Raaxayso",
+                text = "Fast • Reliable • For Everyone",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White.copy(alpha = 0.85f),
+                color = Color.White.copy(alpha = 0.92f),
                 letterSpacing = 0.5.sp
             )
 

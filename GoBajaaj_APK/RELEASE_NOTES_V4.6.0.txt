@@ -1,0 +1,89 @@
+================================================================================
+SHIRI v4.6.0 (Build 63) - DoorDash-Inspired Multi-Category Marketplace Redesign
+Release Date: 2026-11-19
+Package: com.aistudio.gobajaaj.app
+================================================================================
+
+OVERVIEW:
+This release represents a complete visual and functional redesign of the SHIRI
+Android application, upgrading it into a high-performance, multi-category local
+delivery marketplace inspired by DoorDash and Uber Eats, matching the master
+design specification with the signature Emerald Green branding (#00A859).
+
+THREE DEDICATED EXPERIENCES (ALL-IN-ONE APP):
+
+1. CUSTOMER MARKETPLACE (5 DESTINATIONS):
+   • Bottom Navigation: Home, Search, Orders, Saved, Profile.
+   • Master Header: Mogadishu delivery location picker with district dropdown,
+     quick "Change" pill, live notifications bell badge, and central SHIRI logo.
+   • Search Bar: "Maxaad maanta rabtaa?" placeholder with voice & text search.
+   • 18 Marketplace Categories:
+     1. Restaurants & Food (Cunto & Maqaayado)
+     2. Grocery & Supermarkets
+     3. Pharmacy & Healthcare (Daawo & Caafimaad)
+     4. Clothing & Fashion (Dhar & Fashion)
+     5. Electronics & Gadgets
+     6. Beauty & Cosmetics
+     7. Perfumes & Fragrances
+     8. Bakery & Desserts
+     9. Home & Household
+     10. Books & Stationery
+     11. Baby Products
+     12. Furniture & Living
+     13. Flowers & Gifts
+     14. Water & Beverages
+     15. Sports & Fitness
+     16. Auto Parts & Garage
+     17. Pet Supplies
+     18. Other Businesses & Services
+   • Special Offer Banner: 20% OFF Green gradient banner with "Order Now ->".
+   • Popular Near You: Horizontal cards for Pizza Palace, Fresh Market, Health Plus,
+     Burger House, Somali Food, and KFC Somalia.
+   • Search Screen (Screen 2): Filter chips (Top Rated, Under 20 min, Free Delivery),
+     recent search history, category shortcuts, top businesses, and instant filter.
+   • Category Screen (Screen 3): Hero food banner ("Delicious food, delivered fast"),
+     subcategory pills (All, Pizza, Burger, African, Seafood), store list with (+) buttons.
+   • Store Detail Screen (Screen 4): Pizza Palace cover, rating ⭐ 4.7 (1.2k), delivery
+     estimate, tabs (Menu | Reviews | Info), popular items, floating Cart Bar.
+   • Modern Cart (Screen 5): Store info (Pizza Palace • 25 min), item list with
+     [-] [qty] [+] adjusters, Subtotal, Delivery Fee, Service Fee, Total, and big
+     green "Checkout ->" button.
+   • Saved Screen: Bookmarked stores and favorite products.
+   • Customer Profile: Clean user info, language toggle (Somali/English), district
+     picker, and direct "Switch to Merchant Mode" tile.
+
+2. BUSINESS / MERCHANT EXPERIENCE:
+   • 5 Merchant Tabs: Dashboard, Products, Orders, Store, Profile.
+   • Merchant Dashboard: Real store status (Open/Online), 4 stat cards
+     (Today's Orders 24, Revenue $420, Pending 6, Completed 18), and custom Bézier
+     gradient Sales Overview Chart.
+   • Products Management: Product list with images, pricing, In Stock / Out of Stock
+     status toggles, and edit dialogs.
+   • Orders Management: Tabs for New (6), Preparing, Ready, with Accept (green)
+     and Reject (light red) action buttons.
+   • Role Switcher: Seamless switching between Customer and Merchant modes without
+     creating duplicate accounts.
+
+3. DELIVERY APP — DELIVER WITH SHIRI:
+   • Screen 1 (New Delivery): Interactive vector route map, pickup marker (Pizza Palace),
+     dropoff marker (Via Somalia), route metrics, and big green "Accept Order" button.
+   • Screen 2 (On the Way): Route map with animated scooter marker, "Arriving in 8 min"
+     floating badge, customer contact card (Ahmed Hassan ⭐ 4.9), phone/chat triggers,
+     and big green "Contact" button.
+   • Screen 3 (Earnings): "$85.50 Today" earnings card, 8 Deliveries, 5.2h Online,
+     weekly earnings bar chart (Mon-Sun), and "View Details" button.
+
+BRANDING & THEME:
+   • Primary: Signature Vibrant Green (#00A859), Deep Green (#008746).
+   • Backgrounds: Crisp light gray (#F8FAFC) and pure white cards (#FFFFFF).
+   • Typography & Text: High-contrast slate dark text (#0F172A).
+   • Splash & Onboarding: Emerald gradient with SHIRI speed-bag logo and
+     "Fast • Reliable • For Everyone" brand identity.
+
+TECHNICAL DETAILS:
+   • Target SDK: 36 (Android 15 ready)
+   • Min SDK: 24 (Android 7.0+)
+   • Architecture: Jetpack Compose, Kotlin 2.1, Room, Supabase, Kotlin Coroutines
+   • APK Size: 73.8 MB (app-release.apk)
+   • AAB Size: 41.9 MB (app-release.aab)
+================================================================================

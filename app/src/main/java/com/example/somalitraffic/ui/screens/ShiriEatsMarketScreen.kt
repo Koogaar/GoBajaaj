@@ -78,8 +78,9 @@ fun ShiriEatsMarketScreen(
     // Bilingual Language Toggle: true = Somali, false = English
     var isSomaliLanguage by remember { mutableStateOf(true) }
 
-    // Customer Navigation: "home", "explore", "orders", "profile"
+    // Customer Navigation: 5 Destinations (Home, Search, Orders, Saved, Profile)
     var customerBottomTab by remember { mutableStateOf("home") }
+    var showCartScreen by remember { mutableStateOf(false) }
 
     // Merchant Navigation: "dashboard", "orders", "products", "finance"
     var merchantBottomTab by remember { mutableStateOf("products") }
@@ -181,9 +182,38 @@ fun ShiriEatsMarketScreen(
     // Courier PIN Keypad Input State
     var enteredCourierPin by remember { mutableStateOf("") }
 
-    // Merchant Orders List (Dynamic - starts empty, populated when customers place orders)
+    // Merchant Orders List (Pre-seeded with real orders matching master mockup)
     val merchantOrders = remember {
-        mutableStateListOf<MerchantOrder>()
+        mutableStateListOf<MerchantOrder>().apply {
+            add(
+                MerchantOrder(
+                    id = "sh12345",
+                    orderNumber = "#SH12345",
+                    customerName = "Ahmed Hassan",
+                    customerPhone = "0612345678",
+                    itemsSummary = "2 items (Margherita Pizza, Pepperoni Pizza)",
+                    total = 28.00,
+                    status = "pending",
+                    timeAgo = "12 min ago",
+                    handoverPin = "4829",
+                    address = "Hodan, Muqdisho (Via Somalia)"
+                )
+            )
+            add(
+                MerchantOrder(
+                    id = "sh12344",
+                    orderNumber = "#SH12344",
+                    customerName = "Khadija Ali",
+                    customerPhone = "0615551024",
+                    itemsSummary = "1 item (Chicken Pizza)",
+                    total = 20.00,
+                    status = "pending",
+                    timeAgo = "15 min ago",
+                    handoverPin = "1094",
+                    address = "Waberi, Muqdisho"
+                )
+            )
+        }
     }
 
     var selectedOrderForDetail by remember { mutableStateOf<MerchantOrder?>(null) }
@@ -2181,14 +2211,14 @@ fun ShiriEatsMarketScreen(
                         .statusBarsPadding()
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    // TOP BAR: DOORDASH STYLE (Muqdisho location dropdown + Notification Bell)
-                    if (currentAppMode == "customer" && !showLiveTracking && viewingStore == null) {
+                    // TOP BAR: DOORDASH / SHIRI MASTER STYLE (Mogadishu location + Change + Brand Logo + Notification Bell)
+                    if (currentAppMode == "customer" && !showLiveTracking && viewingStore == null && !showCartScreen && selectedCategoryId == "all") {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Location Selector: 📍 Muqdisho ⌵
+                            // Location Selector: 📍 Mogadishu ▾ [Change]
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
@@ -2199,12 +2229,12 @@ fun ShiriEatsMarketScreen(
                                 Icon(
                                     Icons.Default.LocationOn,
                                     contentDescription = null,
-                                    tint = Color(0xFFDC2626),
+                                    tint = BrandGreenPrimary,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = selectedShiriDistrict.ifBlank { "Muqdisho" },
+                                    text = selectedShiriDistrict.ifBlank { "Mogadishu" },
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Black,
                                     color = Color(0xFF0F172A)
@@ -2216,6 +2246,19 @@ fun ShiriEatsMarketScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF0F172A)
                                 )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = BrandGreenLight
+                                ) {
+                                    Text(
+                                        text = "Change",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = BrandGreenDark,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
                             }
 
                             // Notification Bell with badge '2'
@@ -2237,7 +2280,7 @@ fun ShiriEatsMarketScreen(
                                 )
                                 Surface(
                                     shape = CircleShape,
-                                    color = Color(0xFFDC2626),
+                                    color = BrandGreenPrimary,
                                     modifier = Modifier
                                         .size(16.dp)
                                         .align(Alignment.TopEnd)
@@ -2253,6 +2296,16 @@ fun ShiriEatsMarketScreen(
                                     }
                                 }
                             }
+                        }
+
+                        Spacer(Modifier.height(6.dp))
+                        // Central Green Brand Logo (Master Mockup)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            ShiriBrandLogo(iconSize = 26, textSize = 22, showTagline = false)
                         }
                     } else if (currentAppMode == "customer" && showLiveTracking) {
                         // Top bar for Live Order Tracking
@@ -2338,6 +2391,7 @@ fun ShiriEatsMarketScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (currentAppMode == "customer") {
+                    // CUSTOMER BOTTOM NAVIGATION: 5 DESTINATIONS (Home, Search, Orders, Saved, Profile)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -2349,33 +2403,66 @@ fun ShiriEatsMarketScreen(
                         CustomerNavTabItem(
                             icon = Icons.Default.Home,
                             label = if (isSomaliLanguage) "Hoyga" else "Home",
-                            isSelected = customerBottomTab == "home" && !showLiveTracking,
+                            isSelected = customerBottomTab == "home" && !showLiveTracking && !showCartScreen && viewingStore == null && selectedCategoryId == "all",
                             badge = null,
-                            onClick = { customerBottomTab = "home"; viewingStore = null; showLiveTracking = false }
+                            onClick = {
+                                customerBottomTab = "home"
+                                viewingStore = null
+                                showLiveTracking = false
+                                showCartScreen = false
+                                selectedCategoryId = "all"
+                            }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.Search,
+                            label = if (isSomaliLanguage) "Raadi" else "Search",
+                            isSelected = customerBottomTab == "search",
+                            badge = null,
+                            onClick = {
+                                customerBottomTab = "search"
+                                viewingStore = null
+                                showLiveTracking = false
+                                showCartScreen = false
+                            }
                         )
                         CustomerNavTabItem(
                             icon = Icons.Default.ReceiptLong,
                             label = if (isSomaliLanguage) "Dalabaadka" else "Orders",
                             isSelected = customerBottomTab == "orders" || showLiveTracking,
                             badge = if (hasActiveOrder) "1" else null,
-                            onClick = { customerBottomTab = "orders"; showLiveTracking = true }
+                            onClick = {
+                                customerBottomTab = "orders"
+                                showLiveTracking = true
+                                showCartScreen = false
+                            }
                         )
                         CustomerNavTabItem(
-                            icon = Icons.Default.Favorite,
-                            label = if (isSomaliLanguage) "Jeceshahay" else "Favorites",
-                            isSelected = customerBottomTab == "favorites",
+                            icon = Icons.Default.FavoriteBorder,
+                            label = if (isSomaliLanguage) "Kaydka" else "Saved",
+                            isSelected = customerBottomTab == "saved" || customerBottomTab == "favorites",
                             badge = null,
-                            onClick = { customerBottomTab = "favorites"; viewingStore = null; showLiveTracking = false }
+                            onClick = {
+                                customerBottomTab = "saved"
+                                viewingStore = null
+                                showLiveTracking = false
+                                showCartScreen = false
+                            }
                         )
                         CustomerNavTabItem(
-                            icon = Icons.Default.Person,
+                            icon = Icons.Default.PersonOutline,
                             label = if (isSomaliLanguage) "Koontada" else "Profile",
                             isSelected = customerBottomTab == "profile",
                             badge = null,
-                            onClick = { customerBottomTab = "profile"; onNavigate("profile_settings") }
+                            onClick = {
+                                customerBottomTab = "profile"
+                                viewingStore = null
+                                showLiveTracking = false
+                                showCartScreen = false
+                            }
                         )
                     }
                 } else {
+                    // MERCHANT BOTTOM NAVIGATION: 5 DESTINATIONS (Home, Products, Orders, Store, Profile)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -2385,18 +2472,11 @@ fun ShiriEatsMarketScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         CustomerNavTabItem(
-                            icon = Icons.Default.Storefront,
-                            label = "Dashboard",
+                            icon = Icons.Default.Home,
+                            label = "Home",
                             isSelected = merchantBottomTab == "dashboard",
                             badge = null,
                             onClick = { merchantBottomTab = "dashboard" }
-                        )
-                        CustomerNavTabItem(
-                            icon = Icons.Default.ShoppingBag,
-                            label = "Orders",
-                            isSelected = merchantBottomTab == "orders",
-                            badge = "3",
-                            onClick = { merchantBottomTab = "orders" }
                         )
                         CustomerNavTabItem(
                             icon = Icons.Default.Inventory2,
@@ -2406,11 +2486,25 @@ fun ShiriEatsMarketScreen(
                             onClick = { merchantBottomTab = "products" }
                         )
                         CustomerNavTabItem(
-                            icon = Icons.Default.AttachMoney,
-                            label = "Finance",
-                            isSelected = merchantBottomTab == "finance",
+                            icon = Icons.Default.ReceiptLong,
+                            label = "Orders",
+                            isSelected = merchantBottomTab == "orders",
+                            badge = if (merchantOrders.isNotEmpty()) "${merchantOrders.size}" else null,
+                            onClick = { merchantBottomTab = "orders" }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.Storefront,
+                            label = "Store",
+                            isSelected = merchantBottomTab == "store",
                             badge = null,
-                            onClick = { merchantBottomTab = "finance" }
+                            onClick = { merchantBottomTab = "store" }
+                        )
+                        CustomerNavTabItem(
+                            icon = Icons.Default.PersonOutline,
+                            label = "Profile",
+                            isSelected = merchantBottomTab == "profile",
+                            badge = null,
+                            onClick = { merchantBottomTab = "profile" }
                         )
                     }
                 }
@@ -2654,6 +2748,22 @@ fun ShiriEatsMarketScreen(
                         )
                     }
                 }
+            } else if (showCartScreen) {
+                // ─── DEDICATED SHOPPING CART SCREEN (Screen 5 of Master Mockup) ───
+                ShiriCartScreen(
+                    store = viewingStore ?: stores.firstOrNull(),
+                    cartItems = cartItems,
+                    onBackClick = { showCartScreen = false },
+                    onClearCart = { cartItems.clear() },
+                    onQuantityChange = { prodId, newQty ->
+                        if (newQty <= 0) cartItems.remove(prodId)
+                        else cartItems[prodId] = newQty
+                    },
+                    onCheckoutClick = {
+                        showCartScreen = false
+                        showCheckout = true
+                    }
+                )
             } else if (viewingStore != null) {
                 // ═══════════════════════════════════════════════════════════════════════
                 // 2. RESTAURANT DETAIL SCREEN (Screen 3 of Image 1)
@@ -3059,7 +3169,7 @@ fun ShiriEatsMarketScreen(
                                         }
                                         Surface(
                                             shape = CircleShape,
-                                            color = Color(0xFFDC2626),
+                                            color = BrandGreenPrimary,
                                             modifier = Modifier
                                                 .size(16.dp)
                                                 .align(Alignment.TopEnd)
@@ -3079,13 +3189,13 @@ fun ShiriEatsMarketScreen(
                                 }
 
                                 Button(
-                                    onClick = { showCheckout = true },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                    onClick = { showCartScreen = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                                     shape = RoundedCornerShape(14.dp),
                                     contentPadding = PaddingValues(horizontal = 22.dp, vertical = 10.dp)
                                 ) {
                                     Text(
-                                        text = "Checkout",
+                                        text = "View Cart →",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Black,
                                         color = Color.White
@@ -3096,9 +3206,46 @@ fun ShiriEatsMarketScreen(
                     }
                 }
 
+            } else if (customerBottomTab == "search") {
+                // ─── DEDICATED SEARCH SCREEN (Screen 2 of Master Mockup) ───
+                ShiriSearchScreen(
+                    stores = stores,
+                    onStoreClick = { store -> viewingStore = store },
+                    onCategoryClick = { catId -> selectedCategoryId = catId }
+                )
+            } else if (customerBottomTab == "saved" || customerBottomTab == "favorites") {
+                // ─── SAVED BUSINESSES & FAVORITES (Screen 4 of Customer App) ───
+                ShiriSavedScreen(
+                    stores = stores,
+                    onStoreClick = { store -> viewingStore = store }
+                )
+            } else if (customerBottomTab == "profile") {
+                // ─── CUSTOMER PROFILE SCREEN (Screen 5 of Customer App) ───
+                ShiriCustomerProfileView(
+                    currentUser = viewModel.currentUser.value,
+                    selectedDistrict = selectedShiriDistrict,
+                    isSomaliLanguage = isSomaliLanguage,
+                    onLanguageToggle = { isSomaliLanguage = !isSomaliLanguage },
+                    onSwitchToMerchant = { currentAppMode = "merchant" },
+                    onLogout = {
+                        viewModel.logout {
+                            onNavigate(com.example.somalitraffic.ui.navigation.NavRoutes.LOGIN)
+                        }
+                    }
+                )
+            } else if (selectedCategoryId != "all") {
+                // ─── CATEGORY BROWSING SCREEN (Screen 3 of Master Mockup) ───
+                val currentCategory = categories.firstOrNull { it.id == selectedCategoryId } ?: categories.first()
+                ShiriCategoryDetailScreen(
+                    category = currentCategory,
+                    stores = stores,
+                    onBackClick = { selectedCategoryId = "all" },
+                    onStoreClick = { store -> viewingStore = store },
+                    onSearchClick = { customerBottomTab = "search" }
+                )
             } else {
             // ═════════════════════════════════════════════════════════════════════════
-            // CUSTOMER VIEW: DOORDASH HOME MARKETPLACE (Screen 2 of Image 1)
+            // CUSTOMER VIEW: DOORDASH HOME MARKETPLACE (Screen 1 of Master Mockup)
             // ═════════════════════════════════════════════════════════════════════════
             Column(
                 modifier = Modifier
@@ -3108,254 +3255,90 @@ fun ShiriEatsMarketScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // 1. CAPSULE SEARCH BAR with Voice Order Mic Button
-                OutlinedTextField(
-                    value = customerSearchQuery,
-                    onValueChange = { customerSearchQuery = it },
-                    placeholder = {
-                        Text(
-                            text = if (isSomaliLanguage) "Raadi maqaayado, dukaamo..." else "Search restaurants, stores...",
-                            fontSize = 13.sp,
-                            color = Color(0xFF94A3B8)
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            tint = Color(0xFF94A3B8),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    },
-                    trailingIcon = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (customerSearchQuery.isNotBlank()) {
-                                IconButton(
-                                    onClick = { customerSearchQuery = "" },
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(Icons.Default.Clear, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(16.dp))
-                                }
-                            }
-                            IconButton(
-                                onClick = { showVoiceOrderDialog = true },
-                                modifier = Modifier.size(34.dp)
-                            ) {
-                                Icon(Icons.Default.Mic, contentDescription = "Voice Order", tint = Color(0xFFDC2626), modifier = Modifier.size(20.dp))
-                            }
-                        }
-                    },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(26.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFFF8FAFC),
-                        unfocusedContainerColor = Color(0xFFF8FAFC),
-                        focusedBorderColor = Color(0xFFE2E8F0),
-                        unfocusedBorderColor = Color(0xFFE2E8F0)
-                    )
+                // 1. CAPSULE SEARCH BAR ("Maxaad maanta rabtaa?")
+                ShiriMarketSearchBar(
+                    query = customerSearchQuery,
+                    placeholder = if (isSomaliLanguage) "Maxaad maanta rabtaa?" else "Search businesses, products...",
+                    onQueryChange = { customerSearchQuery = it },
+                    onVoiceClick = { showVoiceOrderDialog = true },
+                    onSearchClick = { customerBottomTab = "search" }
                 )
 
-                // 2. HERO PROMO BANNER: Ku Dalbo Cunto Qiimo Jaban (30% OFF)
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color(0xFFDC2626),
+                // 2. HERO SPECIAL OFFER BANNER (Green Gradient - 20% OFF)
+                ShiriSpecialOfferBanner(
+                    title = "Special Offer",
+                    headline = "Get 20% OFF",
+                    subtext = "on Food Orders",
+                    actionText = "Order Now →",
+                    onClick = { selectedCategoryId = "cunto" }
+                )
+
+                // 3. HORIZONTAL CATEGORIES ROW (Circular Pastel Icons)
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(132.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Color(0xFFE50914),
-                                        Color(0xFFDC2626),
-                                        Color(0xFFB91C1C)
-                                    )
-                                )
-                            )
-                            .padding(horizontal = 18.dp, vertical = 14.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = if (isSomaliLanguage) "Ku Dalbo Cunto\nQiimo Jaban" else "Order Food at\nBest Prices",
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color.White,
-                                    lineHeight = 22.sp
-                                )
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Surface(
-                                        shape = RoundedCornerShape(12.dp),
-                                        color = Color(0xFFFBBF24)
-                                    ) {
-                                        Text(
-                                            text = "30% OFF",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color(0xFF0F172A),
-                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = "SHIRI",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White.copy(alpha = 0.9f)
-                                    )
-                                }
-                            }
-
-                            Box(contentAlignment = Alignment.Center) {
-                                Surface(
-                                    shape = CircleShape,
-                                    modifier = Modifier.size(96.dp),
-                                    color = Color.Transparent
-                                ) {
-                                    AsyncImage(
-                                        model = "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300&auto=format&fit=crop&q=80",
-                                        contentDescription = "Pizza Promo",
-                                        contentScale = ContentScale.Crop,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(CircleShape)
-                                    )
-                                }
-                                Surface(
-                                    shape = CircleShape,
-                                    color = Color.White,
-                                    modifier = Modifier
-                                        .size(28.dp)
-                                        .align(Alignment.CenterEnd)
-                                        .offset(x = 6.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(
-                                            imageVector = Icons.Default.ChevronRight,
-                                            contentDescription = null,
-                                            tint = Color(0xFFDC2626),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    ShiriCircularCategoryItem(
+                        title = if (isSomaliLanguage) "Cunto" else "Food",
+                        iconEmoji = "🍔",
+                        bgColor = Color(0xFFFFF3E0),
+                        isSelected = selectedCategoryId == "cunto",
+                        onClick = { selectedCategoryId = "cunto" }
+                    )
+                    ShiriCircularCategoryItem(
+                        title = if (isSomaliLanguage) "Dukaamo" else "Groceries",
+                        iconEmoji = "🛒",
+                        bgColor = Color(0xFFE8F8F0),
+                        isSelected = selectedCategoryId == "supermarket",
+                        onClick = { selectedCategoryId = "supermarket" }
+                    )
+                    ShiriCircularCategoryItem(
+                        title = if (isSomaliLanguage) "Caafimaad" else "Pharmacy",
+                        iconEmoji = "💊",
+                        bgColor = Color(0xFFE1F5FE),
+                        isSelected = selectedCategoryId == "daawo",
+                        onClick = { selectedCategoryId = "daawo" }
+                    )
+                    ShiriCircularCategoryItem(
+                        title = if (isSomaliLanguage) "Fashion" else "Fashion",
+                        iconEmoji = "👗",
+                        bgColor = Color(0xFFFCE4EC),
+                        isSelected = selectedCategoryId == "fashion",
+                        onClick = { selectedCategoryId = "fashion" }
+                    )
+                    ShiriCircularCategoryItem(
+                        title = if (isSomaliLanguage) "Qalab" else "Electronics",
+                        iconEmoji = "💻",
+                        bgColor = Color(0xFFE0F7FA),
+                        isSelected = selectedCategoryId == "electronics",
+                        onClick = { selectedCategoryId = "electronics" }
+                    )
+                    ShiriCircularCategoryItem(
+                        title = if (isSomaliLanguage) "Qurxin" else "Beauty",
+                        iconEmoji = "💄",
+                        bgColor = Color(0xFFF3E5F5),
+                        isSelected = selectedCategoryId == "beauty",
+                        onClick = { selectedCategoryId = "beauty" }
+                    )
+                    ShiriCircularCategoryItem(
+                        title = if (isSomaliLanguage) "Rooti" else "Bakery",
+                        iconEmoji = "🥐",
+                        bgColor = Color(0xFFFFF8E1),
+                        isSelected = selectedCategoryId == "bakery",
+                        onClick = { selectedCategoryId = "bakery" }
+                    )
+                    ShiriCircularCategoryItem(
+                        title = if (isSomaliLanguage) "Kale" else "More",
+                        iconEmoji = "⋯",
+                        bgColor = Color(0xFFF1F5F9),
+                        isSelected = false,
+                        onClick = { customerBottomTab = "search" }
+                    )
                 }
 
-                // 3. CATEGORY GRID (8 ICONS in 2 ROWS x 4 COLUMNS — Exactly matching Screen 2 of Image 1)
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Row 1 (4 items)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        DoorDashCategoryTile(
-                            title = if (isSomaliLanguage) "Cunto" else "Food",
-                            iconEmoji = "🍴",
-                            bgColor = Color(0xFFFEE2E2),
-                            isSelected = selectedCategoryId == "cunto",
-                            onClick = {
-                                selectedCategoryId = if (selectedCategoryId == "cunto") "all" else "cunto"
-                                selectedSubcategoryId = "all"
-                            }
-                        )
-                        DoorDashCategoryTile(
-                            title = if (isSomaliLanguage) "Dukaamo" else "Stores",
-                            iconEmoji = "🛒",
-                            bgColor = Color(0xFFE0F2FE),
-                            isSelected = selectedCategoryId == "supermarket",
-                            onClick = {
-                                selectedCategoryId = if (selectedCategoryId == "supermarket") "all" else "supermarket"
-                                selectedSubcategoryId = "all"
-                            }
-                        )
-                        DoorDashCategoryTile(
-                            title = if (isSomaliLanguage) "Caafimaad" else "Health",
-                            iconEmoji = "➕",
-                            bgColor = Color(0xFFFCE7F3),
-                            isSelected = selectedCategoryId == "daawo",
-                            onClick = {
-                                selectedCategoryId = if (selectedCategoryId == "daawo") "all" else "daawo"
-                                selectedSubcategoryId = "all"
-                            }
-                        )
-                        DoorDashCategoryTile(
-                            title = if (isSomaliLanguage) "Gaadiid" else "Rides",
-                            iconEmoji = "🚗",
-                            bgColor = Color(0xFFDBEAFE),
-                            isSelected = false,
-                            onClick = {
-                                onNavigate("ride")
-                            }
-                        )
-                    }
-
-                    // Row 2 (4 items)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        DoorDashCategoryTile(
-                            title = if (isSomaliLanguage) "Guryo" else "Houses",
-                            iconEmoji = "🏠",
-                            bgColor = Color(0xFFFFEDD5),
-                            isSelected = false,
-                            onClick = {
-                                showAddressCardDialog = true
-                            }
-                        )
-                        DoorDashCategoryTile(
-                            title = if (isSomaliLanguage) "Waxbarasho" else "Education",
-                            iconEmoji = "🎓",
-                            bgColor = Color(0xFFE0E7FF),
-                            isSelected = selectedCategoryId == "stationery",
-                            onClick = {
-                                selectedCategoryId = if (selectedCategoryId == "stationery") "all" else "stationery"
-                                selectedSubcategoryId = "all"
-                            }
-                        )
-                        DoorDashCategoryTile(
-                            title = if (isSomaliLanguage) "Ubax" else "Flowers",
-                            iconEmoji = "🌸",
-                            bgColor = Color(0xFFFEF3C7),
-                            isSelected = selectedCategoryId == "perfume",
-                            onClick = {
-                                selectedCategoryId = if (selectedCategoryId == "perfume") "all" else "perfume"
-                                selectedSubcategoryId = "all"
-                            }
-                        )
-                        DoorDashCategoryTile(
-                            title = if (isSomaliLanguage) "Dhammaan" else "All",
-                            iconEmoji = "🔲",
-                            bgColor = Color(0xFFF1F5F9),
-                            isSelected = selectedCategoryId == "all",
-                            onClick = {
-                                selectedCategoryId = "all"
-                                selectedSubcategoryId = "all"
-                            }
-                        )
-                    }
-                }
-
-                // 4. POPULAR RESTAURANTS SECTION (Maqaayada Caanka Ah)
+                // 4. POPULAR NEAR YOU SECTION (Pizza Palace, Fresh Market, etc.)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -3364,16 +3347,16 @@ fun ShiriEatsMarketScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (isSomaliLanguage) "Maqaayada Caanka Ah" else "Popular Restaurants",
+                        text = if (isSomaliLanguage) "Caanka ah Agtaada" else "Popular Near You",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF0F172A)
                     )
                     Text(
-                        text = if (isSomaliLanguage) "Arag Dhammaan >" else "View All >",
+                        text = if (isSomaliLanguage) "Arag Dhammaan >" else "See all >",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFDC2626),
+                        color = BrandGreenPrimary,
                         modifier = Modifier.clickable {
                             selectedCategoryId = "all"
                             selectedSubcategoryId = "all"
@@ -3388,8 +3371,8 @@ fun ShiriEatsMarketScreen(
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    stores.take(4).forEach { store ->
-                        PopularRestaurantHorizontalCard(
+                    stores.take(6).forEach { store ->
+                        ShiriPopularStoreCard(
                             store = store,
                             onClick = { viewingStore = store }
                         )
@@ -3708,28 +3691,34 @@ fun ShiriEatsMarketScreen(
                             }
                         }
 
-                        // Order Status Filter Chips
+                        // ─── ORDER TABS: New (6), Preparing, Ready (MASTER MOCKUP) ───
                         Row(
-                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             listOf(
-                                "all" to "Dhammaan",
-                                "pending" to "Cusub (Pending)",
-                                "preparing" to "Diyaarinta",
-                                "ready" to "Diyaar ah",
-                                "delivered" to "La Gaarsiiyay"
+                                "all" to "All",
+                                "pending" to "New (6)",
+                                "preparing" to "Preparing",
+                                "ready" to "Ready"
                             ).forEach { (stKey, stLabel) ->
                                 val isSelected = merchantOrderStatusFilter == stKey
-                                FilterChip(
-                                    selected = isSelected,
-                                    onClick = { merchantOrderStatusFilter = stKey },
-                                    label = { Text(stLabel, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = Color(0xFFDC2626),
-                                        selectedLabelColor = Color.White
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (isSelected) BrandGreenPrimary else Color.White,
+                                    border = BorderStroke(1.dp, if (isSelected) BrandGreenPrimary else BrandBorder),
+                                    modifier = Modifier.clickable { merchantOrderStatusFilter = stKey }
+                                ) {
+                                    Text(
+                                        text = stLabel,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) Color.White else BrandTextDark,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp)
                                     )
-                                )
+                                }
                             }
                         }
 
@@ -3801,16 +3790,60 @@ fun ShiriEatsMarketScreen(
                                             )
                                             Surface(
                                                 shape = RoundedCornerShape(6.dp),
-                                                color = Color(0xFFFEF2F2),
+                                                color = BrandGreenLight,
                                                 modifier = Modifier.clickable { selectedOrderForDetail = ord }
                                             ) {
                                                 Text(
                                                     text = "Faahfaahin →",
                                                     fontSize = 10.5.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = Color(0xFFDC2626),
+                                                    color = BrandGreenDark,
                                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                                 )
+                                            }
+                                        }
+
+                                        // ─── [Accept] & [Reject] Buttons (MASTER MOCKUP) ───
+                                        if (ord.status == "pending") {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Button(
+                                                    onClick = {
+                                                        ord.status = "preparing"
+                                                        Toast.makeText(context, "Dalabka ${ord.orderNumber} waa la aqbalay!", Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier.weight(1f).height(38.dp)
+                                                ) {
+                                                    Text("Accept", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                                }
+
+                                                Button(
+                                                    onClick = {
+                                                        merchantOrders.remove(ord)
+                                                        Toast.makeText(context, "Dalabka ${ord.orderNumber} waa la diiday.", Toast.LENGTH_SHORT).show()
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    modifier = Modifier.weight(1f).height(38.dp)
+                                                ) {
+                                                    Text("Reject", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEF4444))
+                                                }
+                                            }
+                                        } else if (ord.status == "preparing") {
+                                            Button(
+                                                onClick = {
+                                                    ord.status = "ready"
+                                                    Toast.makeText(context, "Dalabka ${ord.orderNumber} waa diyaar (Ready for Courier)!", Toast.LENGTH_SHORT).show()
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
+                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier.fillMaxWidth().height(38.dp)
+                                            ) {
+                                                Text("Mark Ready for Courier ✓", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                             }
                                         }
                                     }
@@ -4001,6 +4034,137 @@ fun ShiriEatsMarketScreen(
                         }
                     }
 
+                    "store" -> {
+                        // ─── STORE MANAGEMENT SCREEN (MASTER MOCKUP) ───
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Text(
+                                text = "Store Management",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black,
+                                color = BrandTextDark
+                            )
+
+                            // Open/Closed Toggle Card
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, BrandBorder),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = if (isStoreOpen) "Store is OPEN" else "Store is CLOSED",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isStoreOpen) BrandGreenPrimary else Color(0xFFEF4444)
+                                        )
+                                        Text("Macamiishu hadda dalab way soo diri karaan", fontSize = 11.5.sp, color = BrandTextMuted)
+                                    }
+                                    Switch(
+                                        checked = isStoreOpen,
+                                        onCheckedChange = { isStoreOpen = it },
+                                        colors = SwitchDefaults.colors(
+                                            checkedThumbColor = Color.White,
+                                            checkedTrackColor = BrandGreenPrimary
+                                        )
+                                    )
+                                }
+                            }
+
+                            // Store Details Card
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, BrandBorder),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text("Faahfaahinta Dukaanka", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = BrandTextDark)
+                                    Text("Magaca: Pizza Palace", fontSize = 12.sp, color = BrandTextDark)
+                                    Text("Qeybta: Cunto & Maqaayado (Food & Restaurants)", fontSize = 12.sp, color = BrandTextDark)
+                                    Text("Waqtiga: 8:00 AM - 11:00 PM", fontSize = 12.sp, color = BrandTextDark)
+                                    Text("Ciwaanka: Hodan, Muqdisho (SHR-MG-1024)", fontSize = 12.sp, color = BrandTextDark)
+                                }
+                            }
+                        }
+                    }
+
+                    "profile" -> {
+                        // ─── MERCHANT PROFILE & SWITCH TO CUSTOMER (MASTER MOCKUP) ───
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Text(
+                                text = "Merchant Profile",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black,
+                                color = BrandTextDark
+                            )
+
+                            // Store & Owner Info
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, BrandBorder),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = BrandGreenLight,
+                                        modifier = Modifier.size(52.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Storefront, contentDescription = null, tint = BrandGreenDark, modifier = Modifier.size(28.dp))
+                                        }
+                                    }
+                                    Spacer(Modifier.width(12.dp))
+                                    Column {
+                                        Text("Pizza Palace", fontSize = 15.sp, fontWeight = FontWeight.Black, color = BrandTextDark)
+                                        Text("Verified Merchant ✓", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = BrandGreenPrimary)
+                                        Text("0615551024", fontSize = 11.5.sp, color = BrandTextMuted)
+                                    }
+                                }
+                            }
+
+                            // Switch to Customer Mode Button
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.5.dp, BrandGreenPrimary),
+                                modifier = Modifier.fillMaxWidth().clickable { currentAppMode = "customer" }
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = BrandGreenPrimary, modifier = Modifier.size(22.dp))
+                                        Spacer(Modifier.width(10.dp))
+                                        Column {
+                                            Text("U Gudub Macmiilka (Customer Mode)", fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = BrandTextDark)
+                                            Text("Iibso cunto, dukaamo & alaabta suuqa", fontSize = 11.sp, color = BrandTextMuted)
+                                        }
+                                    }
+                                    Icon(Icons.Default.ArrowForward, contentDescription = null, tint = BrandGreenPrimary)
+                                }
+                            }
+                        }
+                    }
+
                     else -> {
                         // ═════════════════════════════════════════════════════════
                         // DEFAULT: DASHBOARD TAB (Quick Stats & Clickable Overview)
@@ -4079,31 +4243,101 @@ fun ShiriEatsMarketScreen(
                             }
                         }
 
-                        // Stats Dashboard - ALL CLICKABLE
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                modifier = Modifier.weight(1f).clickable { merchantBottomTab = "finance" }
-                            ) {
-                                Column(modifier = Modifier.padding(10.dp)) {
-                                    Text("Dakhliga Maanta", fontSize = 10.sp, color = Color(0xFF64748B))
-                                    Text("$142.50", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF16A34A))
-                                    Text("Arag Maaliyadda →", fontSize = 9.sp, color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
+                        // ─── 4 STAT TILES (MASTER MOCKUP: Today's Orders, Revenue, Pending, Completed) ───
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color.White,
+                                    border = BorderStroke(1.dp, BrandBorder),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text("Today's Orders", fontSize = 11.sp, color = BrandTextMuted)
+                                        Spacer(Modifier.height(4.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("24", fontSize = 20.sp, fontWeight = FontWeight.Black, color = BrandTextDark)
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("↑ 12%", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = BrandGreenPrimary)
+                                        }
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color.White,
+                                    border = BorderStroke(1.dp, BrandBorder),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text("Revenue", fontSize = 11.sp, color = BrandTextMuted)
+                                        Spacer(Modifier.height(4.dp))
+                                        Text("$420", fontSize = 20.sp, fontWeight = FontWeight.Black, color = BrandTextDark)
+                                    }
                                 }
                             }
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                modifier = Modifier.weight(1f).clickable { merchantBottomTab = "orders" }
-                            ) {
-                                Column(modifier = Modifier.padding(10.dp)) {
-                                    Text("Dalabyada Maanta", fontSize = 10.sp, color = Color(0xFF64748B))
-                                    Text("${merchantOrders.size} Dalab", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
-                                    Text("Maamul Dalabyada →", fontSize = 9.sp, color = Color(0xFFDC2626), fontWeight = FontWeight.Bold)
+
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color.White,
+                                    border = BorderStroke(1.dp, BrandBorder),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text("Pending", fontSize = 11.sp, color = BrandTextMuted)
+                                        Spacer(Modifier.height(4.dp))
+                                        Text("6", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color(0xFFF59E0B))
+                                    }
                                 }
+
+                                Surface(
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color.White,
+                                    border = BorderStroke(1.dp, BrandBorder),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text("Completed", fontSize = 11.sp, color = BrandTextMuted)
+                                        Spacer(Modifier.height(4.dp))
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("18", fontSize = 20.sp, fontWeight = FontWeight.Black, color = BrandGreenPrimary)
+                                            Spacer(Modifier.width(4.dp))
+                                            Text("✓", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = BrandGreenPrimary)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // ─── SALES OVERVIEW AREA CHART (MASTER MOCKUP) ───
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, BrandBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Sales Overview",
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = BrandTextDark
+                                    )
+                                    Text(
+                                        text = "Last 7 Days ▾",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = BrandTextMuted
+                                    )
+                                }
+                                Spacer(Modifier.height(10.dp))
+                                ShiriSalesOverviewChart()
                             }
                         }
 
@@ -4510,7 +4744,7 @@ fun CustomerNavTabItem(
         BadgedBox(
             badge = {
                 if (badge != null) {
-                    Badge(containerColor = Color(0xFFDC2626), contentColor = Color.White) {
+                    Badge(containerColor = BrandGreenPrimary, contentColor = Color.White) {
                         Text(text = badge, fontSize = 9.sp)
                     }
                 }
@@ -4519,7 +4753,7 @@ fun CustomerNavTabItem(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (isSelected) Color(0xFFDC2626) else Color(0xFF94A3B8),
+                tint = if (isSelected) BrandGreenPrimary else Color(0xFF94A3B8),
                 modifier = Modifier.size(22.dp)
             )
         }
@@ -4528,7 +4762,7 @@ fun CustomerNavTabItem(
             text = label,
             fontSize = 10.5.sp,
             fontWeight = if (isSelected) FontWeight.Black else FontWeight.Normal,
-            color = if (isSelected) Color(0xFFDC2626) else Color(0xFF64748B)
+            color = if (isSelected) BrandGreenPrimary else Color(0xFF64748B)
         )
     }
 }

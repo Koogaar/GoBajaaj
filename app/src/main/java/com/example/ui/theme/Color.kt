@@ -2,9 +2,34 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// SHIRI Super App (Kinetic Horizon Brand Palette)
-val ShiriCrimson = Color(0xFFDC2626)
-val ShiriCrimsonDark = Color(0xFFB70011)
+// SHIRI Modern Green Marketplace Brand Palette (Master Mockup Matching)
+val ShiriGreenPrimary = Color(0xFF00A859)        // Signature Vibrant Green
+val ShiriGreenDark = Color(0xFF008746)           // Forest Green for depth
+val ShiriGreenLight = Color(0xFFE8F8F0)          // Soft Mint for pills/badges
+val ShiriGreenGradientStart = Color(0xFF00B05F)  // Top gradient
+val ShiriGreenGradientEnd = Color(0xFF008746)    // Bottom gradient
+val ShiriBgLight = Color(0xFFF8FAFC)            // Crisp light-gray background
+val ShiriCardWhite = Color(0xFFFFFFFF)          // Pure white card background
+val ShiriTextDark = Color(0xFF0F172A)           // High-contrast slate dark text
+val ShiriTextMuted = Color(0xFF64748B)          // Secondary muted text
+val ShiriBorder = Color(0xFFE2E8F0)             // Subtle divider border
+val ShiriStarYellow = Color(0xFFF59E0B)         // Star rating yellow/orange
+val ShiriRejectRed = Color(0xFFEF4444)          // Order rejection red
+val ShiriRejectBg = Color(0xFFFEE2E2)           // Order rejection button background
+
+// Aliases for Brand Green
+val BrandGreenPrimary = ShiriGreenPrimary
+val BrandGreenDark = ShiriGreenDark
+val BrandGreenLight = ShiriGreenLight
+val BrandGreenGradientStart = ShiriGreenGradientStart
+val BrandGreenGradientEnd = ShiriGreenGradientEnd
+val BrandBgLight = ShiriBgLight
+val BrandCardWhite = ShiriCardWhite
+val BrandTextDark = ShiriTextDark
+
+// SHIRI Super App (Legacy Palette Preserved for Compatibility)
+val ShiriCrimson = Color(0xFF00A859)            // Remapped to Brand Green
+val ShiriCrimsonDark = Color(0xFF008746)        // Remapped to Deep Green
 val ShiriDarkSlate = Color(0xFF0F172A)
 val ShiriEmerald = Color(0xFF10B981)
 val ShiriEmeraldLight = Color(0xFFECFDF5)

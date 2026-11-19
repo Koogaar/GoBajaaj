@@ -41,9 +41,9 @@ fun OnboardingScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFE50914),
-                        Color(0xFFDC2626),
-                        Color(0xFFB91C1C)
+                        Color(0xFF00B05F),
+                        Color(0xFF00A859),
+                        Color(0xFF008746)
                     )
                 )
             )
@@ -75,12 +75,12 @@ fun OnboardingScreen(
                                 text = "S",
                                 fontSize = 38.sp,
                                 fontWeight = FontWeight.Black,
-                                color = Color(0xFFDC2626)
+                                color = Color(0xFF00A859)
                             )
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
-                                tint = Color(0xFFDC2626),
+                                tint = Color(0xFF00A859),
                                 modifier = Modifier
                                     .size(24.dp)
                                     .offset(x = (-6).dp, y = (-2).dp)
@@ -102,7 +102,7 @@ fun OnboardingScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "Dalbo • Hel • Ku Raaxayso",
+                    text = "Fast • Reliable • For Everyone",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White.copy(alpha = 0.92f),
