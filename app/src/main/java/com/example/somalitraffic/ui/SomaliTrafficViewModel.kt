@@ -94,6 +94,57 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
     private val _uiMessage = MutableSharedFlow<String>()
     val uiMessage: SharedFlow<String> = _uiMessage.asSharedFlow()
 
+    // ─── SHIRI MARKETPLACE & DELIVERY STATE FLOWS ──────────────────────────────
+    private val _marketOrders = MutableStateFlow<List<ShiriMarketOrder>>(emptyList())
+    val marketOrders: StateFlow<List<ShiriMarketOrder>> = _marketOrders.asStateFlow()
+
+    private val _storesList = MutableStateFlow<List<ShiriMerchantStore>>(ShiriMarketRepository.getDefaultStores())
+    val storesList: StateFlow<List<ShiriMerchantStore>> = _storesList.asStateFlow()
+
+    fun loadMarketOrders() {
+        viewModelScope.launch {
+            val orders = repository.getMarketOrders()
+            _marketOrders.value = orders
+        }
+    }
+
+    fun placeMarketOrder(order: ShiriMarketOrder) {
+        viewModelScope.launch {
+            repository.submitMarketOrder(order)
+            _marketOrders.value = listOf(order) + _marketOrders.value.filter { it.id != order.id }
+        }
+    }
+
+    fun updateMarketOrderStatus(orderId: String, newStatus: String, courierId: String? = null) {
+        viewModelScope.launch {
+            repository.updateMarketOrderStatus(orderId, newStatus, courierId)
+            _marketOrders.value = _marketOrders.value.map {
+                if (it.id == orderId) it.copy(status = newStatus, courierId = courierId ?: it.courierId)
+                else it
+            }
+        }
+    }
+
+    fun saveMerchantProduct(storeId: String, product: ShiriProductItem) {
+        _storesList.value = _storesList.value.map { store ->
+            if (store.id == storeId || store.products.any { it.id == product.id }) {
+                val updatedProds = store.products.toMutableList()
+                val idx = updatedProds.indexOfFirst { it.id == product.id }
+                if (idx >= 0) updatedProds[idx] = product
+                else updatedProds.add(0, product)
+                store.copy(products = updatedProds)
+            } else store
+        }
+    }
+
+    fun deleteMerchantProduct(storeId: String, productId: String) {
+        _storesList.value = _storesList.value.map { store ->
+            if (store.id == storeId || store.products.any { it.id == productId }) {
+                store.copy(products = store.products.filter { it.id != productId })
+            } else store
+        }
+    }
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -366,6 +417,9 @@ class SomaliTrafficViewModel(application: Application) : AndroidViewModel(applic
         } catch (_: Exception) {}
         try {
             loadDriverExpenses()
+        } catch (_: Exception) {}
+        try {
+            loadMarketOrders()
         } catch (_: Exception) {}
         viewModelScope.launch {
             try {

@@ -87,3 +87,4 @@ TECHNICAL DETAILS:
    • APK Size: 73.8 MB (app-release.apk)
    • AAB Size: 41.9 MB (app-release.aab)
 ================================================================================
+

@@ -1,4 +1,4 @@
-﻿package com.example.somalitraffic.data.repository
+package com.example.somalitraffic.data.repository
 
 import android.content.Context
 import android.os.Build
@@ -3503,6 +3503,146 @@ class SomaliTrafficRepository(private val context: Context) {
         } catch (_: Exception) {
             return@withContext 4
         }
+    }
+
+    // ─── SHIRI MARKETPLACE ORDERS & CATALOG PERSISTENCE ───────────────────────
+
+    // In-memory + cached order registry
+    private val localOrders = java.util.concurrent.CopyOnWriteArrayList<ShiriMarketOrder>()
+
+    suspend fun getMarketOrders(): List<ShiriMarketOrder> = withContext(Dispatchers.IO) {
+        try {
+            if (prefs.isSupabaseConfigured()) {
+                val resp = getApiService().getMarketOrders(
+                    apiKey = getSafeApiKey(),
+                    authHeader = getSafeAuthHeader()
+                )
+                if (resp.isSuccessful) {
+                    val list = resp.body().orEmpty()
+                    val remoteOrders = list.mapNotNull { mapToMarketOrder(it) }
+                    if (remoteOrders.isNotEmpty()) {
+                        val merged = (remoteOrders + localOrders).distinctBy { it.id }
+                        localOrders.clear()
+                        localOrders.addAll(merged)
+                        return@withContext merged
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        if (localOrders.isEmpty()) {
+            localOrders.addAll(getInitialSeedOrders())
+        }
+        return@withContext localOrders.toList()
+    }
+
+    suspend fun submitMarketOrder(order: ShiriMarketOrder): Result<ShiriMarketOrder> = withContext(Dispatchers.IO) {
+        localOrders.add(0, order)
+        try {
+            if (prefs.isSupabaseConfigured()) {
+                val orderPayload = mapOf(
+                    "id" to order.id,
+                    "order_number" to order.orderNumber,
+                    "customer_id" to (prefs.getCurrentUser()?.id ?: order.customerId.ifBlank { null }),
+                    "subtotal" to order.subtotal,
+                    "delivery_fee" to order.deliveryFee,
+                    "service_fee" to order.serviceFee,
+                    "total" to order.total,
+                    "status" to order.status,
+                    "payment_method" to "evc_plus",
+                    "handover_pin" to order.handoverPin,
+                    "delivery_instructions" to order.deliveryNotes
+                )
+                getApiService().createMarketOrder(
+                    apiKey = getSafeApiKey(),
+                    authHeader = getSafeAuthHeader(),
+                    order = orderPayload
+                )
+            }
+        } catch (_: Exception) {}
+        Result.success(order)
+    }
+
+    suspend fun updateMarketOrderStatus(orderId: String, newStatus: String, courierId: String? = null): Boolean = withContext(Dispatchers.IO) {
+        val idx = localOrders.indexOfFirst { it.id == orderId }
+        if (idx >= 0) {
+            val existing = localOrders[idx]
+            localOrders[idx] = existing.copy(
+                status = newStatus,
+                courierId = courierId ?: existing.courierId
+            )
+        }
+        try {
+            if (prefs.isSupabaseConfigured()) {
+                val updates = mutableMapOf<String, Any?>("status" to newStatus)
+                if (courierId != null) updates["courier_id"] = courierId
+                getApiService().updateMarketOrderStatus(
+                    apiKey = getSafeApiKey(),
+                    authHeader = getSafeAuthHeader(),
+                    idFilter = "eq.$orderId",
+                    updates = updates
+                )
+            }
+        } catch (_: Exception) {}
+        true
+    }
+
+    private fun mapToMarketOrder(map: Map<String, Any>): ShiriMarketOrder? {
+        val id = map["id"]?.toString() ?: return null
+        val orderNum = map["order_number"]?.toString() ?: "#$id"
+        val total = (map["total"] as? Number)?.toDouble() ?: 0.0
+        val status = map["status"]?.toString() ?: "pending"
+        val pin = map["handover_pin"]?.toString() ?: "1234"
+        return ShiriMarketOrder(
+            id = id,
+            orderNumber = orderNum,
+            customerName = "Macmiil Shiri",
+            customerPhone = "0612345678",
+            itemsSummary = "Dalabka SHIRI",
+            total = total,
+            status = status,
+            handoverPin = pin,
+            address = "Muqdisho"
+        )
+    }
+
+    private fun getInitialSeedOrders(): List<ShiriMarketOrder> {
+        return listOf(
+            ShiriMarketOrder(
+                id = "SH12345",
+                orderNumber = "#SH12345",
+                customerName = "Ahmed Hassan",
+                customerPhone = "0615112233",
+                merchantName = "Pizza Palace",
+                itemsSummary = "2 items • Margherita Pizza, Coca Cola",
+                subtotal = 26.50,
+                deliveryFee = 1.00,
+                serviceFee = 0.50,
+                total = 28.00,
+                status = "ready_for_pickup",
+                timeAgo = "12 min ago",
+                handoverPin = "4829",
+                address = "Via Somalia, Hodan",
+                pickupAddress = "Pizza Palace, KM4"
+            ),
+            ShiriMarketOrder(
+                id = "SH12344",
+                orderNumber = "#SH12344",
+                customerName = "Faadumo Cali",
+                customerPhone = "0612334455",
+                merchantName = "Pizza Palace",
+                itemsSummary = "1 item • Chicken Pizza",
+                subtotal = 18.50,
+                deliveryFee = 1.00,
+                serviceFee = 0.50,
+                total = 20.00,
+                status = "pending",
+                timeAgo = "15 min ago",
+                handoverPin = "1932",
+                address = "Taleex, Waberi",
+                pickupAddress = "Pizza Palace, KM4"
+            )
+        )
     }
 
     companion object {

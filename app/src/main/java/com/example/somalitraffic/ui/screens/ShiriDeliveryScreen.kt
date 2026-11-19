@@ -57,6 +57,15 @@ fun ShiriDeliveryScreen(
 ) {
     val context = LocalContext.current
 
+    // Observe live marketplace orders
+    val liveOrders by viewModel.marketOrders.collectAsState()
+    val activeDeliveryOrder = liveOrders.firstOrNull { it.status in listOf("ready_for_pickup", "preparing", "pending", "picked_up") }
+        ?: liveOrders.firstOrNull()
+
+    val completedDeliveriesCount = liveOrders.count { it.status == "delivered" }
+    val totalDeliveries = 8 + completedDeliveriesCount
+    val totalEarningsFormatted = String.format(java.util.Locale.US, "%.2f", 85.50 + (completedDeliveriesCount * 3.50))
+
     // Current driver tab: "new_delivery", "on_the_way", "earnings"
     var driverTab by remember { mutableStateOf("new_delivery") }
     var isDriverOnline by remember { mutableStateOf(true) }
@@ -185,8 +194,13 @@ fun ShiriDeliveryScreen(
                 "new_delivery" -> {
                     NewDeliveryScreenView(
                         orderAccepted = orderAccepted,
+                        pickupStore = activeDeliveryOrder?.merchantName ?: "Pizza Palace",
+                        deliverAddress = activeDeliveryOrder?.address ?: "Via Somalia",
                         onAcceptOrder = {
                             orderAccepted = true
+                            activeDeliveryOrder?.let {
+                                viewModel.updateMarketOrderStatus(it.id, "picked_up", courierId = viewModel.currentUser.value?.id)
+                            }
                             ArrivalSoundManager.playBajajHornSequence(context)
                             Toast.makeText(context, "Dalabka waa la aqbalay! U dhaqaaq maqaayadda.", Toast.LENGTH_LONG).show()
                             driverTab = "on_the_way"
@@ -195,18 +209,24 @@ fun ShiriDeliveryScreen(
                 }
                 "on_the_way" -> {
                     OnTheWayScreenView(
+                        customerName = activeDeliveryOrder?.customerName ?: "Ahmed Hassan",
+                        customerPhone = activeDeliveryOrder?.customerPhone ?: "+252613456789",
                         onContactClick = {
+                            val phone = activeDeliveryOrder?.customerPhone ?: "+252613456789"
                             try {
                                 val intent = Intent(Intent.ACTION_DIAL).apply {
-                                    data = Uri.parse("tel:+252613456789")
+                                    data = Uri.parse("tel:$phone")
                                 }
                                 context.startActivity(intent)
                             } catch (_: Exception) {
-                                Toast.makeText(context, "Wacaya Ahmed Hassan: +252613456789", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Wacaya $phone", Toast.LENGTH_SHORT).show()
                             }
                         },
                         onDeliveredClick = {
                             orderAccepted = false
+                            activeDeliveryOrder?.let {
+                                viewModel.updateMarketOrderStatus(it.id, "delivered")
+                            }
                             Toast.makeText(context, "Dalabka waa la gaarsiiyay! Dakhliga $3.50 ayaa lagu daray.", Toast.LENGTH_LONG).show()
                             driverTab = "earnings"
                         }
@@ -214,8 +234,10 @@ fun ShiriDeliveryScreen(
                 }
                 "earnings" -> {
                     DriverEarningsScreenView(
+                        todayAmount = "$$totalEarningsFormatted",
+                        deliveriesCount = totalDeliveries,
                         onViewDetails = {
-                            Toast.makeText(context, "Dakhliga maanta: $85.50 (8 Safar oo la dhammeeyay)", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "Dakhliga maanta: $$totalEarningsFormatted ($totalDeliveries Safar oo la dhammeeyay)", Toast.LENGTH_LONG).show()
                         }
                     )
                 }
@@ -231,6 +253,8 @@ fun ShiriDeliveryScreen(
 @Composable
 private fun NewDeliveryScreenView(
     orderAccepted: Boolean,
+    pickupStore: String = "Pizza Palace",
+    deliverAddress: String = "Via Somalia",
     onAcceptOrder: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -336,7 +360,7 @@ private fun NewDeliveryScreenView(
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Pizza Palace",
+                                text = pickupStore,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = BrandTextDark
@@ -369,7 +393,7 @@ private fun NewDeliveryScreenView(
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
-                                text = "Via Somalia",
+                                text = deliverAddress,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = BrandTextDark
@@ -405,6 +429,8 @@ private fun NewDeliveryScreenView(
 
 @Composable
 private fun OnTheWayScreenView(
+    customerName: String = "Ahmed Hassan",
+    customerPhone: String = "+252613456789",
     onContactClick: () -> Unit,
     onDeliveredClick: () -> Unit
 ) {
@@ -536,7 +562,7 @@ private fun OnTheWayScreenView(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Ahmed Hassan",
+                                text = customerName,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = BrandTextDark
@@ -635,6 +661,8 @@ private fun OnTheWayScreenView(
 
 @Composable
 private fun DriverEarningsScreenView(
+    todayAmount: String = "$85.50",
+    deliveriesCount: Int = 8,
     onViewDetails: () -> Unit
 ) {
     Column(
@@ -659,7 +687,7 @@ private fun DriverEarningsScreenView(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Text(
-                    text = "$85.50",
+                    text = todayAmount,
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Black,
                     color = BrandTextDark
@@ -680,7 +708,7 @@ private fun DriverEarningsScreenView(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "8",
+                            text = deliveriesCount.toString(),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Black,
                             color = BrandTextDark

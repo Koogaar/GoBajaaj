@@ -19,7 +19,7 @@ class ExampleRobolectricTest {
     fun `read app name from context`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val appName = context.getString(R.string.app_name)
-        assertEquals("GoBajaaj", appName)
+        assertEquals("SHIRI", appName)
     }
 
     @Test
@@ -40,5 +40,56 @@ class ExampleRobolectricTest {
         assertEquals(UserRole.REPORTER, UserRole.fromString("reporter"))
         assertEquals(UserRole.SUPER_ADMIN, UserRole.fromString("super_admin"))
         assertEquals(UserRole.PASSENGER, UserRole.fromString("unknown_value"))
+    }
+
+    @Test
+    fun `test marketplace order lifecycle and status flow`() {
+        val order = com.example.somalitraffic.data.model.ShiriMarketOrder(
+            id = "test-order-1",
+            orderNumber = "#SHR-001",
+            customerName = "Ahmed Hassan",
+            customerPhone = "0612345678",
+            merchantName = "Pizza Palace",
+            itemsSummary = "Margherita Pizza x1",
+            subtotal = 12.00,
+            deliveryFee = 1.00,
+            serviceFee = 0.50,
+            total = 13.50,
+            status = "pending",
+            handoverPin = "4829"
+        )
+
+        assertEquals("pending", order.status)
+        assertEquals(13.50, order.total, 0.01)
+
+        // Status transition: Merchant accepts
+        val preparing = order.copy(status = "preparing")
+        assertEquals("preparing", preparing.status)
+
+        // Status transition: Merchant marks ready
+        val ready = preparing.copy(status = "ready_for_pickup")
+        assertEquals("ready_for_pickup", ready.status)
+
+        // Status transition: Courier assigned and picked up
+        val inTransit = ready.copy(status = "picked_up", courierId = "courier-123")
+        assertEquals("picked_up", inTransit.status)
+        assertEquals("courier-123", inTransit.courierId)
+
+        // Status transition: Delivered
+        val delivered = inTransit.copy(status = "delivered")
+        assertEquals("delivered", delivered.status)
+    }
+
+    @Test
+    fun `test marketplace categories and store catalog completeness`() {
+        val categories = com.example.somalitraffic.data.model.ShiriMarketRepository.getDefaultCategories()
+        assertTrue("Marketplace should have at least 15 categories", categories.size >= 15)
+
+        val stores = com.example.somalitraffic.data.model.ShiriMarketRepository.getDefaultStores()
+        assertTrue("Marketplace should have stores", stores.isNotEmpty())
+
+        val pizzaPalace = stores.find { it.name.contains("Pizza Palace", ignoreCase = true) }
+        assertTrue("Pizza Palace should exist in default stores", pizzaPalace != null)
+        assertTrue("Pizza Palace should have products", pizzaPalace!!.products.isNotEmpty())
     }
 }

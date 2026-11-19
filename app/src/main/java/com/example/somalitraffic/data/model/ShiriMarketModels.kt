@@ -62,6 +62,33 @@ data class ShiriMerchantStore(
     val products: List<ShiriProductItem> = emptyList()
 )
 
+data class ShiriMarketOrder(
+    val id: String = UUID.randomUUID().toString(),
+    val orderNumber: String,
+    val customerId: String = "",
+    val customerName: String,
+    val customerPhone: String,
+    val merchantId: String = "",
+    val merchantName: String = "Pizza Palace",
+    val courierId: String? = null,
+    val courierName: String? = null,
+    val courierPhone: String? = null,
+    val itemsSummary: String,
+    val total: Double,
+    var status: String = "pending", // "pending", "accepted", "preparing", "ready_for_pickup", "picked_up", "delivered", "cancelled"
+    val timeAgo: String = "Hadda",
+    val handoverPin: String = "1234",
+    val address: String = "Hodan, Muqdisho",
+    val pickupAddress: String = "Pizza Palace, KM4",
+    val deliveryNotes: String = "",
+    val subtotal: Double = 0.0,
+    val deliveryFee: Double = 1.0,
+    val serviceFee: Double = 0.5,
+    val createdAt: String = ""
+)
+
+typealias MerchantOrder = ShiriMarketOrder
+
 object ShiriMarketRepository {
     var currentPricing: ShiriPricingConfig = ShiriPricingConfig()
 

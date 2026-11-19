@@ -457,6 +457,105 @@ interface SupabaseApiService {
         @Query("order") order: String = "updated_at.desc",
         @Query("select") select: String = "*"
     ): Response<List<Map<String, Any>>>
+
+    // ─── SHIRI Delivery Marketplace Endpoints ─────────────────────────────────
+    @POST("rest/v1/orders")
+    suspend fun createMarketOrder(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Header("Prefer") prefer: String = "return=representation",
+        @Body order: @JvmSuppressWildcards Map<String, Any?>
+    ): Response<List<Map<String, Any>>>
+
+    @POST("rest/v1/order_items")
+    suspend fun createOrderItems(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Header("Prefer") prefer: String = "return=representation",
+        @Body items: @JvmSuppressWildcards List<Map<String, Any?>>
+    ): Response<List<Map<String, Any>>>
+
+    @GET("rest/v1/orders")
+    suspend fun getMarketOrders(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("order") order: String = "created_at.desc",
+        @Query("limit") limit: Int = 50,
+        @Query("select") select: String = "*"
+    ): Response<List<Map<String, Any>>>
+
+    @GET("rest/v1/orders")
+    suspend fun getOrdersForCustomer(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("customer_id") customerId: String,
+        @Query("order") order: String = "created_at.desc",
+        @Query("select") select: String = "*"
+    ): Response<List<Map<String, Any>>>
+
+    @GET("rest/v1/orders")
+    suspend fun getOrdersForMerchant(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("merchant_id") merchantId: String,
+        @Query("order") order: String = "created_at.desc",
+        @Query("select") select: String = "*"
+    ): Response<List<Map<String, Any>>>
+
+    @GET("rest/v1/orders")
+    suspend fun getOrdersForCourier(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("courier_id") courierId: String,
+        @Query("order") order: String = "created_at.desc",
+        @Query("select") select: String = "*"
+    ): Response<List<Map<String, Any>>>
+
+    @PATCH("rest/v1/orders")
+    suspend fun updateMarketOrderStatus(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("id") idFilter: String,
+        @Body updates: @JvmSuppressWildcards Map<String, Any?>
+    ): Response<Unit>
+
+    @GET("rest/v1/merchants")
+    suspend fun getMerchants(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("select") select: String = "*"
+    ): Response<List<Map<String, Any>>>
+
+    @POST("rest/v1/merchants")
+    suspend fun upsertMerchant(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Header("Prefer") prefer: String = "resolution=merge-duplicates,return=representation",
+        @Body merchant: @JvmSuppressWildcards Map<String, Any?>
+    ): Response<List<Map<String, Any>>>
+
+    @GET("rest/v1/products")
+    suspend fun getProducts(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("merchant_id") merchantId: String? = null,
+        @Query("select") select: String = "*"
+    ): Response<List<Map<String, Any>>>
+
+    @POST("rest/v1/products")
+    suspend fun upsertProduct(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Header("Prefer") prefer: String = "resolution=merge-duplicates,return=representation",
+        @Body product: @JvmSuppressWildcards Map<String, Any?>
+    ): Response<List<Map<String, Any>>>
+
+    @DELETE("rest/v1/products")
+    suspend fun deleteProduct(
+        @Header("apikey") apiKey: String,
+        @Header("Authorization") authHeader: String,
+        @Query("id") idFilter: String
+    ): Response<Unit>
 }
 
 object NetworkClient {

@@ -47,20 +47,15 @@ import coil.compose.AsyncImage
 import com.example.somalitraffic.data.model.*
 import com.example.somalitraffic.ui.SomaliTrafficViewModel
 import com.example.somalitraffic.util.ArrivalSoundManager
+import com.example.ui.theme.BrandGreenPrimary
+import com.example.ui.theme.BrandGreenDark
+import com.example.ui.theme.BrandGreenLight
+import com.example.ui.theme.BrandBgLight
+import com.example.ui.theme.BrandCardWhite
+import com.example.ui.theme.BrandTextDark
 import java.util.UUID
-
-data class MerchantOrder(
-    val id: String,
-    val orderNumber: String,
-    val customerName: String,
-    val customerPhone: String,
-    val itemsSummary: String,
-    val total: Double,
-    var status: String, // "pending", "preparing", "ready", "delivered"
-    val timeAgo: String,
-    val handoverPin: String,
-    val address: String
-)
+import com.example.somalitraffic.data.model.ShiriMarketOrder
+import com.example.somalitraffic.data.model.MerchantOrder
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -182,39 +177,8 @@ fun ShiriEatsMarketScreen(
     // Courier PIN Keypad Input State
     var enteredCourierPin by remember { mutableStateOf("") }
 
-    // Merchant Orders List (Pre-seeded with real orders matching master mockup)
-    val merchantOrders = remember {
-        mutableStateListOf<MerchantOrder>().apply {
-            add(
-                MerchantOrder(
-                    id = "sh12345",
-                    orderNumber = "#SH12345",
-                    customerName = "Ahmed Hassan",
-                    customerPhone = "0612345678",
-                    itemsSummary = "2 items (Margherita Pizza, Pepperoni Pizza)",
-                    total = 28.00,
-                    status = "pending",
-                    timeAgo = "12 min ago",
-                    handoverPin = "4829",
-                    address = "Hodan, Muqdisho (Via Somalia)"
-                )
-            )
-            add(
-                MerchantOrder(
-                    id = "sh12344",
-                    orderNumber = "#SH12344",
-                    customerName = "Khadija Ali",
-                    customerPhone = "0615551024",
-                    itemsSummary = "1 item (Chicken Pizza)",
-                    total = 20.00,
-                    status = "pending",
-                    timeAgo = "15 min ago",
-                    handoverPin = "1094",
-                    address = "Waberi, Muqdisho"
-                )
-            )
-        }
-    }
+    // Observe live marketplace orders from repository / ViewModel
+    val merchantOrders by viewModel.marketOrders.collectAsState()
 
     var selectedOrderForDetail by remember { mutableStateOf<MerchantOrder?>(null) }
     var selectedProductForEdit by remember { mutableStateOf<ShiriProductItem?>(null) }
@@ -471,7 +435,7 @@ fun ShiriEatsMarketScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = Color.White,
                                 unfocusedContainerColor = Color.White,
-                                focusedBorderColor = Color(0xFFDC2626),
+                                focusedBorderColor = BrandGreenPrimary,
                                 unfocusedBorderColor = Color(0xFFE2E8F0)
                             )
                         )
@@ -506,21 +470,25 @@ fun ShiriEatsMarketScreen(
                                 voiceOrderIsRecording = false
                                 voiceOrderPlacedSuccess = true
                                 val newOrderCode = "#SHR-V" + (1000..9999).random()
-                                merchantOrders.add(0, MerchantOrder(
+                                val voiceOrder = ShiriMarketOrder(
                                     id = UUID.randomUUID().toString(),
                                     orderNumber = newOrderCode,
+                                    customerId = viewModel.currentUser.value?.id ?: "",
                                     customerName = viewModel.currentUser.value?.fullName ?: "Macmiil Cod/Chat",
                                     customerPhone = viewModel.currentUser.value?.phoneNumber ?: "0612345678",
+                                    merchantName = "Pizza Palace",
                                     itemsSummary = if (voiceOrderText.isNotBlank()) voiceOrderText else "Dalab Cod Ah (${voiceOrderDuration}s)",
                                     total = 10.0,
                                     status = "pending",
                                     timeAgo = "Hadda",
                                     handoverPin = (1000..9999).random().toString(),
-                                    address = "$selectedShiriDistrict ($selectedShiriStreet)"
-                                ))
+                                    address = "$selectedShiriDistrict ($selectedShiriStreet)",
+                                    pickupAddress = "Pizza Palace, KM4"
+                                )
+                                viewModel.placeMarketOrder(voiceOrder)
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -547,12 +515,12 @@ fun ShiriEatsMarketScreen(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
-                            color = Color(0xFFDC2626).copy(alpha = 0.12f),
+                            color = BrandGreenPrimary.copy(alpha = 0.12f),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.size(36.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Category, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Category, contentDescription = null, tint = BrandGreenPrimary, modifier = Modifier.size(20.dp))
                             }
                         }
                         Spacer(modifier = Modifier.width(8.dp))
@@ -588,7 +556,7 @@ fun ShiriEatsMarketScreen(
                     // Button: Add New Category
                     Button(
                         onClick = { showAddCategorySheet = !showAddCategorySheet },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                        colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -847,7 +815,7 @@ fun ShiriEatsMarketScreen(
                     Surface(
                         shape = RoundedCornerShape(16.dp),
                         color = Color.White,
-                        border = BorderStroke(1.5.dp, Color(0xFFDC2626)),
+                        border = BorderStroke(1.5.dp, BrandGreenPrimary),
                         shadowElevation = 2.dp,
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -978,7 +946,7 @@ fun ShiriEatsMarketScreen(
             confirmButton = {
                 Button(
                     onClick = { showAddressCardDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1013,7 +981,7 @@ fun ShiriEatsMarketScreen(
             title = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(color = Color(0xFFDC2626).copy(alpha = 0.12f), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(34.dp)) {
+                        Surface(color = BrandGreenPrimary.copy(alpha = 0.12f), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(34.dp)) {
                             Box(contentAlignment = Alignment.Center) {
                                 Text(currentStore.emoji, fontSize = 18.sp)
                             }
@@ -1298,7 +1266,7 @@ fun ShiriEatsMarketScreen(
                             HorizontalDivider(color = Color(0xFFE2E8F0), modifier = Modifier.padding(vertical = 2.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(if (isSomaliLanguage) "WADARTA GUUD" else "TOTAL", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Color(0xFF0F172A))
-                                Text("$${String.format("%.2f", checkoutTotal)}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Color(0xFFDC2626))
+                                Text("$${String.format("%.2f", checkoutTotal)}", fontSize = 14.sp, fontWeight = FontWeight.Black, color = BrandGreenPrimary)
                             }
                         }
                     }
@@ -1325,23 +1293,32 @@ fun ShiriEatsMarketScreen(
                             val p = currentStore.products.find { it.id == prodId }
                             "${p?.name ?: "Alaab"} x$qty"
                         }
-                        merchantOrders.add(0, MerchantOrder(
+                        val newOrder = ShiriMarketOrder(
                             id = orderId,
                             orderNumber = "#$orderId",
+                            customerId = viewModel.currentUser.value?.id ?: "",
                             customerName = viewModel.currentUser.value?.fullName ?: "Macmiil Shiri",
-                            customerPhone = viewModel.currentUser.value?.phoneNumber ?: "0612345678",
+                            customerPhone = checkoutPayerPhone.ifBlank { viewModel.currentUser.value?.phoneNumber ?: "0612345678" },
+                            merchantId = currentStore.id,
+                            merchantName = currentStore.name,
                             itemsSummary = itemsSummaryStr,
-                            total = cartTotal + currentStore.deliveryFee,
+                            subtotal = cartTotal,
+                            deliveryFee = currentStore.deliveryFee,
+                            serviceFee = 0.50,
+                            total = cartTotal + currentStore.deliveryFee + 0.50,
                             status = "pending",
                             timeAgo = "Hadda",
                             handoverPin = pin,
-                            address = "$selectedShiriDistrict ($selectedShiriStreet)"
-                        ))
+                            address = "$selectedShiriDistrict ($selectedShiriStreet)",
+                            pickupAddress = "${currentStore.name}, ${currentStore.district}",
+                            deliveryNotes = voiceLandmarkText
+                        )
+                        viewModel.placeMarketOrder(newOrder)
 
                         cartItems.clear()
                         Toast.makeText(context, "Dalabkaagii waa la xaqiijiyay! Digniinta Jikada (Kitchen Alarm) ayaa dirtay.", Toast.LENGTH_LONG).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1402,7 +1379,7 @@ fun ShiriEatsMarketScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // Handover PIN Card
-                    Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFF1E293B), border = BorderStroke(1.5.dp, Color(0xFFDC2626)), modifier = Modifier.fillMaxWidth()) {
+                    Surface(shape = RoundedCornerShape(14.dp), color = Color(0xFF1E293B), border = BorderStroke(1.5.dp, BrandGreenPrimary), modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
                                 text = if (isSomaliLanguage) "KOODHKA SIRTA AH (HANDOVER PIN)" else "HANDOVER SECURITY PIN",
@@ -1434,7 +1411,7 @@ fun ShiriEatsMarketScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Surface(shape = CircleShape, color = Color(0xFFDC2626).copy(alpha = 0.2f), modifier = Modifier.size(36.dp)) {
+                                    Surface(shape = CircleShape, color = BrandGreenLight, modifier = Modifier.size(36.dp)) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text("🏍️", fontSize = 18.sp)
                                         }
@@ -1606,7 +1583,7 @@ fun ShiriEatsMarketScreen(
             confirmButton = {
                 Button(
                     onClick = { showLiveTracking = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1624,7 +1601,7 @@ fun ShiriEatsMarketScreen(
             onDismissRequest = { showAddProductDialog = false },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(color = Color(0xFFDC2626).copy(alpha = 0.12f), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(36.dp)) {
+                    Surface(color = BrandGreenPrimary.copy(alpha = 0.12f), shape = RoundedCornerShape(8.dp), modifier = Modifier.size(36.dp)) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.AddBusiness, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(20.dp))
                         }
@@ -1794,7 +1771,7 @@ fun ShiriEatsMarketScreen(
                             Toast.makeText(context, "Fadlan gali magaca iyo qiimaha saxda ah", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(if (isSomaliLanguage) "Kaydi Alaabta" else "Save Product", fontWeight = FontWeight.Bold, color = Color.White)
@@ -1913,14 +1890,11 @@ fun ShiriEatsMarketScreen(
                         "pending" -> {
                             Button(
                                 onClick = {
-                                    val idx = merchantOrders.indexOfFirst { it.id == ord.id }
-                                    if (idx != -1) {
-                                        merchantOrders[idx] = ord.copy(status = "preparing")
-                                    }
+                                    viewModel.updateMarketOrderStatus(ord.id, "preparing")
                                     selectedOrderForDetail = null
                                     Toast.makeText(context, "Dalabka waa la aqbalay, diyaarinta ayaa bilaabatay!", Toast.LENGTH_SHORT).show()
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
@@ -1930,27 +1904,21 @@ fun ShiriEatsMarketScreen(
                         "preparing" -> {
                             Button(
                                 onClick = {
-                                    val idx = merchantOrders.indexOfFirst { it.id == ord.id }
-                                    if (idx != -1) {
-                                        merchantOrders[idx] = ord.copy(status = "ready")
-                                    }
+                                    viewModel.updateMarketOrderStatus(ord.id, "ready_for_pickup")
                                     selectedOrderForDetail = null
                                     Toast.makeText(context, "Mootada ugu dhow ayaa loo yeeray!", Toast.LENGTH_SHORT).show()
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text("🏍️ Waa Diyaar, U Yeer Mooto", color = Color.White, fontWeight = FontWeight.Bold)
                             }
                         }
-                        "ready" -> {
+                        "ready", "ready_for_pickup" -> {
                             Button(
                                 onClick = {
-                                    val idx = merchantOrders.indexOfFirst { it.id == ord.id }
-                                    if (idx != -1) {
-                                        merchantOrders[idx] = ord.copy(status = "delivered")
-                                    }
+                                    viewModel.updateMarketOrderStatus(ord.id, "delivered")
                                     selectedOrderForDetail = null
                                     Toast.makeText(context, "Dalabka waa la gacan-galiyay!", Toast.LENGTH_SHORT).show()
                                 },
@@ -2113,7 +2081,7 @@ fun ShiriEatsMarketScreen(
                         selectedProductForEdit = null
                         Toast.makeText(context, "Alaabta waa la cusbooneysiiyay!", Toast.LENGTH_SHORT).show()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text("Keydi Isbedelka", color = Color.White, fontWeight = FontWeight.Bold)
@@ -2555,7 +2523,7 @@ fun ShiriEatsMarketScreen(
                                     }
                                     Surface(
                                         shape = CircleShape,
-                                        color = if (isDone) Color(0xFFDC2626) else Color(0xFFE2E8F0),
+                                        color = if (isDone) BrandGreenPrimary else Color(0xFFE2E8F0),
                                         modifier = Modifier.size(24.dp)
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
@@ -2569,7 +2537,7 @@ fun ShiriEatsMarketScreen(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(3.dp)
-                                                .background(if (index < when (trackingStatus) { "delivered" -> 3; "in_transit" -> 2; else -> 1 }) Color(0xFFDC2626) else Color(0xFFE2E8F0))
+                                                .background(if (index < when (trackingStatus) { "delivered" -> 3; "in_transit" -> 2; else -> 1 }) BrandGreenPrimary else Color(0xFFE2E8F0))
                                         )
                                     }
                                 }
@@ -2993,14 +2961,14 @@ fun ShiriEatsMarketScreen(
                                             text = tabLabel,
                                             fontSize = 13.sp,
                                             fontWeight = if (isTabActive) FontWeight.Black else FontWeight.Medium,
-                                            color = if (isTabActive) Color(0xFFDC2626) else Color(0xFF64748B)
+                                            color = if (isTabActive) BrandGreenPrimary else Color(0xFF64748B)
                                         )
                                         Spacer(Modifier.height(4.dp))
                                         Box(
                                             modifier = Modifier
                                                 .width(28.dp)
                                                 .height(2.5.dp)
-                                                .background(if (isTabActive) Color(0xFFDC2626) else Color.Transparent)
+                                                .background(if (isTabActive) BrandGreenPrimary else Color.Transparent)
                                         )
                                     }
                                 }
@@ -3493,7 +3461,7 @@ fun ShiriEatsMarketScreen(
                                     selectedSubcategoryId = "all"
                                     customerSearchQuery = ""
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text(if (isSomaliLanguage) "Arag Dhammaan Meheradaha" else "View All Stores", fontSize = 11.sp, color = Color.White)
@@ -3644,7 +3612,7 @@ fun ShiriEatsMarketScreen(
                                         trackingStatus = "courier_assigned"
                                         Toast.makeText(context, "Darawalka mootada ayaa loo yeeray (Ready for Pickup)!", Toast.LENGTH_LONG).show()
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.weight(1f).height(38.dp),
                                     contentPadding = PaddingValues(horizontal = 4.dp)
@@ -3811,7 +3779,7 @@ fun ShiriEatsMarketScreen(
                                             ) {
                                                 Button(
                                                     onClick = {
-                                                        ord.status = "preparing"
+                                                        viewModel.updateMarketOrderStatus(ord.id, "preparing")
                                                         Toast.makeText(context, "Dalabka ${ord.orderNumber} waa la aqbalay!", Toast.LENGTH_SHORT).show()
                                                     },
                                                     colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
@@ -3823,7 +3791,7 @@ fun ShiriEatsMarketScreen(
 
                                                 Button(
                                                     onClick = {
-                                                        merchantOrders.remove(ord)
+                                                        viewModel.updateMarketOrderStatus(ord.id, "cancelled")
                                                         Toast.makeText(context, "Dalabka ${ord.orderNumber} waa la diiday.", Toast.LENGTH_SHORT).show()
                                                     },
                                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFEE2E2)),
@@ -3836,7 +3804,7 @@ fun ShiriEatsMarketScreen(
                                         } else if (ord.status == "preparing") {
                                             Button(
                                                 onClick = {
-                                                    ord.status = "ready"
+                                                    viewModel.updateMarketOrderStatus(ord.id, "ready_for_pickup")
                                                     Toast.makeText(context, "Dalabka ${ord.orderNumber} waa diyaar (Ready for Courier)!", Toast.LENGTH_SHORT).show()
                                                 },
                                                 colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
@@ -3858,7 +3826,7 @@ fun ShiriEatsMarketScreen(
                         // ═════════════════════════════════════════════════════════
                         Button(
                             onClick = { showAddProductDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                            colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth().height(46.dp)
                         ) {
@@ -3883,7 +3851,7 @@ fun ShiriEatsMarketScreen(
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedContainerColor = Color.White,
                                 unfocusedContainerColor = Color.White,
-                                focusedBorderColor = Color(0xFFDC2626),
+                                focusedBorderColor = BrandGreenPrimary,
                                 unfocusedBorderColor = Color(0xFFE2E8F0)
                             ),
                             modifier = Modifier.fillMaxWidth()
@@ -4005,7 +3973,7 @@ fun ShiriEatsMarketScreen(
                                 Text("$385.20", fontSize = 28.sp, fontWeight = FontWeight.Black, color = Color.White)
                                 Button(
                                     onClick = { showWithdrawDialog = true },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                                     shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.fillMaxWidth().height(42.dp)
                                 ) {
@@ -4213,7 +4181,7 @@ fun ShiriEatsMarketScreen(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 onClick = { showAddProductDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                                colors = ButtonDefaults.buttonColors(containerColor = BrandGreenPrimary),
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1.3f).height(44.dp)
                             ) {
@@ -4236,7 +4204,7 @@ fun ShiriEatsMarketScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
-                                    Icon(Icons.Default.Category, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Category, contentDescription = null, tint = BrandGreenPrimary, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(4.dp))
                                     Text("Qeybaha", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
                                 }
@@ -4357,7 +4325,7 @@ fun ShiriEatsMarketScreen(
                                 text = "Arag Dhammaan →",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFDC2626),
+                                color = BrandGreenPrimary,
                                 modifier = Modifier.clickable { merchantBottomTab = "orders" }
                             )
                         }
@@ -4412,7 +4380,7 @@ fun ShiriEatsMarketScreen(
                                 text = "Maamul Alaabta →",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFDC2626),
+                                color = BrandGreenPrimary,
                                 modifier = Modifier.clickable { merchantBottomTab = "products" }
                             )
                         }
@@ -4489,7 +4457,7 @@ fun DoorDashCategoryTile(
     ) {
         Surface(
             shape = RoundedCornerShape(18.dp),
-            color = if (isSelected) Color(0xFFDC2626) else bgColor,
+            color = if (isSelected) BrandGreenPrimary else bgColor,
             modifier = Modifier.size(56.dp),
             shadowElevation = if (isSelected) 3.dp else 0.dp
         ) {
@@ -4505,7 +4473,7 @@ fun DoorDashCategoryTile(
             text = title,
             fontSize = 11.5.sp,
             fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
-            color = if (isSelected) Color(0xFFDC2626) else Color(0xFF0F172A),
+            color = if (isSelected) BrandGreenPrimary else Color(0xFF0F172A),
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
